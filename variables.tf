@@ -1,11 +1,11 @@
 variable "tags" {
-  description = "A map of tags to add to all resources"
+  description = "A map of tags to add to all resources."
   type        = map(string)
   default     = {}
 }
 
 variable "cluster_name" {
-  description = "Name of the EKS cluster"
+  description = "Name of the EKS cluster."
   type        = string
   default     = ""
 }
@@ -17,31 +17,31 @@ variable "subnets_ids" {
 }
 
 variable "vpc_id" {
-  description = "ID of the VPC where the cluster and its nodes will be provisioned"
+  description = "ID of the VPC where the cluster and its nodes will be provisioned."
   type        = string
   default     = null
 }
 
 variable "eks_managed_node_groups" {
-  description = "Map of EKS managed node group definitions to create"
+  description = "Map of EKS managed node group definitions to create."
   type        = any
   default     = {}
 }
 
 variable "eks_managed_node_group_defaults" {
-  description = "Map of EKS managed node group default configurations"
+  description = "Map of EKS managed node group default configurations."
   type        = any
   default     = {}
 }
 
 variable "access_points_security_group_ids" {
-  description = "The security groups ids of access points to kubernetes API"
+  description = "The security groups ids of access points to kubernetes API."
   type        = list(string)
   default     = []
 }
 
 variable "sso_roles" {
-  description = ""
+  description = "AWS SSO roles that will be mapped to RBAC roles."
   type = list(object({
     role_name = string,
     groups    = list(string),
@@ -49,18 +49,14 @@ variable "sso_roles" {
   default = []
 }
 
-variable "public_alb" {
-
+variable "cluster_endpoint_private_access" {
+  description = "Indicates whether or not the Amazon EKS private API server endpoint is enabled."
+  type        = bool
+  default     = false
 }
 
-variable "private_alb" {
-
-}
-
-variable "private_subnets" {
-
-}
-
-variable "public_subnets" {
-
+variable "cluster_endpoint_public_access" {
+  description = "Indicates whether or not the Amazon EKS public API server endpoint is enabled."
+  type        = bool
+  default     = true
 }

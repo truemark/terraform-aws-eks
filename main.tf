@@ -28,8 +28,8 @@ module "eks" {
 
   cluster_name                    = var.cluster_name
   cluster_version                 = "1.23"
-  cluster_endpoint_private_access = true
-  cluster_endpoint_public_access  = true
+  cluster_endpoint_private_access = var.cluster_endpoint_private_access
+  cluster_endpoint_public_access  = var.cluster_endpoint_public_access
   cluster_enabled_log_types       = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
 
   aws_auth_roles = [
@@ -49,6 +49,10 @@ module "eks" {
 
   cluster_addons = {
     aws-ebs-csi-driver = {}
+    vpc-cni = {
+      resolve_conflicts        = "OVERWRITE"
+      service_account_role_arn = module.vpc_cni_irsa.iam_role_arn
+    }
   }
 
   # aws-auth configmap
@@ -58,8 +62,15 @@ module "eks" {
   subnet_ids = var.subnets_ids
   tags       = var.tags
 
-  eks_managed_node_groups         = var.eks_managed_node_groups
-  eks_managed_node_group_defaults = var.eks_managed_node_group_defaults
+  eks_managed_node_groups = var.eks_managed_node_groups
+  eks_managed_node_group_defaults = {
+    # We are using the IRSA created below for permissions
+    # However, we have to provision a new cluster with the policy attached FIRST
+    # before we can disable. Without this initial policy,
+    # the VPC CNI fails to assign IPs and nodes cannot join the new cluster
+    iam_role_attach_cni_policy = true
+  }
+  //var.eks_managed_node_group_defaults
 
   node_security_group_additional_rules = {
     ingress_allow_access_from_control_plane = {
@@ -73,183 +84,31 @@ module "eks" {
   }
 }
 
-#######################
-# Public loadbalancer #
-#######################
-
-resource "aws_lb" "public" {
-  count              = var.public_alb ? 1 : 0
-  name               = "${var.cluster_name}-public"
-  load_balancer_type = "application"
-  security_groups    = [aws_security_group.public_alb[0].id]
-  subnets            = var.public_subnets
-
-  tags = var.tags
-}
-
-# Security Group
-resource "aws_security_group" "public_alb" {
-  count = var.public_alb ? 1 : 0
-  name  = "${var.cluster_name}-public-alb"
-  # description = var.alb-sg-description
-  vpc_id = var.vpc_id
-
-  tags = var.tags
-}
-
-# Security Group Rules
-resource "aws_security_group_rule" "public_alb_ingress_80" {
-  count             = var.public_alb ? 1 : 0
-  type              = "ingress"
-  security_group_id = aws_security_group.public_alb[0].id
-  from_port         = 80
-  to_port           = 80
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-}
-
-resource "aws_security_group_rule" "public_alb_ingress_443" {
-  count             = var.public_alb ? 1 : 0
-  type              = "ingress"
-  security_group_id = aws_security_group.public_alb[0].id
-  from_port         = 443
-  to_port           = 443
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-}
-
-resource "aws_security_group_rule" "public_alb_egress_allow_all" {
-  count             = var.public_alb ? 1 : 0
-  type              = "egress"
-  security_group_id = aws_security_group.public_alb[0].id
-  from_port         = 0
-  to_port           = 0
-  protocol          = "-1"
-  cidr_blocks       = ["0.0.0.0/0"]
-}
-
-resource "aws_security_group_rule" "public_alb_ingress_80_worker" {
-  count                    = var.public_alb ? 1 : 0
-  type                     = "ingress"
-  from_port                = 80
-  to_port                  = 80
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.public_alb[0].id
-  security_group_id        = module.eks.node_security_group_id
-  description              = "Rule to allow ALB to worker node group"
-}
-
-resource "aws_security_group_rule" "public_alb_ingress_443_worker" {
-  count                    = var.public_alb ? 1 : 0
-  type                     = "ingress"
-  from_port                = 443
-  to_port                  = 443
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.public_alb[0].id
-  security_group_id        = module.eks.node_security_group_id
-  description              = "Rule to allow ALB to worker node group"
-}
-
-########################
-# Private loadbalancer #
-########################
-
-# Security Group
-resource "aws_security_group" "private_alb" {
-  count = var.private_alb ? 1 : 0
-  name  = "${var.cluster_name}-private-alb"
-  # description = var.alb-sg-description
-  vpc_id = var.vpc_id
-
-  tags = var.tags
-}
-
-resource "aws_lb" "private" {
-  count              = var.private_alb ? 1 : 0
-  name               = "${var.cluster_name}-private"
-  load_balancer_type = "application"
-  security_groups    = [aws_security_group.private_alb[0].id]
-  subnets            = var.private_subnets
-
-  tags = var.tags
-}
-
-resource "aws_security_group_rule" "private_alb_allow_80_worker" {
-  count                    = var.private_alb ? 1 : 0
-  type                     = "ingress"
-  from_port                = 80
-  to_port                  = 80
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.private_alb[0].id
-  security_group_id        = module.eks.node_security_group_id
-  description              = "Rule to allow ALB to worker node group"
-}
-
-resource "aws_security_group_rule" "private_alb_allow_443_worker" {
-  count                    = var.private_alb ? 1 : 0
-  type                     = "ingress"
-  from_port                = 443
-  to_port                  = 443
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.private_alb[0].id
-  security_group_id        = module.eks.node_security_group_id
-  description              = "Rule to allow ALB to worker node group"
-}
-
-provider "helm" {
-  kubernetes {
-    host                   = data.aws_eks_cluster.cluster.endpoint
-    cluster_ca_certificate = base64decode(data.aws_eks_cluster.cluster.certificate_authority.0.data)
-    token                  = data.aws_eks_cluster_auth.cluster.token
-  }
-}
-
-resource "aws_alb_listener" "public_alb_80" {
-  count             = var.public_alb ? 1 : 0
-  load_balancer_arn = aws_lb.public[0].arn
-  port              = "80"
-  protocol          = "HTTP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_alb_target_group.public_alb_80[0].arn
-  }
-}
-
-resource "aws_alb_target_group" "public_alb_80" {
-  count       = var.public_alb ? 1 : 0
-  name        = "${var.cluster_name}-public-alb-80"
-  port        = 80
-  protocol    = "HTTP"
-  target_type = "ip"
-  vpc_id      = var.vpc_id
-}
-
 resource "aws_iam_policy" "aws_load_balancer_controller" {
-  name   = "AWSLoadBalancerControllerIAMPolicy1"
+  name   = "AWSLoadBalancerControllerIAMPolicy"
   policy = data.aws_iam_policy_document.aws_load_balancer_controller_full.json
 }
 
 resource "aws_iam_role" "aws_load_balancer_controller" {
-  name               = "AmazonEKSLoadBalancerControllerRole1"
+  name               = "AmazonEKSLoadBalancerControllerRole"
   assume_role_policy = <<EOF
 {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Principal": {
-                "Federated": "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/${trimprefix(module.eks.cluster_oidc_issuer_url, "https://")}"
-            },
-            "Action": "sts:AssumeRoleWithWebIdentity",
-            "Condition": {
-                "StringEquals": {
-                    "${trimprefix(module.eks.cluster_oidc_issuer_url, "https://")}:aud": "sts.amazonaws.com",
-                    "${trimprefix(module.eks.cluster_oidc_issuer_url, "https://")}:sub": "system:serviceaccount:kube-system:aws-load-balancer-controller"
-                }
-            }
-        }
-    ]
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+     "Effect": "Allow",
+     "Principal": {
+      "Federated": "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/${trimprefix(module.eks.cluster_oidc_issuer_url, "https://")}"
+     },
+     "Action": "sts:AssumeRoleWithWebIdentity",
+     "Condition": {
+       "StringEquals": {
+        "${trimprefix(module.eks.cluster_oidc_issuer_url, "https://")}:aud": "sts.amazonaws.com",
+        "${trimprefix(module.eks.cluster_oidc_issuer_url, "https://")}:sub": "system:serviceaccount:kube-system:aws-load-balancer-controller"
+       }
+     }
+    }
+  ]
 }
 EOF
 }
@@ -295,5 +154,25 @@ resource "helm_release" "aws_load_balancer_controller" {
   set {
     name  = "image.tag"
     value = "v2.4.4"
+  }
+}
+
+module "vpc_cni_irsa" {
+  source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+
+  role_name             = "AmazonEKSVPCCNIRole"
+  attach_vpc_cni_policy = true
+  vpc_cni_enable_ipv4   = true
+
+  oidc_providers = {
+    main = {
+      provider_arn               = module.eks.oidc_provider_arn
+      namespace_service_accounts = ["kube-system:aws-node"]
+    }
+  }
+
+  tags = {
+    Environment = "dev"
+    Terraform   = "true"
   }
 }
