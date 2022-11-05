@@ -16,6 +16,14 @@ provider "kubernetes" {
   token                  = data.aws_eks_cluster_auth.cluster.token
 }
 
+provider "helm" {
+  kubernetes {
+    host                   = data.aws_eks_cluster.cluster.endpoint
+    cluster_ca_certificate = base64decode(data.aws_eks_cluster.cluster.certificate_authority.0.data)
+    token                  = data.aws_eks_cluster_auth.cluster.token
+  }
+}
+
 data "aws_iam_roles" "support_role" {
   for_each    = toset(var.sso_roles.*.role_name)
   name_regex  = "${each.key}_*"
@@ -70,7 +78,6 @@ module "eks" {
     # the VPC CNI fails to assign IPs and nodes cannot join the new cluster
     iam_role_attach_cni_policy = true
   }
-  //var.eks_managed_node_group_defaults
 
   node_security_group_additional_rules = {
     ingress_allow_access_from_control_plane = {
@@ -87,6 +94,8 @@ module "eks" {
 resource "aws_iam_policy" "aws_load_balancer_controller" {
   name   = "AWSLoadBalancerControllerIAMPolicy"
   policy = data.aws_iam_policy_document.aws_load_balancer_controller_full.json
+
+  tags = var.tags
 }
 
 resource "aws_iam_role" "aws_load_balancer_controller" {
@@ -111,6 +120,8 @@ resource "aws_iam_role" "aws_load_balancer_controller" {
   ]
 }
 EOF
+
+  tags = var.tags
 }
 
 resource "aws_iam_role_policy_attachment" "aws_load_balancer_controller" {
@@ -171,8 +182,5 @@ module "vpc_cni_irsa" {
     }
   }
 
-  tags = {
-    Environment = "dev"
-    Terraform   = "true"
-  }
+  tags = var.tags
 }
