@@ -16,6 +16,18 @@ variable "subnets_ids" {
   default     = []
 }
 
+variable "public_subnets" {
+  description = "A list of public subnet IDs where the load balancer will be provisioned."
+  type        = list(string)
+  default     = []
+}
+
+variable "private_subnets" {
+  description = "A list of private subnet IDs  where the load balancer will be provisioned."
+  type        = list(string)
+  default     = []
+}
+
 variable "vpc_id" {
   description = "ID of the VPC where the cluster and its nodes will be provisioned."
   type        = string
