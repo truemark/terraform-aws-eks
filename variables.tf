@@ -16,18 +16,6 @@ variable "subnets_ids" {
   default     = []
 }
 
-variable "public_subnets" {
-  description = "A list of public subnet IDs where the load balancer will be provisioned."
-  type        = list(string)
-  default     = []
-}
-
-variable "private_subnets" {
-  description = "A list of private subnet IDs  where the load balancer will be provisioned."
-  type        = list(string)
-  default     = []
-}
-
 variable "vpc_id" {
   description = "ID of the VPC where the cluster and its nodes will be provisioned."
   type        = string
@@ -64,11 +52,11 @@ variable "sso_roles" {
 variable "cluster_endpoint_private_access" {
   description = "Indicates whether or not the Amazon EKS private API server endpoint is enabled."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "cluster_endpoint_public_access" {
   description = "Indicates whether or not the Amazon EKS public API server endpoint is enabled."
   type        = bool
-  default     = true
+  default     = false
 }

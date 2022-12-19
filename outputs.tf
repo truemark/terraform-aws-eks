@@ -82,23 +82,3 @@ output "fargate_profiles" {
   description = "Map of attribute maps for all EKS Fargate Profiles created"
   value       = module.eks.fargate_profiles
 }
-
-output "public_alb_arn" {
-  description = "If public alb created, will return the public alb arn"
-  value       = var.public_alb ? aws_lb.public.arn : null
-}
-
-output "public_alb_security_group_arn" {
-  description = "If public alb created, will return the public alb security group arn"
-  value       = var.public_alb ? aws_security_group.public_alb.arn : null
-}
-
-output "private_alb_arn" {
-  description = "If private alb created, will return the private alb arn"
-  value       = var.private_alb ? aws_lb.private.arn : null
-}
-
-output "private_alb_security_group_arn" {
-  description = "If public alb created, will return the private alb security group arn"
-  value       = var.public_alb ? aws_security_group.public_alb.arn : null
-}
