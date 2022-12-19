@@ -82,8 +82,3 @@ output "fargate_profiles" {
   description = "Map of attribute maps for all EKS Fargate Profiles created"
   value       = module.eks.fargate_profiles
 }
-
-output "fargate_profiles" {
-  description = "Map of attribute maps for all EKS Fargate Profiles created"
-  value       = var.public_alb ? aws_lb.public.arn : null
-}
