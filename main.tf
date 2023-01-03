@@ -89,6 +89,17 @@ module "eks" {
       description                   = "Allow access from control plane to webhook port of AWS load balancer controller"
     }
   }
+
+  cluster_security_group_additional_rules = {
+    for i, v in var.cluster_api_whitelisted_cidr : "cluster_allow_access_cidr_${i}" => {
+      type        = "ingress"
+      protocol    = "tcp"
+      from_port   = 443
+      to_port     = 443
+      cidr_blocks = [v]
+      description = "Allow access from ${v} to cluster api"
+    }
+  }
 }
 
 resource "aws_iam_policy" "aws_load_balancer_controller" {

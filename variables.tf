@@ -60,3 +60,9 @@ variable "cluster_endpoint_public_access" {
   type        = bool
   default     = false
 }
+
+variable "cluster_api_whitelisted_cidr" {
+  description = "Allows access from listed cidrs to cluster api"
+  type        = list(string)
+  default     = []
+}
