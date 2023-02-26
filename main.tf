@@ -3,11 +3,32 @@ data "aws_region" "current" {}
 data "aws_caller_identity" "current" {}
 
 data "aws_eks_cluster" "cluster" {
-  name = module.eks.cluster_id
+  name = module.eks.cluster_name
+}
+
+provider "aws" {
+  region = "us-east-1"
+  alias  = "us-east-1"
 }
 
 data "aws_eks_cluster_auth" "cluster" {
-  name = module.eks.cluster_id
+  name = module.eks.cluster_name
+}
+
+data "aws_ecrpublic_authorization_token" "token" {
+  provider = aws.us-east-1
+}
+
+locals {
+  oidc_provider            = replace(module.eks.cluster_oidc_issuer_url, "https://", "")
+  iamproxy-service-account = "${var.cluster_name}-iamproxy-service-account"
+}
+
+provider "kubectl" {
+  host                   = data.aws_eks_cluster.cluster.endpoint
+  cluster_ca_certificate = base64decode(data.aws_eks_cluster.cluster.certificate_authority.0.data)
+  token                  = data.aws_eks_cluster_auth.cluster.token
+  load_config_file       = false
 }
 
 provider "kubernetes" {
@@ -30,12 +51,28 @@ data "aws_iam_roles" "support_role" {
   path_prefix = "/aws-reserved/sso.amazonaws.com/"
 }
 
+module "ebs_csi_irsa_role" {
+  source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+
+  role_name = "${var.cluster_name}-AmazonEKS_EBS_CSI_DriverRole"
+
+  attach_ebs_csi_policy = true
+  oidc_providers = {
+    main = {
+      provider_arn               = module.eks.oidc_provider_arn
+      namespace_service_accounts = ["kube-system:ebs-csi-controller-sa"]
+    }
+  }
+
+  tags = var.tags
+}
+
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 18.0"
+  version = "~> 19.0"
 
   cluster_name                    = var.cluster_name
-  cluster_version                 = "1.23"
+  cluster_version                 = var.cluster_version
   cluster_endpoint_private_access = var.cluster_endpoint_private_access
   cluster_endpoint_public_access  = var.cluster_endpoint_public_access
   cluster_enabled_log_types       = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
@@ -56,7 +93,9 @@ module "eks" {
   }
 
   cluster_addons = {
-    aws-ebs-csi-driver = {}
+    aws-ebs-csi-driver = {
+      service_account_role_arn = module.ebs_csi_irsa_role.iam_role_arn
+    }
     vpc-cni = {
       resolve_conflicts        = "OVERWRITE"
       service_account_role_arn = module.vpc_cni_irsa.iam_role_arn
@@ -70,36 +109,74 @@ module "eks" {
   subnet_ids = var.subnets_ids
   tags       = var.tags
 
-  eks_managed_node_groups = var.eks_managed_node_groups
+  eks_managed_node_groups = { for k, v in var.eks_managed_node_groups : "${var.cluster_name}-${k}" => v }
+
   eks_managed_node_group_defaults = {
-    # We are using the IRSA created below for permissions
-    # However, we have to provision a new cluster with the policy attached FIRST
-    # before we can disable. Without this initial policy,
-    # the VPC CNI fails to assign IPs and nodes cannot join the new cluster
     iam_role_attach_cni_policy = true
   }
 
-  node_security_group_additional_rules = {
-    ingress_allow_access_from_control_plane = {
-      type                          = "ingress"
-      protocol                      = "tcp"
-      from_port                     = 9443
-      to_port                       = 9443
-      source_cluster_security_group = true
-      description                   = "Allow access from control plane to webhook port of AWS load balancer controller"
-    }
+  node_security_group_tags = {
+    "karpenter.sh/discovery" = var.cluster_name
+  }
+}
+
+module "karpenter" {
+  source = "terraform-aws-modules/eks/aws//modules/karpenter"
+
+  cluster_name = module.eks.cluster_name
+
+  irsa_oidc_provider_arn          = module.eks.oidc_provider_arn
+  irsa_namespace_service_accounts = ["karpenter:karpenter"]
+
+  tags = var.tags
+}
+
+resource "helm_release" "karpenter" {
+  namespace        = "karpenter"
+  create_namespace = true
+
+  name                = "karpenter"
+  repository          = "oci://public.ecr.aws/karpenter"
+  repository_username = data.aws_ecrpublic_authorization_token.token.user_name
+  repository_password = data.aws_ecrpublic_authorization_token.token.password
+  chart               = "karpenter"
+  version             = "v0.21.1"
+
+  set {
+    name  = "settings.aws.clusterName"
+    value = module.eks.cluster_name
+  }
+
+  set {
+    name  = "settings.aws.clusterEndpoint"
+    value = module.eks.cluster_endpoint
+  }
+
+  set {
+    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+    value = module.karpenter.irsa_arn
+  }
+
+  set {
+    name  = "settings.aws.defaultInstanceProfile"
+    value = module.karpenter.instance_profile_name
+  }
+
+  set {
+    name  = "settings.aws.interruptionQueueName"
+    value = module.karpenter.queue_name
   }
 }
 
 resource "aws_iam_policy" "aws_load_balancer_controller" {
-  name   = "AWSLoadBalancerControllerIAMPolicy"
+  name   = "${var.cluster_name}-AWSLoadBalancerControllerIAMPolicy"
   policy = data.aws_iam_policy_document.aws_load_balancer_controller_full.json
 
   tags = var.tags
 }
 
 resource "aws_iam_role" "aws_load_balancer_controller" {
-  name               = "AmazonEKSLoadBalancerControllerRole"
+  name               = "${var.cluster_name}-AmazonEKSLoadBalancerControllerRole"
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -112,8 +189,8 @@ resource "aws_iam_role" "aws_load_balancer_controller" {
      "Action": "sts:AssumeRoleWithWebIdentity",
      "Condition": {
        "StringEquals": {
-        "${trimprefix(module.eks.cluster_oidc_issuer_url, "https://")}:aud": "sts.amazonaws.com",
-        "${trimprefix(module.eks.cluster_oidc_issuer_url, "https://")}:sub": "system:serviceaccount:kube-system:aws-load-balancer-controller"
+        "${local.oidc_provider}:aud": "sts.amazonaws.com",
+        "${local.oidc_provider}:sub": "system:serviceaccount:kube-system:aws-load-balancer-controller"
        }
      }
     }
@@ -171,7 +248,7 @@ resource "helm_release" "aws_load_balancer_controller" {
 module "vpc_cni_irsa" {
   source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
 
-  role_name             = "AmazonEKSVPCCNIRole"
+  role_name             = "${var.cluster_name}-AmazonEKSVPCCNIRole"
   attach_vpc_cni_policy = true
   vpc_cni_enable_ipv4   = true
 
@@ -209,8 +286,27 @@ resource "kubernetes_storage_class" "gp3" {
   storage_provisioner = "ebs.csi.aws.com"
   reclaim_policy      = "Delete"
   parameters = {
-    fsType    = "xfs"
-    type      = "gp3"
+    fsType = "xfs"
+    type   = "gp3"
   }
   volume_binding_mode = "WaitForFirstConsumer"
+}
+
+resource "kubectl_manifest" "gp2" {
+  yaml_body = <<YAML
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"storage.k8s.io/v1","kind":"StorageClass","metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class":"false"},"name":"gp2"},"parameters":{"fsType":"ext4","type":"gp2"},"provisioner":"kubernetes.io/aws-ebs","volumeBindingMode":"WaitForFirstConsumer"}
+  creationTimestamp: "2022-10-11T15:05:47Z"
+  name: gp2
+parameters:
+  fsType: ext4
+  type: gp2
+provisioner: kubernetes.io/aws-ebs
+reclaimPolicy: Delete
+volumeBindingMode: WaitForFirstConsumer
+YAML
 }
