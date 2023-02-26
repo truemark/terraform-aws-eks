@@ -78,3 +78,11 @@ variable "enable_karpenter" {
   type        = bool
   default     = true
 }
+
+variable "amp_id" {
+  type = string
+}
+
+variable "amp_arn" {
+  type = string
+}

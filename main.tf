@@ -309,3 +309,98 @@ reclaimPolicy: Delete
 volumeBindingMode: WaitForFirstConsumer
 YAML
 }
+
+# AMP
+data "aws_iam_policy_document" "remote_write_assume" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    effect  = "Allow"
+
+    principals {
+      type        = "Federated"
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/${local.oidc_provider}"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "${local.oidc_provider}:sub"
+      values = [
+        "system:serviceaccount:grafana:${local.iamproxy-service-account}"
+      ]
+    }
+  }
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    effect  = "Allow"
+
+    principals {
+      type        = "Federated"
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/${local.oidc_provider}"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "${local.oidc_provider}:sub"
+      values = [
+        "system:serviceaccount:prometheus:${local.iamproxy-service-account}"
+      ]
+    }
+  }
+}
+
+module "amp_irsa_role" {
+  source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+
+  role_name = "${var.cluster_name}-EKSAMPServiceAccountRole"
+
+  attach_amazon_managed_service_prometheus_policy  = true
+  amazon_managed_service_prometheus_workspace_arns = [var.amp_arn]
+
+  oidc_providers = {
+    main = {
+      provider_arn               = module.eks.oidc_provider_arn
+      namespace_service_accounts = ["prometheus:${local.iamproxy-service-account}"]
+    }
+  }
+
+  tags = var.tags
+}
+
+resource "kubernetes_namespace" "prometheus" {
+  metadata {
+    name = "prometheus"
+  }
+}
+
+resource "helm_release" "prometheus_install" {
+  name       = "prometheus"
+  repository = "https://prometheus-community.github.io/helm-charts"
+  chart      = "prometheus"
+  namespace  = kubernetes_namespace.prometheus.metadata[0].name
+
+  set {
+    name  = "serviceAccount.server.annotations.eks\\.amazonaws\\.com/role-arn"
+    value = module.amp_irsa_role.iam_role_arn
+    type  = "string"
+  }
+  set {
+    name  = "serviceAccounts.server.name"
+    value = local.iamproxy-service-account
+  }
+  set {
+    name  = "alertmanager.enabled"
+    value = false
+  }
+  set {
+    name  = "prometheus-pushgateway.enabled"
+    value = false
+  }
+  set {
+    name  = "server.remoteWrite[0].url"
+    value = "https://aps-workspaces.${data.aws_region.current.name}.amazonaws.com/workspaces/${var.amp_id}/api/v1/remote_write"
+  }
+  set {
+    name  = "server.remoteWrite[0].sigv4.region"
+    value = data.aws_region.current.name
+  }
+
+  timeout = 600
+}
