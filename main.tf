@@ -71,11 +71,13 @@ module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 19.0"
 
-  cluster_name                    = var.cluster_name
-  cluster_version                 = var.cluster_version
-  cluster_endpoint_private_access = var.cluster_endpoint_private_access
-  cluster_endpoint_public_access  = var.cluster_endpoint_public_access
-  cluster_enabled_log_types       = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+  cluster_name                            = var.cluster_name
+  cluster_version                         = "1.23"
+  cluster_endpoint_private_access         = var.cluster_endpoint_private_access
+  cluster_endpoint_public_access          = var.cluster_endpoint_public_access
+  cluster_enabled_log_types               = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+  cluster_security_group_additional_rules = var.cluster_security_group_additional_rules
+  cluster_additional_security_group_ids   = var.cluster_additional_security_group_ids
 
   aws_auth_roles = [
     for v in var.sso_roles : {

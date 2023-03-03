@@ -34,8 +34,14 @@ variable "eks_managed_node_group_defaults" {
   default     = {}
 }
 
-variable "access_points_security_group_ids" {
-  description = "The security groups ids of access points to kubernetes API."
+variable "cluster_security_group_additional_rules" {
+  description = "List of additional security group rules to add to the cluster security group created. Set `source_node_security_group = true` inside rules to set the `node_security_group` as source"
+  type        = any
+  default     = {}
+}
+
+variable "cluster_additional_security_group_ids" {
+  description = "List of additional, externally created security group IDs to attach to the cluster control plane"
   type        = list(string)
   default     = []
 }
