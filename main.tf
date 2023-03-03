@@ -16,6 +16,7 @@ data "aws_eks_cluster_auth" "cluster" {
 }
 
 data "aws_ecrpublic_authorization_token" "token" {
+  count    = var.enable_karpenter ? 1 : 0
   provider = aws.us-east-1
 }
 
@@ -117,12 +118,11 @@ module "eks" {
     iam_role_attach_cni_policy = true
   }
 
-  node_security_group_tags = {
-    "karpenter.sh/discovery" = var.cluster_name
-  }
+  node_security_group_tags = var.enable_karpenter ? { "karpenter.sh/discovery" = var.cluster_name } : {}
 }
 
 module "karpenter" {
+  count  = var.enable_karpenter ? 1 : 0
   source = "terraform-aws-modules/eks/aws//modules/karpenter"
 
   cluster_name = module.eks.cluster_name
@@ -134,13 +134,14 @@ module "karpenter" {
 }
 
 resource "helm_release" "karpenter" {
+  count            = var.enable_karpenter ? 1 : 0
   namespace        = "karpenter"
   create_namespace = true
 
   name                = "karpenter"
   repository          = "oci://public.ecr.aws/karpenter"
-  repository_username = data.aws_ecrpublic_authorization_token.token.user_name
-  repository_password = data.aws_ecrpublic_authorization_token.token.password
+  repository_username = data.aws_ecrpublic_authorization_token.token[0].user_name
+  repository_password = data.aws_ecrpublic_authorization_token.token[0].password
   chart               = "karpenter"
   version             = "v0.21.1"
 
@@ -156,17 +157,17 @@ resource "helm_release" "karpenter" {
 
   set {
     name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-    value = module.karpenter.irsa_arn
+    value = module.karpenter[0].irsa_arn
   }
 
   set {
     name  = "settings.aws.defaultInstanceProfile"
-    value = module.karpenter.instance_profile_name
+    value = module.karpenter[0].instance_profile_name
   }
 
   set {
     name  = "settings.aws.interruptionQueueName"
-    value = module.karpenter.queue_name
+    value = module.karpenter[0].queue_name
   }
 }
 
