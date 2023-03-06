@@ -72,3 +72,9 @@ variable "cluster_version" {
   type        = string
   default     = "1.23"
 }
+
+variable "enable_karpenter" {
+  description = "Add karpenter to the cluster"
+  type        = bool
+  default     = true
+}
