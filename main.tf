@@ -139,7 +139,7 @@ resource "helm_release" "karpenter" {
   repository_username = data.aws_ecrpublic_authorization_token.token[0].user_name
   repository_password = data.aws_ecrpublic_authorization_token.token[0].password
   chart               = "karpenter"
-  version             = "v0.21.1"
+  version             = "v0.27.3"
 
   set {
     name  = "settings.aws.clusterName"
