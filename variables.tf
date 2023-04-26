@@ -96,3 +96,34 @@ variable "external_secrets_kms_key_arns" {
   type        = list(string)
   default     = ["arn:aws:kms:*:*:key/*"]
 }
+
+variable "vault_integration_enabled" {
+  description = "Enable Vault integration"
+  type        = bool
+  default     = false
+}
+
+variable "vault_token" {
+  description = "Vault token to use for authentication"
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
+variable "vault_host" {
+  description = "Vault host"
+  type        = string
+  default     = null
+}
+
+variable "vault_backend_path" {
+  description = "Vault backend path"
+  type        = string
+  default     = "secret"
+}
+
+variable "vault_version" {
+  description = "Vault version"
+  type        = string
+  default     = "v1"
+}
