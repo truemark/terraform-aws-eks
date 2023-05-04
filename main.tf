@@ -323,7 +323,7 @@ module "external_secrets_irsa" {
   oidc_providers = {
     main = {
       provider_arn               = module.eks.oidc_provider_arn
-      namespace_service_accounts = ["kube-system:aws-node"]
+      namespace_service_accounts = ["external-secrets:external-secrets"]
     }
   }
 
