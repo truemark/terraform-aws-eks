@@ -348,3 +348,12 @@ resource "helm_release" "external_secrets" {
     value = module.external_secrets_irsa.iam_role_arn
   }
 }
+
+module "monitoring" {
+  source = "github.com/truemark/terraform-aws-eks-monitoring.git?ref=providers"
+
+  cluster_name            = module.eks.cluster_name
+  cluster_oidc_issuer_url = module.eks.cluster_oidc_issuer_url
+  cluster_oidc_issuer_arn = module.eks.cluster_oidc_issuer_arn
+  amp_name                = "${var.cluster_name}-cluster"
+}
