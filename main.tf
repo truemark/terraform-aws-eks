@@ -74,6 +74,7 @@ module "eks" {
   cluster_endpoint_public_access          = var.cluster_endpoint_public_access
   cluster_enabled_log_types               = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
   cluster_security_group_additional_rules = var.cluster_security_group_additional_rules
+  node_security_group_additional_rules    = var.node_security_group_additional_rules
   cluster_additional_security_group_ids   = var.cluster_additional_security_group_ids
 
   aws_auth_roles = [
