@@ -102,3 +102,15 @@ variable "external_secrets_kms_key_arns" {
   type        = list(string)
   default     = ["arn:aws:kms:*:*:key/*"]
 }
+
+variable "amp_id" {
+  description = "The AMP workspace id"
+  type        = string
+  default     = null
+}
+
+variable "amp_arn" {
+  description = "The AMP workspace arn"
+  type        = string
+  default     = null
+}
