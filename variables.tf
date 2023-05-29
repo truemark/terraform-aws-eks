@@ -114,3 +114,9 @@ variable "amp_arn" {
   type        = string
   default     = null
 }
+
+variable "enable_monitoring" {
+  description = "Enable monitoring"
+  type        = bool
+  default     = false
+}

@@ -351,6 +351,8 @@ resource "helm_release" "external_secrets" {
 }
 
 module "monitoring" {
+  count = var.enable_monitoring ? 1 : 0
+
   source  = "truemark/eks-monitoring/aws"
   version = "0.0.4"
 
