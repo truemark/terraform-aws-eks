@@ -69,7 +69,7 @@ module "eks" {
   version = "~> 19.0"
 
   cluster_name                            = var.cluster_name
-  cluster_version                         = "1.23"
+  cluster_version                         = var.cluster_version
   cluster_endpoint_private_access         = var.cluster_endpoint_private_access
   cluster_endpoint_public_access          = var.cluster_endpoint_public_access
   cluster_enabled_log_types               = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
