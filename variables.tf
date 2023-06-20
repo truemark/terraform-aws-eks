@@ -76,7 +76,7 @@ variable "cluster_endpoint_public_access" {
 variable "cluster_version" {
   description = "Kubernetes `<major>.<minor>` version to use for the EKS cluster (i.e.: `1.24`)"
   type        = string
-  default     = "1.23"
+  default     = "1.26"
 }
 
 variable "enable_karpenter" {
