@@ -120,3 +120,9 @@ variable "enable_monitoring" {
   type        = bool
   default     = false
 }
+
+variable "alerts_sns_topics_arn" {
+  description = "The ARN of the SNS topic to send alerts to"
+  type        = string
+  default     = null
+}
