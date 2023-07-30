@@ -366,3 +366,53 @@ module "monitoring" {
   alerts_sns_topics_arn   = var.alerts_sns_topics_arn
   tags                    = var.tags
 }
+
+resource "kubernetes_namespace" "amazon_cloudwatch" {
+  count = var.enable_cloudwatch_logs ? 1 : 0
+  metadata {
+    name = "amazon-cloudwatch"
+  }
+}
+
+# resource "kubernetes_config_map" "fluent_bit_cluster_info" {
+#   count = var.enable_cloudwatch_logs ? 1 : 0
+
+#   metadata {
+#     name      = "fluent-bit-cluster-info"
+#     namespace = kubernetes_namespace.amazon_cloudwatch[0].id
+#   }
+#   data = {
+#     "cluster.name" = module.eks.cluster_name
+#     "http.server"  = "On"
+#     "http.port"    = "2020"
+#     "read.head"    = "Off"
+#     "read.tail"    = "On"
+#     "logs.region"  = data.aws_region.current.name
+#   }
+# }
+
+resource "helm_release" "aws_fluent_bit" {
+  count = var.enable_cloudwatch_logs ? 1 : 0
+
+  name       = "aws-fluent-bit"
+  repository = "https://aws.github.io/eks-charts"
+  chart      = "aws-for-fluent-bit"
+  namespace  = kubernetes_namespace.amazon_cloudwatch[0].id
+  version    = "0.1.28"
+
+  set {
+    name  = "serviceAccount.name"
+    value = "aws-fluent-bit"
+  }
+
+  set {
+    name  = "serviceAccount.create"
+    value = true
+  }
+
+  # set {
+  #   name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+  #   value = aws_iam_role.aws_load_balancer_controller.arn
+  #   type  = "string"
+  # }
+}

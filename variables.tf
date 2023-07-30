@@ -126,3 +126,11 @@ variable "alerts_sns_topics_arn" {
   type        = string
   default     = null
 }
+
+variable "enable_cloudwatch_logs" {
+  description = "Enable cloudwatch logs"
+  type        = bool
+  default     = false
+}
+  
+}
