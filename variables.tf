@@ -130,13 +130,13 @@ variable "alerts_sns_topics_arn" {
 
 ## Variables ingress controllers
 variable "enable_traefik" {
-  type = bool
-  default = false
+  type        = bool
+  default     = false
   description = "Enables traefik deployment."
 }
 
 variable "enable_istio" {
-  type = bool
-  default = false
+  type        = bool
+  default     = false
   description = "Enables istio deployment"
 }

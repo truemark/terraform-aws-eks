@@ -369,13 +369,13 @@ module "monitoring" {
 
 
 module "ingress_traefik" {
-  count = var.enable_traefik ? 1 : 0
+  count   = var.enable_traefik ? 1 : 0
   source  = "truemark/traefik/kubernetes"
   version = "0.0.1"
 }
 
 module "ingress_istio" {
-  count = var.enable_istio ? 1 : 0
+  count   = var.enable_istio ? 1 : 0
   source  = "truemark/istio/kubernetes"
   version = "0.0.1"
 }
