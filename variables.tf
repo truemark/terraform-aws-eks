@@ -127,7 +127,6 @@ variable "alerts_sns_topics_arn" {
   default     = null
 }
 
-
 ## Variables ingress controllers
 variable "enable_traefik" {
   type        = bool

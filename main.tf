@@ -367,7 +367,6 @@ module "monitoring" {
   tags                    = var.tags
 }
 
-
 module "ingress_traefik" {
   count   = var.enable_traefik ? 1 : 0
   source  = "truemark/traefik/kubernetes"
