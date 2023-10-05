@@ -366,3 +366,15 @@ module "monitoring" {
   alerts_sns_topics_arn   = var.alerts_sns_topics_arn
   tags                    = var.tags
 }
+
+module "ingress_traefik" {
+  count   = var.enable_traefik ? 1 : 0
+  source  = "truemark/traefik/kubernetes"
+  version = "0.0.1"
+}
+
+module "ingress_istio" {
+  count   = var.enable_istio ? 1 : 0
+  source  = "truemark/istio/kubernetes"
+  version = "0.0.1"
+}
