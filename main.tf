@@ -54,7 +54,7 @@ module "ebs_csi_irsa_role" {
   role_name = "${var.cluster_name}-AmazonEKS_EBS_CSI_DriverRole"
 
   attach_ebs_csi_policy = true
-  oidc_providers = {
+  oidc_providers        = {
     main = {
       provider_arn               = module.eks.oidc_provider_arn
       namespace_service_accounts = ["kube-system:ebs-csi-controller-sa"]
@@ -109,7 +109,7 @@ module "eks" {
   subnet_ids = var.subnets_ids
   tags       = var.tags
 
-  eks_managed_node_groups = { for k, v in var.eks_managed_node_groups : "${var.cluster_name}-${k}" => v }
+  eks_managed_node_groups = {for k, v in var.eks_managed_node_groups : "${var.cluster_name}-${k}" => v}
 
   eks_managed_node_group_defaults = {
     iam_role_attach_cni_policy = true
@@ -199,20 +199,8 @@ resource "kubectl_manifest" "karpenter_node_template" {
     metadata:
       name: default
     spec:
-      amiFamily: Bottlerocket
-      blockDeviceMappings:
-      # Root device
-      - deviceName: /dev/xvda
-        ebs:
-          volumeSize: 30Gi
-          volumeType: gp3
-          encrypted: true
-      # Data device: Container resources such as images and logs
-      - deviceName: /dev/xvdb
-        ebs:
-          volumeSize: 100Gi
-          volumeType: gp3
-          encrypted: true
+      amiFamily: ${var.karpenter_provisioner_default_ami_family}
+      blockDeviceMappings: ${jsonencode(var.karpenter_provisioner_default_block_device_mappings.specs)}
       subnetSelector: ${jsonencode(var.karpenter_node_template_default.subnetSelector)}
       securityGroupSelector:
         karpenter.sh/discovery: ${module.eks.cluster_name}
@@ -326,7 +314,7 @@ resource "kubernetes_storage_class" "gp3_xfs_encrypted" {
   }
   storage_provisioner = "ebs.csi.aws.com"
   reclaim_policy      = "Delete"
-  parameters = {
+  parameters          = {
     fsType    = "xfs"
     type      = "gp3"
     encrypted = "true"
@@ -336,14 +324,14 @@ resource "kubernetes_storage_class" "gp3_xfs_encrypted" {
 
 resource "kubernetes_storage_class" "gp3" {
   metadata {
-    name = "gp3"
+    name        = "gp3"
     annotations = {
       "storageclass.kubernetes.io/is-default-class" = "true"
     }
   }
   storage_provisioner = "ebs.csi.aws.com"
   reclaim_policy      = "Delete"
-  parameters = {
+  parameters          = {
     fsType = "xfs"
     type   = "gp3"
   }

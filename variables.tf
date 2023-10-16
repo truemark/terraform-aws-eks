@@ -103,7 +103,7 @@ variable "karpenter_provisioner_default_requirements" {
       {
         key      = "karpenter.k8s.aws/instance-category"
         operator = "In"
-        values   = ["c", "m", "r"]
+        values   = ["m"]
       },
       {
         key      = "karpenter.k8s.aws/instance-cpu"
@@ -118,12 +118,43 @@ variable "karpenter_provisioner_default_requirements" {
       {
         key      = "kubernetes.io/arch"
         operator = "In"
-        values   = ["arm64", "amd64"]
+        values   = ["amd64"]
       },
       {
         key      = "karpenter.sh/capacity-type"
         operator = "In"
-        values   = ["spot", "on-demand"]
+        values   = ["on-demand"]
+      }
+    ]
+  }
+}
+
+variable "karpenter_provisioner_default_ami_family" {
+  description = "Specifies the default Amazon Machine Image (AMI) family to be used by the Karpenter provisioner."
+  type        = string
+  default     = "Bottlerocket"
+}
+
+variable "karpenter_provisioner_default_block_device_mappings" {
+  description = "Specifies the default size and characteristics of the volumes used by the Karpenter provisioner. It defines the volume size, type, and encryption settings."
+  type        = map(any)
+  default     = {
+    specs = [
+      {
+        deviceName = "/dev/xvda"
+        ebs        = {
+          volumeSize = "30Gi"
+          volumeType = "gp3"
+          encrypted  = true
+        }
+      },
+      {
+        deviceName = "/dev/xvdb"
+        ebs        = {
+          volumeSize = "100Gi"
+          volumeType = "gp3"
+          encrypted  = true
+        }
       }
     ]
   }
