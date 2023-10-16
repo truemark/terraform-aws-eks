@@ -54,7 +54,7 @@ variable "cluster_additional_security_group_ids" {
 
 variable "sso_roles" {
   description = "AWS SSO roles that will be mapped to RBAC roles."
-  type = list(object({
+  type        = list(object({
     role_name = string,
     groups    = list(string),
   }))
@@ -83,6 +83,68 @@ variable "enable_karpenter" {
   description = "Add karpenter to the cluster"
   type        = bool
   default     = true
+}
+
+variable "karpenter_node_template_default" {
+  description = "Config for default node template for karpenter"
+  type        = map(any)
+  default     = {
+    subnetSelector = {
+      network = private
+    }
+  }
+}
+
+variable "karpenter_provisioner_default_requirements" {
+  description = "Specifies the default requirements for the Karpenter provisioner template, including instance category, CPU, hypervisor, architecture, and capacity type."
+  type        = map(any)
+  default     = {
+    requirements = [
+      {
+        key      = "karpenter.k8s.aws/instance-category"
+        operator = "In"
+        values   = ["c", "m", "r"]
+      },
+      {
+        key      = "karpenter.k8s.aws/instance-cpu"
+        operator = "In"
+        values   = ["4", "8", "16"]
+      },
+      {
+        key      = "karpenter.k8s.aws/instance-hypervisor"
+        operator = "In"
+        values   = ["nitro"]
+      },
+      {
+        key      = "kubernetes.io/arch"
+        operator = "In"
+        values   = ["arm64", "amd64"]
+      },
+      {
+        key      = "karpenter.sh/capacity-type"
+        operator = "In"
+        values   = ["spot", "on-demand"]
+      }
+    ]
+  }
+}
+
+variable "karpenter_provisioner_default_cpu_limits" {
+  description = "Defines the default CPU limits for the Karpenter default provisioner, ensuring resource allocation and utilization."
+  type        = number
+  default     = 300
+}
+
+variable "karpenter_provisioner_default_ttl_after_empty" {
+  description = "Sets the default Time to Live (TTL) for provisioned resources by the Karpenter default provisioner after they become empty or idle."
+  type        = number
+  default     = 300
+}
+
+variable "karpenter_provisioner_default_ttl_until_expired" {
+  description = "Specifies the default Time to Live (TTL) for provisioned resources by the Karpenter default provisioner until they expire or are reclaimed."
+  type        = number
+  default     = 2592000
 }
 
 variable "external_secrets_ssm_parameter_arns" {

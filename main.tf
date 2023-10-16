@@ -168,6 +168,62 @@ resource "helm_release" "karpenter" {
   }
 }
 
+resource "kubectl_manifest" "karpenter_provisioner" {
+  yaml_body = <<-YAML
+    apiVersion: karpenter.sh/v1alpha5
+    kind: Provisioner
+    metadata:
+      name: default
+    spec:
+      requirements: ${jsonencode(var.karpenter_provisioner_default_requirements.requirements)}
+      limits:
+        resources:
+          cpu: ${var.karpenter_provisioner_default_cpu_limits}
+      providerRef:
+        name: default
+      ttlSecondsAfterEmpty: ${var.karpenter_provisioner_default_ttl_after_empty}
+      ttlSecondsUntilExpired: ${var.karpenter_provisioner_default_ttl_until_expired}
+  YAML
+
+  depends_on = [
+    helm_release.karpenter
+  ]
+}
+
+resource "kubectl_manifest" "karpenter_node_template" {
+  count     = var.enable_karpenter ? 1 : 0
+  yaml_body = <<-YAML
+    apiVersion: karpenter.k8s.aws/v1alpha1
+    kind: AWSNodeTemplate
+    metadata:
+      name: default
+    spec:
+      amiFamily: Bottlerocket
+      blockDeviceMappings:
+      # Root device
+      - deviceName: /dev/xvda
+        ebs:
+          volumeSize: 30Gi
+          volumeType: gp3
+          encrypted: true
+      # Data device: Container resources such as images and logs
+      - deviceName: /dev/xvdb
+        ebs:
+          volumeSize: 100Gi
+          volumeType: gp3
+          encrypted: true
+      subnetSelector: ${jsonencode(var.karpenter_node_template_default.subnetSelector)}
+      securityGroupSelector:
+        karpenter.sh/discovery: ${module.eks.cluster_name}
+      tags:
+        karpenter.sh/discovery: ${module.eks.cluster_name}
+  YAML
+
+  depends_on = [
+    helm_release.karpenter
+  ]
+}
+
 resource "aws_iam_policy" "aws_load_balancer_controller" {
   name   = "${var.cluster_name}-AWSLoadBalancerControllerIAMPolicy"
   policy = data.aws_iam_policy_document.aws_load_balancer_controller_full.json
