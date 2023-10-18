@@ -19,6 +19,25 @@ data "aws_ecrpublic_authorization_token" "token" {
 locals {
   oidc_provider            = replace(module.eks.cluster_oidc_issuer_url, "https://", "")
   iamproxy-service-account = "${var.cluster_name}-iamproxy-service-account"
+  aws_auth_roles           = concat(
+    [
+      for v in var.sso_roles : {
+      rolearn  = replace(tolist(data.aws_iam_roles.support_role[v.role_name].arns.*)[0], "aws-reserved/sso.amazonaws.com/${data.aws_region.current.name}/", "")
+      username = "${v.role_name}:{{SessionName}}"
+      groups   = v.groups
+    }
+    ],
+    [
+      {
+        rolearn  = module.karpenter[0].role_arn
+        username = "system:node:{{EC2PrivateDNSName}}"
+        groups   = [
+          "system:bootstrappers",
+          "system:nodes",
+        ]
+      }
+    ]
+  )
 }
 
 provider "kubectl" {
@@ -77,13 +96,7 @@ module "eks" {
   node_security_group_additional_rules    = var.node_security_group_additional_rules
   cluster_additional_security_group_ids   = var.cluster_additional_security_group_ids
 
-  aws_auth_roles = [
-    for v in var.sso_roles : {
-      rolearn  = replace(tolist(data.aws_iam_roles.support_role[v.role_name].arns.*)[0], "aws-reserved/sso.amazonaws.com/${data.aws_region.current.name}/", "")
-      username = "${v.role_name}:{{SessionName}}"
-      groups   = v.groups
-    }
-  ]
+  aws_auth_roles = local.aws_auth_roles
 
   # OIDC Identity provider
   cluster_identity_providers = {
