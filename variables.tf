@@ -90,7 +90,7 @@ variable "karpenter_node_template_default" {
   type        = map(any)
   default     = {
     subnetSelector = {
-      network = private
+      network = "private"
     }
   }
 }
