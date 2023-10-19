@@ -19,6 +19,25 @@ data "aws_ecrpublic_authorization_token" "token" {
 locals {
   oidc_provider            = replace(module.eks.cluster_oidc_issuer_url, "https://", "")
   iamproxy-service-account = "${var.cluster_name}-iamproxy-service-account"
+  aws_auth_roles           = concat(
+    [
+      for v in var.sso_roles : {
+      rolearn  = replace(tolist(data.aws_iam_roles.support_role[v.role_name].arns.*)[0], "aws-reserved/sso.amazonaws.com/${data.aws_region.current.name}/", "")
+      username = "${v.role_name}:{{SessionName}}"
+      groups   = v.groups
+    }
+    ],
+    [
+      {
+        rolearn  = module.karpenter[0].role_arn
+        username = "system:node:{{EC2PrivateDNSName}}"
+        groups   = [
+          "system:bootstrappers",
+          "system:nodes",
+        ]
+      }
+    ]
+  )
 }
 
 provider "kubectl" {
@@ -54,7 +73,7 @@ module "ebs_csi_irsa_role" {
   role_name = "${var.cluster_name}-AmazonEKS_EBS_CSI_DriverRole"
 
   attach_ebs_csi_policy = true
-  oidc_providers = {
+  oidc_providers        = {
     main = {
       provider_arn               = module.eks.oidc_provider_arn
       namespace_service_accounts = ["kube-system:ebs-csi-controller-sa"]
@@ -77,13 +96,7 @@ module "eks" {
   node_security_group_additional_rules    = var.node_security_group_additional_rules
   cluster_additional_security_group_ids   = var.cluster_additional_security_group_ids
 
-  aws_auth_roles = [
-    for v in var.sso_roles : {
-      rolearn  = replace(tolist(data.aws_iam_roles.support_role[v.role_name].arns.*)[0], "aws-reserved/sso.amazonaws.com/${data.aws_region.current.name}/", "")
-      username = "${v.role_name}:{{SessionName}}"
-      groups   = v.groups
-    }
-  ]
+  aws_auth_roles = local.aws_auth_roles
 
   # OIDC Identity provider
   cluster_identity_providers = {
@@ -109,7 +122,7 @@ module "eks" {
   subnet_ids = var.subnets_ids
   tags       = var.tags
 
-  eks_managed_node_groups = { for k, v in var.eks_managed_node_groups : "${var.cluster_name}-${k}" => v }
+  eks_managed_node_groups = {for k, v in var.eks_managed_node_groups : "${var.cluster_name}-${k}" => v}
 
   eks_managed_node_group_defaults = {
     iam_role_attach_cni_policy = true
@@ -166,6 +179,51 @@ resource "helm_release" "karpenter" {
     name  = "settings.aws.interruptionQueueName"
     value = module.karpenter[0].queue_name
   }
+}
+
+resource "kubectl_manifest" "karpenter_provisioner" {
+  count     = var.enable_karpenter ? 1 : 0
+  yaml_body = <<-YAML
+    apiVersion: karpenter.sh/v1alpha5
+    kind: Provisioner
+    metadata:
+      name: default
+    spec:
+      requirements: ${jsonencode(var.karpenter_provisioner_default_requirements.requirements)}
+      limits:
+        resources:
+          cpu: ${var.karpenter_provisioner_default_cpu_limits}
+      providerRef:
+        name: default
+      ttlSecondsAfterEmpty: ${var.karpenter_provisioner_default_ttl_after_empty}
+      ttlSecondsUntilExpired: ${var.karpenter_provisioner_default_ttl_until_expired}
+  YAML
+
+  depends_on = [
+    helm_release.karpenter
+  ]
+}
+
+resource "kubectl_manifest" "karpenter_node_template" {
+  count     = var.enable_karpenter ? 1 : 0
+  yaml_body = <<-YAML
+    apiVersion: karpenter.k8s.aws/v1alpha1
+    kind: AWSNodeTemplate
+    metadata:
+      name: default
+    spec:
+      amiFamily: ${var.karpenter_provisioner_default_ami_family}
+      blockDeviceMappings: ${jsonencode(var.karpenter_provisioner_default_block_device_mappings.specs)}
+      subnetSelector: ${jsonencode(var.karpenter_node_template_default.subnetSelector)}
+      securityGroupSelector:
+        karpenter.sh/discovery: ${module.eks.cluster_name}
+      tags:
+        karpenter.sh/discovery: ${module.eks.cluster_name}
+  YAML
+
+  depends_on = [
+    helm_release.karpenter
+  ]
 }
 
 resource "aws_iam_policy" "aws_load_balancer_controller" {
@@ -269,7 +327,7 @@ resource "kubernetes_storage_class" "gp3_xfs_encrypted" {
   }
   storage_provisioner = "ebs.csi.aws.com"
   reclaim_policy      = "Delete"
-  parameters = {
+  parameters          = {
     fsType    = "xfs"
     type      = "gp3"
     encrypted = "true"
@@ -279,14 +337,14 @@ resource "kubernetes_storage_class" "gp3_xfs_encrypted" {
 
 resource "kubernetes_storage_class" "gp3" {
   metadata {
-    name = "gp3"
+    name        = "gp3"
     annotations = {
       "storageclass.kubernetes.io/is-default-class" = "true"
     }
   }
   storage_provisioner = "ebs.csi.aws.com"
   reclaim_policy      = "Delete"
-  parameters = {
+  parameters          = {
     fsType = "xfs"
     type   = "gp3"
   }
