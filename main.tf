@@ -135,16 +135,19 @@ module "karpenter" {
   count  = var.enable_karpenter ? 1 : 0
   source = "terraform-aws-modules/eks/aws//modules/karpenter"
 
-  cluster_name = module.eks.cluster_name
-
+  cluster_name                               = module.eks.cluster_name
+  enable_karpenter_instance_profile_creation = true
+  iam_role_additional_policies               = {
+    AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+  }
   irsa_oidc_provider_arn          = module.eks.oidc_provider_arn
   irsa_namespace_service_accounts = ["karpenter:karpenter"]
 
   tags = var.tags
 }
 
+
 resource "helm_release" "karpenter" {
-  count            = var.enable_karpenter ? 1 : 0
   namespace        = "karpenter"
   create_namespace = true
 
@@ -153,50 +156,39 @@ resource "helm_release" "karpenter" {
   repository_username = data.aws_ecrpublic_authorization_token.token[0].user_name
   repository_password = data.aws_ecrpublic_authorization_token.token[0].password
   chart               = "karpenter"
-  version             = "v0.27.3"
+  version             = "v0.32.1"
 
-  set {
-    name  = "settings.aws.clusterName"
-    value = module.eks.cluster_name
-  }
-
-  set {
-    name  = "settings.aws.clusterEndpoint"
-    value = module.eks.cluster_endpoint
-  }
-
-  set {
-    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-    value = module.karpenter[0].irsa_arn
-  }
-
-  set {
-    name  = "settings.aws.defaultInstanceProfile"
-    value = module.karpenter[0].instance_profile_name
-  }
-
-  set {
-    name  = "settings.aws.interruptionQueueName"
-    value = module.karpenter[0].queue_name
-  }
+  values = [
+    <<-EOT
+    settings:
+      clusterName: ${module.eks.cluster_name}
+      clusterEndpoint: ${module.eks.cluster_endpoint}
+      interruptionQueueName: ${module.karpenter[0].queue_name}
+    serviceAccount:
+      annotations:
+        eks.amazonaws.com/role-arn: ${module.karpenter[0].irsa_arn}
+    EOT
+  ]
 }
 
-resource "kubectl_manifest" "karpenter_provisioner" {
-  count     = var.enable_karpenter ? 1 : 0
+resource "kubectl_manifest" "karpenter_node_class" {
   yaml_body = <<-YAML
-    apiVersion: karpenter.sh/v1alpha5
-    kind: Provisioner
+    apiVersion: karpenter.k8s.aws/v1beta1
+    kind: EC2NodeClass
     metadata:
       name: default
     spec:
-      requirements: ${jsonencode(var.karpenter_provisioner_default_requirements.requirements)}
-      limits:
-        resources:
-          cpu: ${var.karpenter_provisioner_default_cpu_limits}
-      providerRef:
-        name: default
-      ttlSecondsAfterEmpty: ${var.karpenter_provisioner_default_ttl_after_empty}
-      ttlSecondsUntilExpired: ${var.karpenter_provisioner_default_ttl_until_expired}
+      amiFamily: ${var.karpenter_provisioner_default_ami_family}
+      blockDeviceMappings: ${jsonencode(var.karpenter_provisioner_default_block_device_mappings.specs)}
+      role: ${module.karpenter[0].role_name}
+      subnetSelectorTerms:
+        - tags:
+            ${jsonencode(var.karpenter_node_template_default.subnetSelector)}
+      securityGroupSelectorTerms:
+        - tags:
+            karpenter.sh/discovery: ${module.eks.cluster_name}
+      tags:
+        karpenter.sh/discovery: ${module.eks.cluster_name}
   YAML
 
   depends_on = [
@@ -204,25 +196,27 @@ resource "kubectl_manifest" "karpenter_provisioner" {
   ]
 }
 
-resource "kubectl_manifest" "karpenter_node_template" {
-  count     = var.enable_karpenter ? 1 : 0
+resource "kubectl_manifest" "karpenter_node_pool" {
   yaml_body = <<-YAML
-    apiVersion: karpenter.k8s.aws/v1alpha1
-    kind: AWSNodeTemplate
+    apiVersion: karpenter.sh/v1beta1
+    kind: NodePool
     metadata:
       name: default
     spec:
-      amiFamily: ${var.karpenter_provisioner_default_ami_family}
-      blockDeviceMappings: ${jsonencode(var.karpenter_provisioner_default_block_device_mappings.specs)}
-      subnetSelector: ${jsonencode(var.karpenter_node_template_default.subnetSelector)}
-      securityGroupSelector:
-        karpenter.sh/discovery: ${module.eks.cluster_name}
-      tags:
-        karpenter.sh/discovery: ${module.eks.cluster_name}
+      template:
+        spec:
+          nodeClassRef:
+            name: default
+          requirements: ${jsonencode(var.karpenter_provisioner_default_requirements.requirements)}
+      limits:
+        cpu: ${var.karpenter_provisioner_default_cpu_limits}
+      disruption:
+        consolidationPolicy: WhenEmpty
+        consolidateAfter: 30s
   YAML
 
   depends_on = [
-    helm_release.karpenter
+    kubectl_manifest.karpenter_node_class
   ]
 }
 
@@ -432,7 +426,16 @@ module "ingress_traefik" {
 }
 
 module "ingress_istio" {
-  count   = var.enable_istio ? 1 : 0
-  source  = "truemark/istio/kubernetes"
-  version = "0.0.1"
+  count                               = var.enable_istio ? 1 : 0
+  source                              = "truemark/istio/kubernetes"
+  version                             = "0.0.3"
+
+  vpc_id                              = var.vpc_id
+  istio_enable_external_gateway       = var.istio_enable_external_gateway
+  istio_external_gateway_service_kind = var.istio_external_gateway_service_kind
+  istio_external_gateway_lb_certs     = var.istio_external_gateway_lb_certs
+
+  istio_enable_internal_gateway       = var.istio_enable_internal_gateway
+  istio_internal_gateway_service_kind = var.istio_internal_gateway_service_kind
+  istio_internal_gateway_lb_certs     = var.istio_internal_gateway_lb_certs
 }
