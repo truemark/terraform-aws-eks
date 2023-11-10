@@ -232,3 +232,65 @@ variable "enable_istio" {
   default     = false
   description = "Enables istio deployment"
 }
+
+## External Gateway configs
+variable "istio_enable_external_gateway" {
+  type        = bool
+  default     = true
+  description = "Determines whether to enable an external gateway for Istio, allowing external traffic to reach Istio services."
+}
+
+variable "istio_external_gateway_lb_certs" {
+  type        = list(string)
+  description = "The certificates for the Istio external gateway load balancer."
+  default     = []
+}
+
+variable "istio_external_gateway_service_kind" {
+  type        = string
+  default     = "NodePort"
+  description = "The type of service for the Istio external gateway."
+}
+
+variable "istio_external_gateway_scaling_max_replicas" {
+  type        = number
+  description = "The maximum number of replicas for scaling the Istio external gateway."
+  default     = 5
+}
+
+variable "istio_external_gateway_scaling_target_cpu_utilization" {
+  type        = number
+  description = "The target CPU utilization percentage for scaling the external gateway."
+  default     = 80
+}
+
+## Internal Gateway configs
+variable "istio_enable_internal_gateway" {
+  type        = bool
+  default     = false
+  description = "Controls the enabling of an internal gateway for Istio, which manages traffic within the Kubernetes cluster."
+}
+
+variable "istio_internal_gateway_lb_certs" {
+  type        = list(string)
+  description = "The certificates for the Istio internal gateway load balancer."
+  default     = []
+}
+
+variable "istio_internal_gateway_service_kind" {
+  type        = string
+  default     = "NodePort"
+  description = "The type of service for the Istio internal gateway."
+}
+
+variable "istio_internal_gateway_scaling_max_replicas" {
+  type        = number
+  description = "The maximum number of replicas for scaling the Istio internal gateway."
+  default     = 5
+}
+
+variable "istio_internal_gateway_scaling_target_cpu_utilization" {
+  type        = number
+  description = "The target CPU utilization percentage for scaling the internal gateway."
+  default     = 80
+}
