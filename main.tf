@@ -146,7 +146,6 @@ module "karpenter" {
   tags = var.tags
 }
 
-
 resource "helm_release" "karpenter" {
   namespace        = "karpenter"
   create_namespace = true
