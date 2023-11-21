@@ -39,6 +39,7 @@ data "aws_iam_policy_document" "aws_load_balancer_controller_full" {
       "elasticloadbalancing:DescribeTargetGroupAttributes",
       "elasticloadbalancing:DescribeTargetHealth",
       "elasticloadbalancing:DescribeTags",
+      "elasticloadbalancing:AddTags"
     ]
   }
 

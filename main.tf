@@ -28,6 +28,13 @@ locals {
     }
     ],
     [
+      for v in var.iam_roles : {
+      rolearn  = try(format("arn:aws:iam::%s:role/%s", v.account, v.role_name), (tolist(data.aws_iam_roles.iam_role[v.role_name].arns.*)[0]))
+      username = "${v.role_name}:{{SessionName}}"
+      groups   = v.groups
+    }
+    ],
+    [
       {
         rolearn  = module.karpenter[0].role_arn
         username = "system:node:{{EC2PrivateDNSName}}"
@@ -67,6 +74,11 @@ data "aws_iam_roles" "support_role" {
   path_prefix = "/aws-reserved/sso.amazonaws.com/"
 }
 
+data "aws_iam_roles" "iam_role" {
+  for_each   = toset(var.iam_roles.*.role_name)
+  name_regex = "${each.key}"
+}
+
 module "ebs_csi_irsa_role" {
   source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
 
@@ -97,6 +109,9 @@ module "eks" {
   cluster_additional_security_group_ids   = var.cluster_additional_security_group_ids
 
   aws_auth_roles = local.aws_auth_roles
+
+  #KMS
+  kms_key_users = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
 
   # OIDC Identity provider
   cluster_identity_providers = {
@@ -425,9 +440,9 @@ module "ingress_traefik" {
 }
 
 module "ingress_istio" {
-  count                               = var.enable_istio ? 1 : 0
-  source                              = "truemark/istio/kubernetes"
-  version                             = "0.0.4"
+  count   = var.enable_istio ? 1 : 0
+  source  = "truemark/istio/kubernetes"
+  version = "0.0.4"
 
   vpc_id                              = var.vpc_id
   istio_enable_external_gateway       = var.istio_enable_external_gateway
