@@ -61,6 +61,12 @@ variable "sso_roles" {
   default = []
 }
 
+variable "iam_roles" {
+  description = "AWS IAM roles that will be mapped to RBAC roles."
+  type        = list(any)
+  default     = []
+}
+
 variable "cluster_endpoint_private_access" {
   description = "Indicates whether or not the Amazon EKS private API server endpoint is enabled."
   type        = bool
