@@ -453,3 +453,13 @@ module "ingress_istio" {
   istio_internal_gateway_service_kind = var.istio_internal_gateway_service_kind
   istio_internal_gateway_lb_certs     = var.istio_internal_gateway_lb_certs
 }
+
+
+module "cert_manager" {
+  count = var.enable_cert_manager ? 1 : 0
+
+  source  = "truemark/eks-certmanager/aws"
+  version = "0.0.2"
+
+  chart_version = "v1.13.3"
+}
