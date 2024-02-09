@@ -153,7 +153,7 @@ module "karpenter" {
 
   cluster_name                               = module.eks.cluster_name
   enable_karpenter_instance_profile_creation = true
-  node_iam_role_additional_policies = {
+  iam_role_additional_policies = {
     AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
   }
   irsa_oidc_provider_arn          = module.eks.oidc_provider_arn
