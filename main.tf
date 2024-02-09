@@ -19,26 +19,26 @@ data "aws_ecrpublic_authorization_token" "token" {
 locals {
   oidc_provider            = replace(module.eks.cluster_oidc_issuer_url, "https://", "")
   iamproxy-service-account = "${var.cluster_name}-iamproxy-service-account"
-  aws_auth_roles           = concat(
+  aws_auth_roles = concat(
     [
       for v in var.sso_roles : {
-      rolearn  = replace(tolist(data.aws_iam_roles.support_role[v.role_name].arns.*)[0], "aws-reserved/sso.amazonaws.com/${data.aws_region.current.name}/", "")
-      username = "${v.role_name}:{{SessionName}}"
-      groups   = v.groups
-    }
+        rolearn  = replace(tolist(data.aws_iam_roles.support_role[v.role_name].arns.*)[0], "aws-reserved/sso.amazonaws.com/${data.aws_region.current.name}/", "")
+        username = "${v.role_name}:{{SessionName}}"
+        groups   = v.groups
+      }
     ],
     [
       for v in var.iam_roles : {
-      rolearn  = try(format("arn:aws:iam::%s:role/%s", v.account, v.role_name), (tolist(data.aws_iam_roles.iam_role[v.role_name].arns.*)[0]))
-      username = "${v.role_name}:{{SessionName}}"
-      groups   = v.groups
-    }
+        rolearn  = try(format("arn:aws:iam::%s:role/%s", v.account, v.role_name), (tolist(data.aws_iam_roles.iam_role[v.role_name].arns.*)[0]))
+        username = "${v.role_name}:{{SessionName}}"
+        groups   = v.groups
+      }
     ],
     [
       {
         rolearn  = module.karpenter[0].role_arn
         username = "system:node:{{EC2PrivateDNSName}}"
-        groups   = [
+        groups = [
           "system:bootstrappers",
           "system:nodes",
         ]
@@ -76,7 +76,7 @@ data "aws_iam_roles" "support_role" {
 
 data "aws_iam_roles" "iam_role" {
   for_each   = toset(var.iam_roles.*.role_name)
-  name_regex = "${each.key}"
+  name_regex = each.key
 }
 
 module "ebs_csi_irsa_role" {
@@ -85,7 +85,7 @@ module "ebs_csi_irsa_role" {
   role_name = "${var.cluster_name}-AmazonEKS_EBS_CSI_DriverRole"
 
   attach_ebs_csi_policy = true
-  oidc_providers        = {
+  oidc_providers = {
     main = {
       provider_arn               = module.eks.oidc_provider_arn
       namespace_service_accounts = ["kube-system:ebs-csi-controller-sa"]
@@ -97,7 +97,7 @@ module "ebs_csi_irsa_role" {
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 19.0"
+  version = "~> 20.0"
 
   cluster_name                            = var.cluster_name
   cluster_version                         = var.cluster_version
@@ -125,8 +125,9 @@ module "eks" {
       service_account_role_arn = module.ebs_csi_irsa_role.iam_role_arn
     }
     vpc-cni = {
-      resolve_conflicts        = "OVERWRITE"
-      service_account_role_arn = module.vpc_cni_irsa.iam_role_arn
+      resolve_conficts_on_create = "OVERWRITE"
+      resolve_conficts_on_update = "OVERWRITE"
+      service_account_role_arn   = module.vpc_cni_irsa.iam_role_arn
     }
   }
 
@@ -137,7 +138,7 @@ module "eks" {
   subnet_ids = var.subnets_ids
   tags       = var.tags
 
-  eks_managed_node_groups = {for k, v in var.eks_managed_node_groups : "${var.cluster_name}-${k}" => v}
+  eks_managed_node_groups = { for k, v in var.eks_managed_node_groups : "${var.cluster_name}-${k}" => v }
 
   eks_managed_node_group_defaults = {
     iam_role_attach_cni_policy = true
@@ -147,12 +148,13 @@ module "eks" {
 }
 
 module "karpenter" {
-  count  = var.enable_karpenter ? 1 : 0
-  source = "terraform-aws-modules/eks/aws//modules/karpenter"
+  count   = var.enable_karpenter ? 1 : 0
+  source  = "terraform-aws-modules/eks/aws//modules/karpenter"
+  version = "~> 20.0"
 
   cluster_name                               = module.eks.cluster_name
   enable_karpenter_instance_profile_creation = true
-  iam_role_additional_policies               = {
+  node_iam_role_additional_policies = {
     AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
   }
   irsa_oidc_provider_arn          = module.eks.oidc_provider_arn
@@ -170,7 +172,7 @@ resource "helm_release" "karpenter" {
   repository_username = data.aws_ecrpublic_authorization_token.token[0].user_name
   repository_password = data.aws_ecrpublic_authorization_token.token[0].password
   chart               = "karpenter"
-  version             = "v0.32.1"
+  version             = "v0.33.1"
 
   values = [
     <<-EOT
@@ -335,7 +337,7 @@ resource "kubernetes_storage_class" "gp3_xfs_encrypted" {
   }
   storage_provisioner = "ebs.csi.aws.com"
   reclaim_policy      = "Delete"
-  parameters          = {
+  parameters = {
     fsType    = "xfs"
     type      = "gp3"
     encrypted = "true"
@@ -345,14 +347,14 @@ resource "kubernetes_storage_class" "gp3_xfs_encrypted" {
 
 resource "kubernetes_storage_class" "gp3" {
   metadata {
-    name        = "gp3"
+    name = "gp3"
     annotations = {
       "storageclass.kubernetes.io/is-default-class" = "true"
     }
   }
   storage_provisioner = "ebs.csi.aws.com"
   reclaim_policy      = "Delete"
-  parameters          = {
+  parameters = {
     fsType = "xfs"
     type   = "gp3"
   }
