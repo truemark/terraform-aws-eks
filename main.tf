@@ -113,7 +113,7 @@ module "eks" {
   aws_auth_roles            = local.aws_auth_roles
 
   #KMS
-  kms_key_users                 = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+  kms_key_users = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
 
   # OIDC Identity provider
   cluster_identity_providers = {
@@ -127,9 +127,8 @@ module "eks" {
       service_account_role_arn = module.ebs_csi_irsa_role.iam_role_arn
     }
     vpc-cni = {
-      resolve_conficts_on_create = "OVERWRITE"
-      resolve_conficts_on_update = "OVERWRITE"
-      service_account_role_arn   = module.vpc_cni_irsa.iam_role_arn
+      resolve_conflicts        = "OVERWRITE"
+      service_account_role_arn = module.vpc_cni_irsa.iam_role_arn
     }
   }
 
