@@ -113,7 +113,6 @@ module "eks" {
   aws_auth_roles            = local.aws_auth_roles
 
   #KMS
-  kms_key_enable_default_policy = false
   kms_key_users                 = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
 
   # OIDC Identity provider
