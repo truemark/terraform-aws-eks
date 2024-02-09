@@ -97,7 +97,7 @@ module "ebs_csi_irsa_role" {
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 20.0"
+  version = "~> 19.0"
 
   cluster_name                            = var.cluster_name
   cluster_version                         = var.cluster_version
@@ -108,10 +108,12 @@ module "eks" {
   node_security_group_additional_rules    = var.node_security_group_additional_rules
   cluster_additional_security_group_ids   = var.cluster_additional_security_group_ids
 
-  aws_auth_roles = local.aws_auth_roles
+  #AUTH
+  manage_aws_auth_configmap = true
+  aws_auth_roles            = local.aws_auth_roles
 
   #KMS
-  kms_key_users = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+  kms_key_users                 = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
 
   # OIDC Identity provider
   cluster_identity_providers = {
@@ -131,9 +133,6 @@ module "eks" {
     }
   }
 
-  # aws-auth configmap
-  manage_aws_auth_configmap = true
-
   vpc_id     = var.vpc_id
   subnet_ids = var.subnets_ids
   tags       = var.tags
@@ -150,11 +149,11 @@ module "eks" {
 module "karpenter" {
   count   = var.enable_karpenter ? 1 : 0
   source  = "terraform-aws-modules/eks/aws//modules/karpenter"
-  version = "~> 20.0"
+  version = "~> 19.0"
 
   cluster_name                               = module.eks.cluster_name
   enable_karpenter_instance_profile_creation = true
-  node_iam_role_additional_policies = {
+  iam_role_additional_policies = {
     AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
   }
   irsa_oidc_provider_arn          = module.eks.oidc_provider_arn
