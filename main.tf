@@ -422,7 +422,7 @@ module "monitoring" {
   count = var.enable_monitoring ? 1 : 0
 
   source  = "truemark/eks-monitoring/aws"
-  version = "0.0.6"
+  version = "~> 0.0.6"
 
   cluster_name            = module.eks.cluster_name
   amp_name                = var.amp_arn == null ? "${var.cluster_name}-monitoring" : null
@@ -438,13 +438,13 @@ module "monitoring" {
 module "ingress_traefik" {
   count   = var.enable_traefik ? 1 : 0
   source  = "truemark/traefik/kubernetes"
-  version = "0.0.1"
+  version = "~> 0.0.1"
 }
 
 module "ingress_istio" {
   count   = var.enable_istio ? 1 : 0
   source  = "truemark/istio/kubernetes"
-  version = "0.0.4"
+  version = "~> 0.0.4"
 
   vpc_id                              = var.vpc_id
   istio_enable_external_gateway       = var.istio_enable_external_gateway
