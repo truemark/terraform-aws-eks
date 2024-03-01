@@ -300,3 +300,9 @@ variable "istio_internal_gateway_scaling_target_cpu_utilization" {
   description = "The target CPU utilization percentage for scaling the internal gateway."
   default     = 80
 }
+
+variable "enable_cert_manager" {
+  type        = bool
+  default     = false
+  description = "Enables cert-manager deployment."
+}
