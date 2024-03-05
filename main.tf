@@ -114,6 +114,7 @@ module "eks" {
 
   #KMS
   kms_key_users = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+  kms_key_owners = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
 
   # OIDC Identity provider
   cluster_identity_providers = {
