@@ -113,7 +113,7 @@ module "eks" {
   aws_auth_roles            = local.aws_auth_roles
 
   #KMS
-  kms_key_users = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+  kms_key_users  = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
   kms_key_owners = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
 
   # OIDC Identity provider
@@ -415,6 +415,14 @@ resource "helm_release" "external_secrets" {
     name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
     value = module.external_secrets_irsa.iam_role_arn
   }
+}
+
+resource "helm_release" "metrics_server" {
+  name       = "metrics-server"
+  chart      = "metrics-server"
+  repository = "https://kubernetes-sigs.github.io/metrics-server/"
+  version    = "3.12.0"
+  namespace  = "kube-system"
 }
 
 module "monitoring" {
