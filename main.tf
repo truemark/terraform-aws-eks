@@ -429,7 +429,7 @@ module "monitoring" {
   count = var.enable_monitoring ? 1 : 0
 
   source  = "truemark/eks-monitoring/aws"
-  version = "~> 0.0.7"
+  version = "~> 0.0.9"
 
   cluster_name            = module.eks.cluster_name
   amp_name                = var.amp_arn == null ? "${var.cluster_name}-monitoring" : null
