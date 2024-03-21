@@ -54,7 +54,7 @@ variable "cluster_additional_security_group_ids" {
 
 variable "sso_roles" {
   description = "AWS SSO roles that will be mapped to RBAC roles."
-  type        = list(object({
+  type = list(object({
     role_name = string,
     groups    = list(string),
   }))
@@ -94,7 +94,7 @@ variable "enable_karpenter" {
 variable "karpenter_node_template_default" {
   description = "Config for default node template for karpenter"
   type        = map(any)
-  default     = {
+  default = {
     subnetSelector = {
       network = "private"
     }
@@ -104,7 +104,7 @@ variable "karpenter_node_template_default" {
 variable "karpenter_provisioner_default_requirements" {
   description = "Specifies the default requirements for the Karpenter provisioner template, including instance category, CPU, hypervisor, architecture, and capacity type."
   type        = map(any)
-  default     = {
+  default = {
     requirements = [
       {
         key      = "karpenter.k8s.aws/instance-category"
@@ -144,11 +144,11 @@ variable "karpenter_provisioner_default_ami_family" {
 variable "karpenter_provisioner_default_block_device_mappings" {
   description = "Specifies the default size and characteristics of the volumes used by the Karpenter provisioner. It defines the volume size, type, and encryption settings."
   type        = map(any)
-  default     = {
+  default = {
     specs = [
       {
         deviceName = "/dev/xvda"
-        ebs        = {
+        ebs = {
           volumeSize = "30Gi"
           volumeType = "gp3"
           encrypted  = true
@@ -156,7 +156,7 @@ variable "karpenter_provisioner_default_block_device_mappings" {
       },
       {
         deviceName = "/dev/xvdb"
-        ebs        = {
+        ebs = {
           volumeSize = "100Gi"
           volumeType = "gp3"
           encrypted  = true
@@ -224,6 +224,18 @@ variable "alerts_sns_topics_arn" {
   description = "The ARN of the SNS topic to send alerts to"
   type        = string
   default     = null
+}
+
+variable "amp_alerting_rules_exclude_namespace" {
+  description = "Namespaces to exclude from alerting"
+  type        = string
+  default     = ""
+}
+
+variable "prometheus_server_data_volume_size" {
+  description = "Volume size for prometheus data"
+  type        = string
+  default     = "150Gi"
 }
 
 ## Variables ingress controllers
