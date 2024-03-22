@@ -429,17 +429,19 @@ module "monitoring" {
   count = var.enable_monitoring ? 1 : 0
 
   source  = "truemark/eks-monitoring/aws"
-  version = "~> 0.0.6"
+  version = "~> 0.0.13"
 
-  cluster_name            = module.eks.cluster_name
-  amp_name                = var.amp_arn == null ? "${var.cluster_name}-monitoring" : null
-  amp_id                  = var.amp_id
-  amp_arn                 = var.amp_arn
-  cluster_oidc_issuer_url = module.eks.oidc_provider
-  oidc_provider_arn       = module.eks.oidc_provider_arn
-  region                  = data.aws_region.current.name
-  alerts_sns_topics_arn   = var.alerts_sns_topics_arn
-  tags                    = var.tags
+  cluster_name                         = module.eks.cluster_name
+  amp_name                             = var.amp_arn == null ? "${var.cluster_name}-monitoring" : null
+  amp_id                               = var.amp_id
+  amp_arn                              = var.amp_arn
+  amp_alerting_rules_exclude_namespace = var.amp_alerting_rules_exclude_namespace
+  prometheus_server_data_volume_size   = var.prometheus_server_data_volume_size
+  cluster_oidc_issuer_url              = module.eks.oidc_provider
+  oidc_provider_arn                    = module.eks.oidc_provider_arn
+  region                               = data.aws_region.current.name
+  alerts_sns_topics_arn                = var.alerts_sns_topics_arn
+  tags                                 = var.tags
 }
 
 module "ingress_traefik" {
@@ -468,7 +470,8 @@ module "cert_manager" {
   count = var.enable_cert_manager ? 1 : 0
 
   source  = "truemark/eks-certmanager/aws"
-  version = "0.0.3"
+  version = "0.0.4"
 
-  chart_version = "v1.13.3"
+  chart_version                = "v1.13.3"
+  enable_recursive_nameservers = true
 }
