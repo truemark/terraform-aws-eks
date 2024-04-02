@@ -141,6 +141,12 @@ variable "karpenter_provisioner_default_requirements" {
   }
 }
 
+variable "karpenter_nodepool_default_expireAfter" {
+  default     = "720h"
+  type        = string
+  description = "The amount of time a Node can live on the cluster before being removed"
+}
+
 variable "karpenter_provisioner_default_ami_family" {
   description = "Specifies the default Amazon Machine Image (AMI) family to be used by the Karpenter provisioner."
   type        = string
