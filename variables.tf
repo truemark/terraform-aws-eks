@@ -94,7 +94,7 @@ variable "enable_karpenter" {
 variable "karpenter_settings_featureGates_drift" {
   type        = bool
   description = "Enable or disable drift feature of karpenter"
-  default     = false
+  default     = true
 }
 
 variable "karpenter_node_template_default" {
