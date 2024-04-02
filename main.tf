@@ -179,6 +179,12 @@ resource "helm_release" "karpenter" {
       clusterName: ${module.eks.cluster_name}
       clusterEndpoint: ${module.eks.cluster_endpoint}
       interruptionQueueName: ${module.karpenter[0].queue_name}
+      featureGates:
+        drift: ${var.karpenter_settings_featureGates_drift}
+    podAnnotations:
+      prometheus.io/path: /metrics
+      prometheus.io/port: '8000'
+      prometheus.io/scrape: 'true'
     serviceAccount:
       annotations:
         eks.amazonaws.com/role-arn: ${module.karpenter[0].irsa_arn}
