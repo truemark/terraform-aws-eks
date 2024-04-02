@@ -91,6 +91,12 @@ variable "enable_karpenter" {
   default     = true
 }
 
+variable "karpenter_settings_featureGates_drift" {
+  type        = bool
+  description = "Enable or disable drift feature of karpenter"
+  default     = false
+}
+
 variable "karpenter_node_template_default" {
   description = "Config for default node template for karpenter"
   type        = map(any)
