@@ -232,6 +232,7 @@ resource "kubectl_manifest" "karpenter_node_pool" {
       limits:
         cpu: ${var.karpenter_provisioner_default_cpu_limits}
       disruption:
+        expireAfter: ${var.karpenter_nodepool_default_expireAfter}
         consolidationPolicy: WhenEmpty
         consolidateAfter: 30s
   YAML

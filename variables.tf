@@ -94,7 +94,7 @@ variable "enable_karpenter" {
 variable "karpenter_settings_featureGates_drift" {
   type        = bool
   description = "Enable or disable drift feature of karpenter"
-  default     = false
+  default     = true
 }
 
 variable "karpenter_node_template_default" {
@@ -139,6 +139,12 @@ variable "karpenter_provisioner_default_requirements" {
       }
     ]
   }
+}
+
+variable "karpenter_nodepool_default_expireAfter" {
+  default     = "720h"
+  type        = string
+  description = "The amount of time a Node can live on the cluster before being removed"
 }
 
 variable "karpenter_provisioner_default_ami_family" {
