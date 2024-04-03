@@ -97,3 +97,8 @@ output "fargate_profiles" {
   description = "Map of attribute maps for all EKS Fargate Profiles created"
   value       = module.eks.fargate_profiles
 }
+
+output "amp_workspace_id" {
+  description = "The ID of the AMP workspace"
+  value       = module.monitoring.amp_workspace_id
+}
