@@ -148,7 +148,7 @@ module "eks" {
 
 
 resource "aws_eks_access_entry" "account_access_entries" {
-  for_each = { for role in var.cross_account_iam_roles : role.role_name => role }
+  for_each = data.aws_iam_roles.account_iam_role
 
   cluster_name  = var.cluster_name
   principal_arn = tolist(each.value.arns)[0]
