@@ -146,12 +146,12 @@ module "eks" {
 }
 
 resource "aws_eks_access_policy_association" "cluster_admin_access" {
-  for_each = { for v in data.aws_iam_roles.account_iam_role : element(split("/", tolist(v.arns)[0]), length(split("/", tolist(v.arns)[0])) - 1) => role }
+  for_each      = { for v in data.aws_iam_roles.account_iam_role : element(split("/", tolist(v.arns)[0]), length(split("/", tolist(v.arns)[0])) - 1) => role }
   cluster_name  = var.cluster_name
   policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
   principal_arn = each.value.rolearn
   access_scope {
-    type       = "cluster"
+    type = "cluster"
   }
   depends_on = [
     module.eks
@@ -161,10 +161,11 @@ resource "aws_eks_access_policy_association" "cluster_admin_access" {
 resource "aws_eks_access_policy_association" "cross_account_admin_access" {
   for_each = { for role in var.cross_account_iam_roles : role.role_name => role }
 
-  cluster_name      = var.cluster_name
-  principal_arn     = each.value.prefix != null ? format("arn:aws:iam::%s:role/%s/%s", each.value.account, each.value.prefix, each.value.role_name) : format("arn:aws:iam::%s:role/%s", each.value.account, each.value.role_name)
+  cluster_name  = var.cluster_name
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+  principal_arn = each.value.prefix != null ? format("arn:aws:iam::%s:role/%s/%s", each.value.account, each.value.prefix, each.value.role_name) : format("arn:aws:iam::%s:role/%s", each.value.account, each.value.role_name)
   access_scope {
-    type       = "cluster"
+    type = "cluster"
   }
 
   depends_on = [
