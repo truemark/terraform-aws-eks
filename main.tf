@@ -221,6 +221,11 @@ resource "helm_release" "karpenter" {
     serviceAccount:
       annotations:
         eks.amazonaws.com/role-arn: ${module.karpenter[0].iam_role_arn}
+    tolerations:
+      - key: 'eks.amazonaws.com/compute-type'
+        operator: Equal
+        value: fargate
+        effect: "NoSchedule"
     EOT
   ]
 }
