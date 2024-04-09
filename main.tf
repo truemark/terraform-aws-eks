@@ -145,14 +145,12 @@ module "eks" {
   node_security_group_tags = var.enable_karpenter ? { "karpenter.sh/discovery" = var.cluster_name } : {}
 }
 
-
-
 resource "aws_eks_access_entry" "account_access_entries" {
   for_each = data.aws_iam_roles.account_iam_role
 
   cluster_name  = var.cluster_name
   principal_arn = tolist(each.value.arns)[0]
-  user_name     = "each.key:{{SessionName}}"
+  user_name     = "${each.key}:{{SessionName}}"
   tags          = var.tags
 
   depends_on = [
@@ -178,7 +176,7 @@ resource "aws_eks_access_entry" "cross_account_access_entries" {
 
   cluster_name  = var.cluster_name
   principal_arn = each.value.prefix != null ? format("arn:aws:iam::%s:role/%s/%s", each.value.account, each.value.prefix, each.value.role_name) : format("arn:aws:iam::%s:role/%s", each.value.account, each.value.role_name)
-  user_name     = "each.key:{{SessionName}}"
+  user_name     = "${each.key}:{{SessionName}}"
   tags          = var.tags
 
   depends_on = [
