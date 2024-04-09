@@ -145,7 +145,22 @@ module "eks" {
   node_security_group_tags = var.enable_karpenter ? { "karpenter.sh/discovery" = var.cluster_name } : {}
 }
 
-resource "aws_eks_access_policy_association" "cluster_admin_access" {
+
+
+resource "aws_eks_access_entry" "account_access_entries" {
+  for_each = { for role in var.cross_account_iam_roles : role.role_name => role }
+
+  cluster_name  = var.cluster_name
+  principal_arn = tolist(each.value.arns)[0]
+  username      = "each.key:{{SessionName}}"
+  tags          = var.tags
+
+  depends_on = [
+    module.eks
+  ]
+}
+
+resource "aws_eks_access_policy_association" "account_access_policy_associations" {
   for_each      = data.aws_iam_roles.account_iam_role
   cluster_name  = var.cluster_name
   policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
@@ -158,7 +173,21 @@ resource "aws_eks_access_policy_association" "cluster_admin_access" {
   ]
 }
 
-resource "aws_eks_access_policy_association" "cross_account_admin_access" {
+resource "aws_eks_access_entry" "cross_account_access_entries" {
+  for_each = { for role in var.cross_account_iam_roles : role.role_name => role }
+
+  cluster_name      = var.cluster_name
+  principal_arn     = each.value.prefix != null ? format("arn:aws:iam::%s:role/%s/%s", each.value.account, each.value.prefix, each.value.role_name) : format("arn:aws:iam::%s:role/%s", each.value.account, each.value.role_name)
+  kubernetes_groups = each.value.groups
+
+  tags = var.tags
+
+  depends_on = [
+    module.eks
+  ]
+}
+
+resource "aws_eks_access_policy_association" "cross_account_access_policy_associations" {
   for_each = { for role in var.cross_account_iam_roles : role.role_name => role }
 
   cluster_name  = var.cluster_name
