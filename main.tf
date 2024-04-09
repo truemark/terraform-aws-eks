@@ -24,12 +24,6 @@ data "aws_iam_roles" "account_iam_role" {
 locals {
   oidc_provider            = replace(module.eks.cluster_oidc_issuer_url, "https://", "")
   iamproxy-service-account = "${var.cluster_name}-iamproxy-service-account"
-  aws_auth_roles = {
-    for v in data.aws_iam_roles.account_iam_role : element(split("/", tolist(v.arns)[0]), length(split("/", tolist(v.arns)[0])) - 1) => {
-      rolearn = replace(tolist(v.arns)[0], "aws-reserved/sso.amazonaws.com/${data.aws_region.current.name}/", "")
-      groups  = lookup(var.iam_roles[index(var.iam_roles.*.role_name, v.name_regex)], "groups", [])
-    }
-  }
 }
 
 provider "kubectl" {
@@ -151,28 +145,27 @@ module "eks" {
   node_security_group_tags = var.enable_karpenter ? { "karpenter.sh/discovery" = var.cluster_name } : {}
 }
 
-resource "aws_eks_access_entry" "account_access_entries" {
-  for_each = local.aws_auth_roles
-
-  cluster_name      = var.cluster_name
-  principal_arn     = each.value.rolearn
-  kubernetes_groups = each.value.groups
-
-  tags = var.tags
-
+resource "aws_eks_access_policy_association" "cluster_admin_access" {
+  for_each = { for v in data.aws_iam_roles.account_iam_role : element(split("/", tolist(v.arns)[0]), length(split("/", tolist(v.arns)[0])) - 1) => role }
+  cluster_name  = var.cluster_name
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+  principal_arn = each.value.rolearn
+  access_scope {
+    type       = "cluster"
+  }
   depends_on = [
     module.eks
   ]
 }
 
-resource "aws_eks_access_entry" "cross_account_access_entries" {
+resource "aws_eks_access_policy_association" "cross_account_admin_access" {
   for_each = { for role in var.cross_account_iam_roles : role.role_name => role }
 
   cluster_name      = var.cluster_name
   principal_arn     = each.value.prefix != null ? format("arn:aws:iam::%s:role/%s/%s", each.value.account, each.value.prefix, each.value.role_name) : format("arn:aws:iam::%s:role/%s", each.value.account, each.value.role_name)
-  kubernetes_groups = each.value.groups
-
-  tags = var.tags
+  access_scope {
+    type       = "cluster"
+  }
 
   depends_on = [
     module.eks
