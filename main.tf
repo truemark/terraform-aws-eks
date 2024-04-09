@@ -149,7 +149,7 @@ resource "aws_eks_access_policy_association" "cluster_admin_access" {
   for_each      = data.aws_iam_roles.account_iam_role
   cluster_name  = var.cluster_name
   policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-  principal_arn = each.value.arns[0]
+  principal_arn = tolist(each.value.arns)[0]
   access_scope {
     type = "cluster"
   }
