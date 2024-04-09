@@ -31,8 +31,17 @@ locals {
     }
   }
   cross_account_aws_auth_roles = {
-
+    for v in var.cross_account_iam_roles : v.role_name => {
+      account = v.account
+      prefix  = v.prefix
+      role_name = v.role_name
+      groups    = v.groups
+    }
   }
+}
+
+output "local-test" {
+  value = local.cross_account_aws_auth_roles
 }
 
 provider "kubectl" {
