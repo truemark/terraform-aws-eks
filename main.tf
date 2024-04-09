@@ -152,7 +152,7 @@ resource "aws_eks_access_entry" "account_access_entries" {
 
   cluster_name  = var.cluster_name
   principal_arn = tolist(each.value.arns)[0]
-  username      = "each.key:{{SessionName}}"
+  user_name     = "each.key:{{SessionName}}"
   tags          = var.tags
 
   depends_on = [
@@ -176,11 +176,10 @@ resource "aws_eks_access_policy_association" "account_access_policy_associations
 resource "aws_eks_access_entry" "cross_account_access_entries" {
   for_each = { for role in var.cross_account_iam_roles : role.role_name => role }
 
-  cluster_name      = var.cluster_name
-  principal_arn     = each.value.prefix != null ? format("arn:aws:iam::%s:role/%s/%s", each.value.account, each.value.prefix, each.value.role_name) : format("arn:aws:iam::%s:role/%s", each.value.account, each.value.role_name)
-  kubernetes_groups = each.value.groups
-
-  tags = var.tags
+  cluster_name  = var.cluster_name
+  principal_arn = each.value.prefix != null ? format("arn:aws:iam::%s:role/%s/%s", each.value.account, each.value.prefix, each.value.role_name) : format("arn:aws:iam::%s:role/%s", each.value.account, each.value.role_name)
+  user_name     = "each.key:{{SessionName}}"
+  tags          = var.tags
 
   depends_on = [
     module.eks
