@@ -129,6 +129,19 @@ module "eks" {
   subnet_ids = var.subnets_ids
   tags       = var.tags
 
+  fargate_profiles = {
+    karpenter = {
+      selectors = [
+        { namespace = "karpenter" }
+      ]
+    }
+    kube-system = {
+      selectors = [
+        { namespace = "kube-system" }
+      ]
+    }
+  }
+
   eks_managed_node_groups = { for k, v in var.eks_managed_node_groups : "${var.cluster_name}-${k}" => v }
 
   eks_managed_node_group_defaults = {
