@@ -376,6 +376,11 @@ resource "helm_release" "aws_load_balancer_controller" {
     name  = "image.tag"
     value = "v2.4.4"
   }
+
+  set {
+    name  = "vpcId"
+    value = var.vpc_id
+  }
 }
 
 module "vpc_cni_irsa" {
