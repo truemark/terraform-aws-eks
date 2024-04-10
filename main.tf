@@ -43,18 +43,6 @@ locals {
     },
     var.fargate_profiles
   )
-  cluster_security_group_additional_rules = concat(
-    var.cluster_security_group_additional_rules,
-    [
-      {
-        description       = "Allow all traffic from the VPC"
-        from_port         = 0
-        to_port           = 0
-        protocol          = "-1"
-        security_group_id = data.aws_vpc.selected.cidr_block
-      }
-    ]
-  )
   cluster_addons = {
     coredns = {
       most_recent = true
@@ -136,7 +124,7 @@ module "eks" {
   cluster_enabled_log_types               = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
   cluster_security_group_additional_rules = var.cluster_security_group_additional_rules
   node_security_group_additional_rules    = var.node_security_group_additional_rules
-  cluster_additional_security_group_ids   = local.cluster_security_group_additional_rules
+  cluster_additional_security_group_ids   = var.cluster_security_group_additional_rules
 
   # KMS
   kms_key_users  = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
