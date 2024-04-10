@@ -22,6 +22,23 @@ variable "vpc_id" {
   default     = null
 }
 
+################################################################################
+# Fargate
+################################################################################
+
+variable "fargate_profiles" {
+  description = "Map of Fargate Profile definitions to create"
+  type        = any
+  default     = {}
+}
+
+variable "fargate_profile_defaults" {
+  description = "Map of Fargate Profile default configurations"
+  type        = any
+  default     = {}
+}
+
+
 variable "eks_managed_node_groups" {
   description = "Map of EKS managed node group definitions to create."
   type        = any

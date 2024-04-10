@@ -24,6 +24,21 @@ data "aws_iam_roles" "account_iam_role" {
 locals {
   oidc_provider            = replace(module.eks.cluster_oidc_issuer_url, "https://", "")
   iamproxy-service-account = "${var.cluster_name}-iamproxy-service-account"
+  fargate_profiles = merge(
+    {
+      karpenter = {
+        selectors = [
+          { namespace = "karpenter" }
+        ]
+      }
+      kube-system = {
+        selectors = [
+          { namespace = "kube-system" }
+        ]
+      }
+    },
+    var.fargate_profiles
+  )
 }
 
 provider "kubectl" {
@@ -123,18 +138,8 @@ module "eks" {
   subnet_ids = var.subnets_ids
   tags       = var.tags
 
-  fargate_profiles = {
-    karpenter = {
-      selectors = [
-        { namespace = "karpenter" }
-      ]
-    }
-    kube-system = {
-      selectors = [
-        { namespace = "kube-system" }
-      ]
-    }
-  }
+  fargate_profile_defaults = var.fargate_profile_defaults
+  fargate_profiles         = local.fargate_profiles
 
   eks_managed_node_groups = { for k, v in var.eks_managed_node_groups : "${var.cluster_name}-${k}" => v }
 
