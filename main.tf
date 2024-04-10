@@ -21,6 +21,10 @@ data "aws_iam_roles" "account_iam_role" {
   name_regex = each.key
 }
 
+data "aws_vpc" "selected" {
+  id = var.vpc_id
+}
+
 locals {
   oidc_provider            = replace(module.eks.cluster_oidc_issuer_url, "https://", "")
   iamproxy-service-account = "${var.cluster_name}-iamproxy-service-account"
@@ -39,6 +43,49 @@ locals {
     },
     var.fargate_profiles
   )
+  cluster_security_group_additional_rules = concat(
+    var.cluster_security_group_additional_rules,
+    [
+      {
+        description       = "Allow all traffic from the VPC"
+        from_port         = 0
+        to_port           = 0
+        protocol          = "-1"
+        security_group_id = data.aws_vpc.selected.cidr_block
+      }
+    ]
+  )
+  cluster_addons = {
+    coredns = {
+      most_recent = true
+      configuration_values = jsonencode({
+        computeType = "Fargate"
+        resources = {
+          limits = {
+            cpu    = "0.25"
+            memory = "256M"
+          }
+          requests = {
+            cpu    = "0.25"
+            memory = "256M"
+          }
+        }
+      })
+    }
+    kube-proxy = {}
+    vpc-cni = {
+      most_recent              = true
+      before_compute           = true
+      service_account_role_arn = module.vpc_cni_irsa.iam_role_arn
+    }
+    eks-pod-identity-agent = {
+      most_recent = true
+    }
+    aws-ebs-csi-driver = {
+      most_recent              = true
+      service_account_role_arn = module.ebs_csi_irsa_role.iam_role_arn
+    }
+  }
 }
 
 provider "kubectl" {
@@ -89,9 +136,9 @@ module "eks" {
   cluster_enabled_log_types               = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
   cluster_security_group_additional_rules = var.cluster_security_group_additional_rules
   node_security_group_additional_rules    = var.node_security_group_additional_rules
-  cluster_additional_security_group_ids   = var.cluster_additional_security_group_ids
+  cluster_additional_security_group_ids   = local.cluster_security_group_additional_rules
 
-  #KMS
+  # KMS
   kms_key_users  = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
   kms_key_owners = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
 
@@ -102,37 +149,7 @@ module "eks" {
     }
   }
 
-  cluster_addons = {
-    coredns = {
-      most_recent = true
-      configuration_values = jsonencode({
-        computeType = "Fargate"
-        resources = {
-          limits = {
-            cpu    = "0.25"
-            memory = "256M"
-          }
-          requests = {
-            cpu    = "0.25"
-            memory = "256M"
-          }
-        }
-      })
-    }
-    kube-proxy = {}
-    vpc-cni = {
-      most_recent              = true
-      before_compute           = true
-      service_account_role_arn = module.vpc_cni_irsa.iam_role_arn
-    }
-    eks-pod-identity-agent = {
-      most_recent = true
-    }
-    aws-ebs-csi-driver = {
-      most_recent              = true
-      service_account_role_arn = module.ebs_csi_irsa_role.iam_role_arn
-    }
-  }
+  cluster_addons = local.cluster_addons
 
   vpc_id     = var.vpc_id
   subnet_ids = var.subnets_ids
