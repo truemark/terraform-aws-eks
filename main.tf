@@ -175,10 +175,10 @@ resource "aws_eks_access_policy_association" "access_policy_associations" {
   policy_arn    = "arn:aws:eks::aws:cluster-access-policy/"
   principal_arn = each.value.arn
   dynamic "access_scope" {
-    for_each = each.value.access_scope
+    for_each = each.value.access_scope != null ? [each.value.access_scope] : []
     content {
       type       = access_scope.value.type
-      namespaces = access_scope.value.namespaces
+      namespaces = access_scope.value.namespaces != null ? access_scope.value.namespaces : []
     }
   }
 }
