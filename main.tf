@@ -74,7 +74,7 @@ locals {
       service_account_role_arn = module.ebs_csi_irsa_role.iam_role_arn
     }
   }
-  eks_access_iam_roles_map = { for role in var.iam_roles : role.role_name => role }
+  eks_access_iam_roles_map = { for role in var.eks_access_account_iam_roles : role.role_name => role }
   eks_access_entries = merge(
     { for role in data.aws_iam_roles.eks_access_iam_roles : role.name_regex => merge(local.eks_access_iam_roles_map[role.name_regex], { "arn" : tolist(role.arns)[0] }) },
     { for role in var.eks_access_cross_account_iam_roles : role.role_name => merge({ "role_name" = role.role_name, "access_scope" = role.access_scope, "policy_name" = role.policy_name, "arn" = role.prefix != null ? format("arn:aws:iam::%s:role/%s/%s", role.account, role.prefix, role.role_name) : format("arn:aws:iam::%s:role/%s", role.account, role.role_name) }) }
