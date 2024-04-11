@@ -172,7 +172,7 @@ resource "aws_eks_access_policy_association" "access_policy_associations" {
   for_each = local.eks_access_entries
 
   cluster_name  = module.eks.cluster_name
-  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/"
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/${each.value.policy_name}"
   principal_arn = each.value.arn
   dynamic "access_scope" {
     for_each = each.value.access_scope != null ? [each.value.access_scope] : []
