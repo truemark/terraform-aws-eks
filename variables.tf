@@ -69,13 +69,13 @@ variable "cluster_additional_security_group_ids" {
   default     = []
 }
 
-variable "iam_roles" {
+variable "eks_access_account_iam_roles" {
   description = "AWS IAM roles that will be mapped to RBAC roles."
   type        = list(any)
   default     = []
 }
 
-variable "cross_account_iam_roles" {
+variable "eks_access_cross_account_iam_roles" {
   description = "AWS IAM roles that will be mapped to RBAC roles."
   type        = list(any)
   default     = []

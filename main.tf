@@ -16,8 +16,8 @@ data "aws_ecrpublic_authorization_token" "token" {
   provider = aws.us-east-1
 }
 
-data "aws_iam_roles" "account_iam_role" {
-  for_each   = toset(var.iam_roles.*.role_name)
+data "aws_iam_roles" "eks_access_iam_roles" {
+  for_each   = toset(var.eks_access_account_iam_roles.*.role_name)
   name_regex = each.key
 }
 
@@ -74,6 +74,11 @@ locals {
       service_account_role_arn = module.ebs_csi_irsa_role.iam_role_arn
     }
   }
+  eks_access_iam_roles_map = { for role in var.iam_roles : role.role_name => role }
+  eks_access_entries = merge(
+    { for role in data.aws_iam_roles.eks_access_iam_roles : role.name_regex => merge(local.eks_access_iam_roles_map[role.name_regex], { "arn" : tolist(role.arns)[0] }) },
+    { for role in var.eks_access_cross_account_iam_roles : role.role_name => merge({ "role_name" = role.role_name, "access_scope" = role.access_scope, "policy_name" = role.policy_name, "arn" = role.prefix != null ? format("arn:aws:iam::%s:role/%s/%s", role.account, role.prefix, role.role_name) : format("arn:aws:iam::%s:role/%s", role.account, role.role_name) }) }
+  )
 }
 
 provider "kubectl" {
@@ -155,58 +160,27 @@ module "eks" {
   node_security_group_tags = var.enable_karpenter ? { "karpenter.sh/discovery" = var.cluster_name } : {}
 }
 
-resource "aws_eks_access_entry" "account_access_entries" {
-  for_each = data.aws_iam_roles.account_iam_role
+resource "aws_eks_access_entry" "access_entries" {
+  for_each = local.eks_access_entries
 
-  cluster_name  = var.cluster_name
-  principal_arn = tolist(each.value.arns)[0]
+  cluster_name  = module.eks.cluster_name
+  principal_arn = each.value.arn
   user_name     = "${each.key}:{{SessionName}}"
-  tags          = var.tags
-
-  depends_on = [
-    module.eks
-  ]
 }
 
-resource "aws_eks_access_policy_association" "account_access_policy_associations" {
-  for_each      = data.aws_iam_roles.account_iam_role
-  cluster_name  = var.cluster_name
-  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-  principal_arn = tolist(each.value.arns)[0]
-  access_scope {
-    type = "cluster"
+resource "aws_eks_access_policy_association" "access_policy_associations" {
+  for_each = local.eks_access_entries
+
+  cluster_name  = module.eks.cluster_name
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/"
+  principal_arn = each.value.arn
+  dynamic "access_scope" {
+    for_each = each.value.access_scope
+    content {
+      type       = access_scope.value.type
+      namespaces = access_scope.value.namespaces
+    }
   }
-  depends_on = [
-    module.eks
-  ]
-}
-
-resource "aws_eks_access_entry" "cross_account_access_entries" {
-  for_each = { for role in var.cross_account_iam_roles : role.role_name => role }
-
-  cluster_name  = var.cluster_name
-  principal_arn = each.value.prefix != null ? format("arn:aws:iam::%s:role/%s/%s", each.value.account, each.value.prefix, each.value.role_name) : format("arn:aws:iam::%s:role/%s", each.value.account, each.value.role_name)
-  user_name     = "${each.key}:{{SessionName}}"
-  tags          = var.tags
-
-  depends_on = [
-    module.eks
-  ]
-}
-
-resource "aws_eks_access_policy_association" "cross_account_access_policy_associations" {
-  for_each = { for role in var.cross_account_iam_roles : role.role_name => role }
-
-  cluster_name  = var.cluster_name
-  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-  principal_arn = each.value.prefix != null ? format("arn:aws:iam::%s:role/%s/%s", each.value.account, each.value.prefix, each.value.role_name) : format("arn:aws:iam::%s:role/%s", each.value.account, each.value.role_name)
-  access_scope {
-    type = "cluster"
-  }
-
-  depends_on = [
-    module.eks
-  ]
 }
 
 module "karpenter" {
