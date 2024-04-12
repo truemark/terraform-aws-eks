@@ -330,3 +330,9 @@ variable "enable_cert_manager" {
   default     = false
   description = "Enables cert-manager deployment."
 }
+
+variable "amp_custom_alerting_rules" {
+  description = "Prometheus K8s custom alerting rules"
+  type        = string
+  default     = ""
+}

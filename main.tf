@@ -436,7 +436,7 @@ module "monitoring" {
   count = var.enable_monitoring ? 1 : 0
 
   source  = "truemark/eks-monitoring/aws"
-  version = "~> 0.0.14"
+  version = "~> 0.0.15"
 
   cluster_name                         = module.eks.cluster_name
   amp_name                             = var.amp_arn == null ? "${var.cluster_name}-monitoring" : null
@@ -448,6 +448,7 @@ module "monitoring" {
   oidc_provider_arn                    = module.eks.oidc_provider_arn
   region                               = data.aws_region.current.name
   alerts_sns_topics_arn                = var.alerts_sns_topics_arn
+  amp_custom_alerting_rules            = var.amp_custom_alerting_rules
   tags                                 = var.tags
 }
 
