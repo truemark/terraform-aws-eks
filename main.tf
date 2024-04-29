@@ -28,39 +28,14 @@ data "aws_vpc" "selected" {
 locals {
   oidc_provider            = replace(module.eks.cluster_oidc_issuer_url, "https://", "")
   iamproxy-service-account = "${var.cluster_name}-iamproxy-service-account"
-  fargate_profiles = merge(
-    {
-      karpenter = {
-        selectors = [
-          { namespace = "karpenter" }
-        ]
-      }
-      kube-system = {
-        selectors = [
-          { namespace = "kube-system" }
-        ]
-      }
-    },
-    var.fargate_profiles
-  )
+  fargate_profiles = var.fargate_profiles
   cluster_addons = {
     coredns = {
       most_recent = true
-      configuration_values = jsonencode({
-        computeType = "Fargate"
-        resources = {
-          limits = {
-            cpu    = "0.25"
-            memory = "256M"
-          }
-          requests = {
-            cpu    = "0.25"
-            memory = "256M"
-          }
-        }
-      })
     }
-    kube-proxy = {}
+    kube-proxy = {
+      most_recent = true
+    }
     vpc-cni = {
       most_recent              = true
       before_compute           = true

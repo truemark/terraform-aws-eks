@@ -129,7 +129,7 @@ variable "karpenter_provisioner_default_requirements" {
       {
         key      = "karpenter.k8s.aws/instance-category"
         operator = "In"
-        values   = ["m"]
+        values   = ["m", "c", "r"]
       },
       {
         key      = "karpenter.k8s.aws/instance-cpu"
@@ -144,7 +144,7 @@ variable "karpenter_provisioner_default_requirements" {
       {
         key      = "kubernetes.io/arch"
         operator = "In"
-        values   = ["amd64"]
+        values   = ["amd64", "arm64"]
       },
       {
         key      = "karpenter.sh/capacity-type"
