@@ -337,23 +337,9 @@ module "vpc_cni_irsa" {
   tags = var.tags
 }
 
-resource "kubernetes_storage_class" "gp3_xfs_encrypted" {
+resource "kubernetes_storage_class" "gp3_ext4_encrypted" {
   metadata {
-    name = "gp3-xfs-encrypted"
-  }
-  storage_provisioner = "ebs.csi.aws.com"
-  reclaim_policy      = "Delete"
-  parameters = {
-    fsType    = "xfs"
-    type      = "gp3"
-    encrypted = "true"
-  }
-  volume_binding_mode = "WaitForFirstConsumer"
-}
-
-resource "kubernetes_storage_class" "gp3" {
-  metadata {
-    name = "gp3"
+    name = "gp3-ext4-encrypted"
     annotations = {
       "storageclass.kubernetes.io/is-default-class" = "true"
     }
@@ -361,8 +347,9 @@ resource "kubernetes_storage_class" "gp3" {
   storage_provisioner = "ebs.csi.aws.com"
   reclaim_policy      = "Delete"
   parameters = {
-    fsType = "xfs"
-    type   = "gp3"
+    fsType    = "ext4"
+    type      = "gp3"
+    encrypted = "true"
   }
   volume_binding_mode = "WaitForFirstConsumer"
 }
