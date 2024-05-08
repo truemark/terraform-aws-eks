@@ -97,7 +97,7 @@ module "ebs_csi_irsa_role" {
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 19.0"
+  version = "~> 20.9"
 
   cluster_name                            = var.cluster_name
   cluster_version                         = var.cluster_version
@@ -149,7 +149,7 @@ module "eks" {
 module "karpenter" {
   count   = var.enable_karpenter ? 1 : 0
   source  = "terraform-aws-modules/eks/aws//modules/karpenter"
-  version = "~> 19.0"
+  version = "~> 20.9"
 
   cluster_name                               = module.eks.cluster_name
   enable_karpenter_instance_profile_creation = true
