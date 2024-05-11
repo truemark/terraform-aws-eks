@@ -257,3 +257,50 @@ data "aws_iam_policy_document" "aws_load_balancer_controller_full" {
     ]
   }
 }
+
+data "aws_iam_policy_document" "vpc_lattice_controller" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "vpc-lattice:*",
+      "ec2:DescribeVpcs",
+      "ec2:DescribeSubnets",
+      "ec2:DescribeTags",
+      "ec2:DescribeSecurityGroups",
+      "logs:CreateLogDelivery",
+      "logs:GetLogDelivery",
+      "logs:DescribeLogGroups",
+      "logs:PutResourcePolicy",
+      "logs:DescribeResourcePolicies",
+      "logs:UpdateLogDelivery",
+      "logs:DeleteLogDelivery",
+      "logs:ListLogDeliveries",
+      "tag:GetResources",
+      "firehose:TagDeliveryStream",
+      "s3:GetBucketPolicy",
+      "s3:PutBucketPolicy"
+    ]
+    resources = ["*"]
+  }
+  statement {
+    effect    = "Allow"
+    actions   = ["iam:CreateServiceLinkedRole"]
+    resources = ["arn:aws:iam::*:role/aws-service-role/vpc-lattice.amazonaws.com/AWSServiceRoleForVpcLattice"]
+    condition {
+      test     = "StringEquals"
+      variable = "iam:AWSServiceName"
+      values   = ["vpc-lattice.amazonaws.com"]
+    }
+  }
+  statement {
+    effect    = "Allow"
+    actions   = ["iam:CreateServiceLinkedRole"]
+    resources = ["arn:aws:iam::*:role/aws-service-role/delivery.logs.amazonaws.com/AWSServiceRoleForLogDelivery"]
+    condition {
+      test     = "StringEquals"
+      variable = "iam:AWSServiceName"
+      values   = ["delivery.logs.amazonaws.com"]
+
+    }
+  }
+}

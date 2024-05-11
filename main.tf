@@ -435,8 +435,9 @@ resource "helm_release" "metrics_server" {
 module "monitoring" {
   count = var.enable_monitoring ? 1 : 0
 
-  source  = "truemark/eks-monitoring/aws"
-  version = "~> 0.0.15"
+  source  = "github.com/truemark/terraform-aws-eks-monitoring.git?ref=18-namespace-being-overridden"
+  # source  = "truemark/eks-monitoring/aws"
+  # version = "~> 0.0.15"
 
   cluster_name                         = module.eks.cluster_name
   amp_name                             = var.amp_arn == null ? "${var.cluster_name}-monitoring" : null
@@ -483,3 +484,86 @@ module "cert_manager" {
   chart_version                = "v1.13.3"
   enable_recursive_nameservers = true
 }
+
+resource "aws_iam_policy" "vpc_lattice_controller" {
+  name   = "${var.cluster_name}-VPCLatticeControllerIAMPolicy"
+  policy = data.aws_iam_policy_document.vpc_lattice_controller.json
+
+  tags = var.tags
+}
+
+resource "aws_iam_role" "vpc_lattice_controller" {
+  name               = "${var.cluster_name}-VPCLatticeControllerRole"
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+     "Effect": "Allow",
+     "Principal": {
+      "Federated": "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/${trimprefix(module.eks.cluster_oidc_issuer_url, "https://")}"
+     },
+     "Action": "sts:AssumeRoleWithWebIdentity",
+     "Condition": {
+       "StringEquals": {
+        "${local.oidc_provider}:aud": "sts.amazonaws.com",
+        "${local.oidc_provider}:sub": "system:serviceaccount:aws-application-networking-system:gateway-api-controller"
+       }
+     }
+    }
+  ]
+}
+EOF
+
+  tags = var.tags
+}
+
+resource "aws_iam_role_policy_attachment" "vpc_lattice_controller" {
+  role       = aws_iam_role.aws_load_balancer_controller.name
+  policy_arn = aws_iam_policy.aws_load_balancer_controller.arn
+}
+
+resource "helm_release" "gateway_api_controller" {
+  namespace        = "aws-application-networking-system"
+  create_namespace = true
+
+  name                = "gateway-api-controller"
+  repository          = "oci://public.ecr.aws/aws-application-networking-k8s/aws-gateway-controller-chart "
+  repository_username = data.aws_ecrpublic_authorization_token.token[0].user_name
+  repository_password = data.aws_ecrpublic_authorization_token.token[0].password
+  chart               = "gateway-api-controller"
+  version             = "v1.0.5"
+
+  set {
+    name  = "serviceAccount.name"
+    value = "gateway-api-controller"
+  }
+
+  set {
+    name  = "serviceAccount.create"
+    value = true
+  }
+
+  set {
+    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+    value = aws_iam_role.vpc_lattice_controller.arn
+    type  = "string"
+  }
+}
+
+# # Gateway Class for AWS VPC lattice provider
+# resource "kubernetes_manifest" "gateway_class_amazon_vpc_lattice" {
+#   manifest = {
+#     apiVersion = "gateway.networking.k8s.io/v1beta1"
+#     kind       = "GatewayClass"
+
+#     metadata = {
+#       name = "amazon-vpc-lattice"
+#     }
+#     spec = {
+#       controllerName = "application-networking.k8s.aws/gateway-api-controller"
+#     }
+#   }
+
+#   depends_on = [ helm_release.gateway_api_controller ]
+# }
