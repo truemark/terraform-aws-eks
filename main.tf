@@ -52,10 +52,6 @@ data "aws_iam_roles" "eks_access_iam_roles" {
   name_regex = each.key
 }
 
-output "eks_access_iam_roles" {
-  value = data.aws_iam_roles.eks_access_iam_roles
-}
-
 module "ebs_csi_irsa_role" {
   source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
 
