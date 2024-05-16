@@ -26,6 +26,18 @@ variable "vpc_id" {
 # Fargate
 ################################################################################
 
+variable "use_fargate_for_karpenter" {
+  description = "Use Fargate for Karpenter"
+  type        = bool
+  default     = false
+}
+
+variable "user_fargate_for_kube_system" {
+  description = "Use Fargate for kube-system"
+  type        = bool
+  default     = false
+}
+
 variable "fargate_profiles" {
   description = "Map of Fargate Profile definitions to create"
   type        = any
@@ -39,6 +51,9 @@ variable "fargate_profile_defaults" {
 }
 
 
+################################################################################
+# Managed Node Groups
+################################################################################
 variable "eks_managed_node_groups" {
   description = "Map of EKS managed node group definitions to create."
   type        = any

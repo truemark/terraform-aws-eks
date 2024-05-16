@@ -28,27 +28,7 @@ data "aws_vpc" "selected" {
 locals {
   oidc_provider            = replace(module.eks.cluster_oidc_issuer_url, "https://", "")
   iamproxy-service-account = "${var.cluster_name}-iamproxy-service-account"
-  fargate_profiles = var.fargate_profiles
-  cluster_addons = {
-    coredns = {
-      most_recent = true
-    }
-    kube-proxy = {
-      most_recent = true
-    }
-    vpc-cni = {
-      most_recent              = true
-      before_compute           = true
-      service_account_role_arn = module.vpc_cni_irsa.iam_role_arn
-    }
-    eks-pod-identity-agent = {
-      most_recent = true
-    }
-    aws-ebs-csi-driver = {
-      most_recent              = true
-      service_account_role_arn = module.ebs_csi_irsa_role.iam_role_arn
-    }
-  }
+  fargate_profiles         = var.fargate_profiles
   eks_access_iam_roles_map = { for role in var.eks_access_account_iam_roles : role.role_name => role }
   eks_access_entries = merge(
     { for role in data.aws_iam_roles.eks_access_iam_roles : role.name_regex => merge(local.eks_access_iam_roles_map[role.name_regex], { "arn" : tolist(role.arns)[0] }) },
@@ -117,14 +97,49 @@ module "eks" {
     }
   }
 
-  cluster_addons = local.cluster_addons
+  cluster_addons = {
+    coredns = {
+      most_recent = true
+    }
+    kube-proxy = {
+      most_recent = true
+    }
+    vpc-cni = {
+      most_recent              = true
+      before_compute           = true
+      service_account_role_arn = module.vpc_cni_irsa.iam_role_arn
+    }
+    eks-pod-identity-agent = {
+      most_recent = true
+    }
+    aws-ebs-csi-driver = {
+      most_recent              = true
+      service_account_role_arn = module.ebs_csi_irsa_role.iam_role_arn
+    }
+  }
 
   vpc_id     = var.vpc_id
   subnet_ids = var.subnets_ids
   tags       = var.tags
 
   fargate_profile_defaults = var.fargate_profile_defaults
-  fargate_profiles         = local.fargate_profiles
+  fargate_profiles = merge(
+    var.user_fargate_for_kube_system ? {
+      kube_system = {
+        selectors = [
+          { namespace = "kube-system" }
+        ]
+      }
+    } : {},
+    var.use_fargate_for_karpenter ? {
+      karpenter = {
+        selectors = [
+          { namespace = "karpenter" }
+        ]
+      }
+    } : {},
+    var.fargate_profiles
+  )
 
   eks_managed_node_groups = { for k, v in var.eks_managed_node_groups : "${var.cluster_name}-${k}" => v }
 
@@ -347,7 +362,8 @@ module "vpc_cni_irsa" {
 
   role_name             = "${var.cluster_name}-AmazonEKSVPCCNIRole"
   attach_vpc_cni_policy = true
-  vpc_cni_enable_ipv4   = true
+  vpc_cni_enable_ipv4   = var.vpc_cni_enable_ipv4
+  vpc_cni_enable_ipv6 = var.vpc_cni_enable_ipv6
 
   oidc_providers = {
     main = {
