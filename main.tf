@@ -19,31 +19,10 @@ data "aws_ecrpublic_authorization_token" "token" {
 locals {
   oidc_provider            = replace(module.eks.cluster_oidc_issuer_url, "https://", "")
   iamproxy-service-account = "${var.cluster_name}-iamproxy-service-account"
-  aws_auth_roles = concat(
-    [
-      for v in var.sso_roles : {
-        rolearn  = replace(tolist(data.aws_iam_roles.support_role[v.role_name].arns.*)[0], "aws-reserved/sso.amazonaws.com/${data.aws_region.current.name}/", "")
-        username = "${v.role_name}:{{SessionName}}"
-        groups   = v.groups
-      }
-    ],
-    [
-      for v in var.iam_roles : {
-        rolearn  = try(format("arn:aws:iam::%s:role/%s", v.account, v.role_name), (tolist(data.aws_iam_roles.iam_role[v.role_name].arns.*)[0]))
-        username = "${v.role_name}:{{SessionName}}"
-        groups   = v.groups
-      }
-    ],
-    [
-      {
-        rolearn  = module.karpenter[0].role_arn
-        username = "system:node:{{EC2PrivateDNSName}}"
-        groups = [
-          "system:bootstrappers",
-          "system:nodes",
-        ]
-      }
-    ]
+  eks_access_iam_roles_map = { for role in var.eks_access_account_iam_roles : role.role_name => role }
+  eks_access_entries = merge(
+    { for role in data.aws_iam_roles.eks_access_iam_roles : role.name_regex => merge(local.eks_access_iam_roles_map[role.name_regex], { "arn" : tolist(role.arns)[0] }) },
+    { for role in var.eks_access_cross_account_iam_roles : role.role_name => merge({ "role_name" = role.role_name, "access_scope" = role.access_scope, "policy_name" = role.policy_name, "arn" = role.prefix != null ? format("arn:aws:iam::%s:role/%s/%s", role.account, role.prefix, role.role_name) : format("arn:aws:iam::%s:role/%s", role.account, role.role_name) }) }
   )
 }
 
@@ -68,15 +47,13 @@ provider "helm" {
   }
 }
 
-data "aws_iam_roles" "support_role" {
-  for_each    = toset(var.sso_roles.*.role_name)
-  name_regex  = "${each.key}_*"
-  path_prefix = "/aws-reserved/sso.amazonaws.com/"
+data "aws_iam_roles" "eks_access_iam_roles" {
+  for_each   = toset(var.eks_access_account_iam_roles.*.role_name)
+  name_regex = each.key
 }
 
-data "aws_iam_roles" "iam_role" {
-  for_each   = toset(var.iam_roles.*.role_name)
-  name_regex = each.key
+output "eks_access_iam_roles" {
+  value = data.aws_iam_roles.eks_access_iam_roles
 }
 
 module "ebs_csi_irsa_role" {
@@ -97,7 +74,7 @@ module "ebs_csi_irsa_role" {
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 19.0"
+  version = "~> 20.10"
 
   cluster_name                            = var.cluster_name
   cluster_version                         = var.cluster_version
@@ -107,10 +84,6 @@ module "eks" {
   cluster_security_group_additional_rules = var.cluster_security_group_additional_rules
   node_security_group_additional_rules    = var.node_security_group_additional_rules
   cluster_additional_security_group_ids   = var.cluster_additional_security_group_ids
-
-  #AUTH
-  manage_aws_auth_configmap = true
-  aws_auth_roles            = local.aws_auth_roles
 
   #KMS
   kms_key_users  = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
@@ -146,16 +119,39 @@ module "eks" {
   node_security_group_tags = var.enable_karpenter ? { "karpenter.sh/discovery" = var.cluster_name } : {}
 }
 
+resource "aws_eks_access_entry" "access_entries" {
+  for_each = local.eks_access_entries
+
+  cluster_name  = module.eks.cluster_name
+  principal_arn = each.value.arn
+  user_name     = "${each.key}:{{SessionName}}"
+}
+
+resource "aws_eks_access_policy_association" "access_policy_associations" {
+  for_each = local.eks_access_entries
+
+  cluster_name  = module.eks.cluster_name
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/${each.value.policy_name}"
+  principal_arn = each.value.arn
+  dynamic "access_scope" {
+    for_each = each.value.access_scope != null ? [each.value.access_scope] : []
+    content {
+      type       = access_scope.value.type
+      namespaces = access_scope.value.namespaces != null ? access_scope.value.namespaces : []
+    }
+  }
+}
+
 module "karpenter" {
   count   = var.enable_karpenter ? 1 : 0
   source  = "terraform-aws-modules/eks/aws//modules/karpenter"
-  version = "~> 19.0"
+  version = "~> 20.10"
 
   cluster_name                               = module.eks.cluster_name
-  enable_karpenter_instance_profile_creation = true
-  iam_role_additional_policies = {
+  node_iam_role_additional_policies = {
     AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
   }
+  enable_irsa = true
   irsa_oidc_provider_arn          = module.eks.oidc_provider_arn
   irsa_namespace_service_accounts = ["karpenter:karpenter"]
 
@@ -187,7 +183,7 @@ resource "helm_release" "karpenter" {
       prometheus.io/scrape: 'true'
     serviceAccount:
       annotations:
-        eks.amazonaws.com/role-arn: ${module.karpenter[0].irsa_arn}
+        eks.amazonaws.com/role-arn: ${module.karpenter[0].iam_role_arn}
     EOT
   ]
 }
@@ -201,7 +197,7 @@ resource "kubectl_manifest" "karpenter_node_class" {
     spec:
       amiFamily: ${var.karpenter_provisioner_default_ami_family}
       blockDeviceMappings: ${jsonencode(var.karpenter_provisioner_default_block_device_mappings.specs)}
-      role: ${module.karpenter[0].role_name}
+      role: ${module.karpenter[0].node_iam_role_name}
       subnetSelectorTerms:
         - tags:
             ${jsonencode(var.karpenter_node_template_default.subnetSelector)}

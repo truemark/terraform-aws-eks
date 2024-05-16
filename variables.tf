@@ -52,6 +52,34 @@ variable "cluster_additional_security_group_ids" {
   default     = []
 }
 
+variable "eks_access_account_iam_roles" {
+  description = "AWS IAM roles that will be mapped to RBAC roles."
+  type        = list(object({
+    role_name = string,
+    access_scope = object({
+      type       = string
+      namespaces = list(string)
+    })
+    policy_name = string
+  }))
+  default     = []
+}
+
+variable "eks_access_cross_account_iam_roles" {
+  description = "AWS IAM roles that will be mapped to RBAC roles."
+  type = list(object({
+    role_name   = string
+    account     = string
+    access_scope = object({
+      type       = string
+      namespaces = list(string)
+    })
+    prefix      = string
+    policy_name = string
+  }))
+  default = []
+}
+
 variable "sso_roles" {
   description = "AWS SSO roles that will be mapped to RBAC roles."
   type = list(object({
