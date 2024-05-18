@@ -93,12 +93,23 @@ module "eks" {
   }
 
   cluster_addons = {
-    aws-ebs-csi-driver = {
-      service_account_role_arn = module.ebs_csi_irsa_role.iam_role_arn
+    coredns = {
+      most_recent = true
+    }
+    kube-proxy = {
+      most_recent = true
     }
     vpc-cni = {
-      resolve_conflicts        = "OVERWRITE"
+      most_recent              = true
+      before_compute           = true
       service_account_role_arn = module.vpc_cni_irsa.iam_role_arn
+    }
+    eks-pod-identity-agent = {
+      most_recent = true
+    }
+    aws-ebs-csi-driver = {
+      most_recent              = true
+      service_account_role_arn = module.ebs_csi_irsa_role.iam_role_arn
     }
   }
 
