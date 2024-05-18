@@ -119,6 +119,12 @@ variable "enable_karpenter" {
   default     = true
 }
 
+variable "karpenter_version" {
+  description = "Version of karpenter to install"
+  type        = string
+  default     = "v0.33.1"
+}
+
 variable "karpenter_settings_featureGates_drift" {
   type        = bool
   description = "Enable or disable drift feature of karpenter"
