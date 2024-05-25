@@ -24,6 +24,42 @@ locals {
     { for role in data.aws_iam_roles.eks_access_iam_roles : role.name_regex => merge(local.eks_access_iam_roles_map[role.name_regex], { "arn" : tolist(role.arns)[0] }) },
     { for role in var.eks_access_cross_account_iam_roles : role.role_name => merge({ "role_name" = role.role_name, "access_scope" = role.access_scope, "policy_name" = role.policy_name, "arn" = role.prefix != null ? format("arn:aws:iam::%s:role/%s/%s", role.account, role.prefix, role.role_name) : format("arn:aws:iam::%s:role/%s", role.account, role.role_name) }) }
   )
+  default_critical_addon_nodegroup = {
+    instance_types = var.default_critical_addon_node_group_instance_types
+    ami_type       = "AL2023_ARM_64_STANDARD"
+    block_device_mappings = {
+      xvda = {
+        device_name = "/dev/xvda"
+        ebs = {
+          volume_size           = 100
+          volume_type           = "gp3"
+          encrypted             = true
+          delete_on_termination = true
+        }
+      }
+    }
+    min_size     = 3
+    max_size     = 3
+    desired_size = 3
+
+    labels = {
+      CriticalAddonsOnly = "true"
+    }
+
+    taints = {
+      addons = {
+        key    = "CriticalAddonsOnly"
+        value  = "true"
+        effect = "NO_SCHEDULE"
+      },
+    }
+  }
+  eks_managed_node_groups = merge(
+    { for k, v in var.eks_managed_node_groups : "${var.cluster_name}-${k}" => v },
+    var.create_default_critical_addon_node_group ? {
+      "${var.cluster_name}-critical" = local.default_critical_addon_nodegroup
+    } : {}
+  )
 }
 
 provider "kubectl" {
@@ -76,6 +112,7 @@ module "eks" {
   cluster_version                         = var.cluster_version
   cluster_endpoint_private_access         = var.cluster_endpoint_private_access
   cluster_endpoint_public_access          = var.cluster_endpoint_public_access
+  create_cloudwatch_log_group             = false
   cluster_enabled_log_types               = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
   cluster_security_group_additional_rules = var.cluster_security_group_additional_rules
   node_security_group_additional_rules    = var.node_security_group_additional_rules
@@ -101,7 +138,7 @@ module "eks" {
     }
     vpc-cni = {
       most_recent              = true
-      before_compute           = true
+      before_compute           = var.vpc_cni_before_compute
       service_account_role_arn = module.vpc_cni_irsa.iam_role_arn
     }
     eks-pod-identity-agent = {
@@ -117,7 +154,7 @@ module "eks" {
   subnet_ids = var.subnets_ids
   tags       = var.tags
 
-  eks_managed_node_groups = { for k, v in var.eks_managed_node_groups : "${var.cluster_name}-${k}" => v }
+  eks_managed_node_groups = local.eks_managed_node_groups
 
   eks_managed_node_group_defaults = {
     iam_role_attach_cni_policy = true
@@ -188,6 +225,10 @@ resource "helm_release" "karpenter" {
       prometheus.io/path: /metrics
       prometheus.io/port: '8000'
       prometheus.io/scrape: 'true'
+    nodeSelector:
+      ${jsonencode(var.critical_addons_node_selector.selectors)}
+    tolerations:
+      ${jsonencode(var.critical_addons_node_tolerations.tolerations)}
     serviceAccount:
       annotations:
         eks.amazonaws.com/role-arn: ${module.karpenter[0].iam_role_arn}
@@ -219,6 +260,10 @@ resource "kubectl_manifest" "karpenter_node_class" {
     helm_release.karpenter
   ]
 }
+
+# resource "kubectl_manifest" "karpenter_nood" {
+#   yaml_body = ""
+# }
 
 resource "kubectl_manifest" "karpenter_node_pool" {
   yaml_body = <<-YAML
@@ -291,36 +336,21 @@ resource "helm_release" "aws_load_balancer_controller" {
   namespace  = "kube-system"
   version    = "1.4.5"
 
-  set {
-    name  = "clusterName"
-    value = module.eks.cluster_name
-  }
-
-  set {
-    name  = "serviceAccount.name"
-    value = "aws-load-balancer-controller"
-  }
-
-  set {
-    name  = "image.repository"
-    value = format("602401143452.dkr.ecr.%s.amazonaws.com/amazon/aws-load-balancer-controller", data.aws_region.current.name)
-  }
-
-  set {
-    name  = "serviceAccount.create"
-    value = true
-  }
-
-  set {
-    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-    value = aws_iam_role.aws_load_balancer_controller.arn
-    type  = "string"
-  }
-
-  set {
-    name  = "image.tag"
-    value = "v2.4.4"
-  }
+  values = [
+    <<-EOT
+    clusterName: ${module.eks.cluster_name}
+    serviceAccount:
+      name: aws-load-balancer-controller
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: ${aws_iam_role.aws_load_balancer_controller.arn}
+    image:
+      repository: 602401143452.dkr.ecr.${data.aws_region.current.name}.amazonaws.com/amazon/aws-load-balancer-controller
+      tag: v2.4.4
+    nodeSelector: ${jsonencode(var.critical_addons_node_selector.selectors)}
+    tolerations: ${jsonencode(var.critical_addons_node_tolerations.tolerations)}
+    EOT
+  ]
 }
 
 module "vpc_cni_irsa" {

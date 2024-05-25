@@ -1,3 +1,7 @@
+###############################################
+# General Cluster Configuration
+###############################################
+
 variable "tags" {
   description = "A map of tags to add to all resources."
   type        = map(string)
@@ -22,10 +26,81 @@ variable "vpc_id" {
   default     = null
 }
 
+variable "cluster_endpoint_private_access" {
+  description = "Indicates whether or not the Amazon EKS private API server endpoint is enabled."
+  type        = bool
+  default     = true
+}
+
+variable "cluster_endpoint_public_access" {
+  description = "Indicates whether or not the Amazon EKS public API server endpoint is enabled."
+  type        = bool
+  default     = false
+}
+
+variable "cluster_version" {
+  description = "Kubernetes `<major>.<minor>` version to use for the EKS cluster (i.e.: `1.24`)"
+  type        = string
+  default     = "1.29"
+}
+
+###############################################
+# EKS Addons Configuration
+###############################################
+variable "vpc_cni_before_compute" {
+  description = "Whether to install the VPC CNI before the compute resources."
+  type        = bool
+  default     = false
+}
+
+
+###############################################
+# Node Group Configuration
+###############################################
 variable "eks_managed_node_groups" {
   description = "Map of EKS managed node group definitions to create."
   type        = any
   default     = {}
+}
+
+variable "create_default_critical_addon_node_group" {
+  description = "Create a default critical addon node group"
+  type        = bool
+  default     = true
+}
+
+variable "default_critical_addon_node_group_instance_types" {
+  description = "Instance type for the default critical addon node group"
+  type        = list(string)
+  default     = ["m7g.large"]
+}
+
+variable "critical_addons_node_selector" {
+  description = "Config for node selector for karpenter"
+  type        = map(any)
+  default = {
+    selectors = {
+      CriticalAddonsOnly = "true"
+    }
+  }
+}
+
+variable "critical_addons_node_tolerations" {
+  description = "Config for node tolerations for karpenter"
+  type = map(list(object({
+    key      = string
+    operator = string
+    effect   = string
+    value    = string
+  })))
+  default = {
+    tolerations = [{
+      key      = "CriticalAddonsOnly"
+      operator = "Equal"
+      effect   = "NoSchedule"
+      value    = "true"
+    }]
+  }
 }
 
 variable "eks_managed_node_group_defaults" {
@@ -52,6 +127,9 @@ variable "cluster_additional_security_group_ids" {
   default     = []
 }
 
+###############################################
+# EKS Access Configuration
+###############################################
 variable "eks_access_account_iam_roles" {
   description = "AWS IAM roles that will be mapped to RBAC roles."
   type = list(object({
@@ -80,39 +158,9 @@ variable "eks_access_cross_account_iam_roles" {
   default = []
 }
 
-variable "sso_roles" {
-  description = "AWS SSO roles that will be mapped to RBAC roles."
-  type = list(object({
-    role_name = string,
-    groups    = list(string),
-  }))
-  default = []
-}
-
-variable "iam_roles" {
-  description = "AWS IAM roles that will be mapped to RBAC roles."
-  type        = list(any)
-  default     = []
-}
-
-variable "cluster_endpoint_private_access" {
-  description = "Indicates whether or not the Amazon EKS private API server endpoint is enabled."
-  type        = bool
-  default     = true
-}
-
-variable "cluster_endpoint_public_access" {
-  description = "Indicates whether or not the Amazon EKS public API server endpoint is enabled."
-  type        = bool
-  default     = false
-}
-
-variable "cluster_version" {
-  description = "Kubernetes `<major>.<minor>` version to use for the EKS cluster (i.e.: `1.24`)"
-  type        = string
-  default     = "1.26"
-}
-
+###############################################
+# Karpenter Configuration
+###############################################
 variable "enable_karpenter" {
   description = "Add karpenter to the cluster"
   type        = bool
@@ -230,6 +278,9 @@ variable "karpenter_provisioner_default_ttl_until_expired" {
   default     = 2592000
 }
 
+###############################################
+# External Secrets Configuration
+###############################################
 variable "external_secrets_ssm_parameter_arns" {
   description = "List of Systems Manager Parameter ARNs that contain secrets to mount using External Secrets"
   type        = list(string)
@@ -248,6 +299,10 @@ variable "external_secrets_kms_key_arns" {
   default     = ["arn:aws:kms:*:*:key/*"]
 }
 
+
+###############################################
+# Monitoring Configuration
+###############################################
 variable "amp_id" {
   description = "The AMP workspace id"
   type        = string
@@ -284,13 +339,24 @@ variable "prometheus_server_data_volume_size" {
   default     = "150Gi"
 }
 
-## Variables ingress controllers
+variable "amp_custom_alerting_rules" {
+  description = "Prometheus K8s custom alerting rules"
+  type        = string
+  default     = ""
+}
+
+###############################################
+# Ingress Configuration
+###############################################
+
+## Traefik
 variable "enable_traefik" {
   type        = bool
   default     = false
   description = "Enables traefik deployment."
 }
 
+## Istio
 variable "enable_istio" {
   type        = bool
   default     = false
@@ -359,14 +425,13 @@ variable "istio_internal_gateway_scaling_target_cpu_utilization" {
   default     = 80
 }
 
+###############################################
+# Certmanager Configuration
+###############################################
 variable "enable_cert_manager" {
   type        = bool
   default     = false
   description = "Enables cert-manager deployment."
 }
 
-variable "amp_custom_alerting_rules" {
-  description = "Prometheus K8s custom alerting rules"
-  type        = string
-  default     = ""
-}
+
