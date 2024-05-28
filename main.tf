@@ -112,7 +112,7 @@ module "eks" {
   cluster_version                         = var.cluster_version
   cluster_endpoint_private_access         = var.cluster_endpoint_private_access
   cluster_endpoint_public_access          = var.cluster_endpoint_public_access
-  create_cloudwatch_log_group             = false
+  create_cloudwatch_log_group             = var.create_cloudwatch_log_group
   cluster_enabled_log_types               = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
   cluster_security_group_additional_rules = var.cluster_security_group_additional_rules
   node_security_group_additional_rules    = var.node_security_group_additional_rules
