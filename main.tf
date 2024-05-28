@@ -163,6 +163,7 @@ resource "aws_eks_access_entry" "access_entries" {
   cluster_name  = module.eks.cluster_name
   principal_arn = each.value.arn
   user_name     = "${each.key}:{{SessionName}}"
+  depends_on    = [module.eks]
 }
 
 resource "aws_eks_access_policy_association" "access_policy_associations" {
@@ -178,6 +179,7 @@ resource "aws_eks_access_policy_association" "access_policy_associations" {
       namespaces = access_scope.value.namespaces != null ? access_scope.value.namespaces : []
     }
   }
+  depends_on = [aws_eks_access_entry.access_entries, module.eks]
 }
 
 module "karpenter" {
