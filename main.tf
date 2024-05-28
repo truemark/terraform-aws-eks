@@ -185,7 +185,7 @@ resource "aws_eks_access_policy_association" "access_policy_associations" {
 module "karpenter" {
   count   = var.enable_karpenter ? 1 : 0
   source  = "terraform-aws-modules/eks/aws//modules/karpenter"
-  version = "~> 20.10"
+  version = "~> 20.11"
 
   cluster_name = module.eks.cluster_name
   node_iam_role_additional_policies = {
