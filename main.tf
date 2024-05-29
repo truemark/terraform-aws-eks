@@ -288,7 +288,7 @@ resource "kubectl_manifest" "karpenter_node_pool_amd" {
     apiVersion: karpenter.sh/v1beta1
     kind: NodePool
     metadata:
-      name: default_x86
+      name: default_amd
     spec:
       template:
         spec:
