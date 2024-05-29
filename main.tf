@@ -257,28 +257,51 @@ resource "kubectl_manifest" "karpenter_node_class" {
   ]
 }
 
-# resource "kubectl_manifest" "karpenter_nood" {
-#   yaml_body = ""
-# }
-
-resource "kubectl_manifest" "karpenter_node_pool" {
+resource "kubectl_manifest" "karpenter_node_pool_arm" {
   yaml_body = <<-YAML
     apiVersion: karpenter.sh/v1beta1
     kind: NodePool
     metadata:
-      name: default
+      name: default_arm
     spec:
       template:
         spec:
           nodeClassRef:
             name: default
-          requirements: ${jsonencode(var.karpenter_provisioner_default_requirements.requirements)}
+          requirements: ${jsonencode(var.karpenter_node_pool_default_arm_requirements.requirements)}
       limits:
-        cpu: ${var.karpenter_provisioner_default_cpu_limits}
+        cpu: ${var.karpenter_nodepool_default_cpu_limits}
       disruption:
         expireAfter: ${var.karpenter_nodepool_default_expireAfter}
         consolidationPolicy: WhenEmpty
         consolidateAfter: 30s
+      weight: 10
+  YAML
+
+  depends_on = [
+    kubectl_manifest.karpenter_node_class
+  ]
+}
+
+resource "kubectl_manifest" "karpenter_node_pool_amd" {
+  yaml_body = <<-YAML
+    apiVersion: karpenter.sh/v1beta1
+    kind: NodePool
+    metadata:
+      name: default_x86
+    spec:
+      template:
+        spec:
+          nodeClassRef:
+            name: default
+          requirements: ${jsonencode(var.karpenter_node_pool_default_amd_requirements.requirements)}
+      limits:
+        cpu: ${var.karpenter_nodepool_default_cpu_limits}
+      disruption:
+        expireAfter: ${var.karpenter_nodepool_default_expireAfter}
+        consolidationPolicy: WhenEmpty
+        consolidateAfter: 30s
+      weight: 5
   YAML
 
   depends_on = [

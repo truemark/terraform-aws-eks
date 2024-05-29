@@ -195,15 +195,49 @@ variable "karpenter_node_template_default" {
   }
 }
 
-variable "karpenter_provisioner_default_requirements" {
-  description = "Specifies the default requirements for the Karpenter provisioner template, including instance category, CPU, hypervisor, architecture, and capacity type."
+variable "karpenter_node_pool_default_arm_requirements" {
+  description = "Specifies the default requirements for the Karpenter ARM node pool template, including instance category, CPU, hypervisor, architecture, and capacity type."
   type        = map(any)
   default = {
     requirements = [
       {
         key      = "karpenter.k8s.aws/instance-category"
         operator = "In"
-        values   = ["m"]
+        values   = ["m", "c", "r"]
+      },
+      {
+        key      = "karpenter.k8s.aws/instance-cpu"
+        operator = "In"
+        values   = ["4", "8", "16"]
+      },
+      {
+        key      = "karpenter.k8s.aws/instance-hypervisor"
+        operator = "In"
+        values   = ["nitro"]
+      },
+      {
+        key      = "kubernetes.io/arch"
+        operator = "In"
+        values   = ["arm64"]
+      },
+      {
+        key      = "karpenter.sh/capacity-type"
+        operator = "In"
+        values   = ["on-demand"]
+      }
+    ]
+  }
+}
+
+variable "karpenter_node_pool_default_amd_requirements" {
+  description = "Specifies the default requirements for the Karpenter x86 node pool template, including instance category, CPU, hypervisor, architecture, and capacity type."
+  type        = map(any)
+  default = {
+    requirements = [
+      {
+        key      = "karpenter.k8s.aws/instance-category"
+        operator = "In"
+        values   = ["m", "c", "r"]
       },
       {
         key      = "karpenter.k8s.aws/instance-cpu"
@@ -266,19 +300,19 @@ variable "karpenter_provisioner_default_block_device_mappings" {
   }
 }
 
-variable "karpenter_provisioner_default_cpu_limits" {
+variable "karpenter_nodepool_default_cpu_limits" {
   description = "Defines the default CPU limits for the Karpenter default provisioner, ensuring resource allocation and utilization."
   type        = number
   default     = 300
 }
 
-variable "karpenter_provisioner_default_ttl_after_empty" {
+variable "karpenter_nodepool_default_ttl_after_empty" {
   description = "Sets the default Time to Live (TTL) for provisioned resources by the Karpenter default provisioner after they become empty or idle."
   type        = number
   default     = 300
 }
 
-variable "karpenter_provisioner_default_ttl_until_expired" {
+variable "karpenter_nodepool_default_ttl_until_expired" {
   description = "Specifies the default Time to Live (TTL) for provisioned resources by the Karpenter default provisioner until they expire or are reclaimed."
   type        = number
   default     = 2592000
