@@ -262,7 +262,7 @@ resource "kubectl_manifest" "karpenter_node_pool_arm" {
     apiVersion: karpenter.sh/v1beta1
     kind: NodePool
     metadata:
-      name: default_arm
+      name: default-arm
     spec:
       template:
         spec:
@@ -288,7 +288,7 @@ resource "kubectl_manifest" "karpenter_node_pool_amd" {
     apiVersion: karpenter.sh/v1beta1
     kind: NodePool
     metadata:
-      name: default_amd
+      name: default-amd
     spec:
       template:
         spec:
