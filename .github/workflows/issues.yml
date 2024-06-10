@@ -3,9 +3,11 @@ on:
   issues:
     types:
       - opened
+name: issues
 jobs:
   add-to-project:
     name: Add issue to project
+    if: github.actor != 'dependabot[bot]'
     uses: truemark/github-workflows/.github/workflows/issues.yml@main
     secrets:
       private-key: ${{ secrets.ISSUES_BOT_KEY }}

@@ -1,0 +1,16 @@
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+name: publish
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+jobs:
+  publish:
+    uses: truemark/github-workflows/.github/workflows/terraform-module.yml@main
+    secrets:
+      app-id: ${{ secrets.RELEASE_BOT_ID }}
+      private-key: ${{ secrets.RELEASE_BOT_KEY }}
