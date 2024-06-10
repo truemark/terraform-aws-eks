@@ -19,31 +19,46 @@ data "aws_ecrpublic_authorization_token" "token" {
 locals {
   oidc_provider            = replace(module.eks.cluster_oidc_issuer_url, "https://", "")
   iamproxy-service-account = "${var.cluster_name}-iamproxy-service-account"
-  aws_auth_roles = concat(
-    [
-      for v in var.sso_roles : {
-        rolearn  = replace(tolist(data.aws_iam_roles.support_role[v.role_name].arns.*)[0], "aws-reserved/sso.amazonaws.com/${data.aws_region.current.name}/", "")
-        username = "${v.role_name}:{{SessionName}}"
-        groups   = v.groups
+  eks_access_iam_roles_map = { for role in var.eks_access_account_iam_roles : role.role_name => role }
+  eks_access_entries = merge(
+    { for role in data.aws_iam_roles.eks_access_iam_roles : role.name_regex => merge(local.eks_access_iam_roles_map[role.name_regex], { "arn" : tolist(role.arns)[0] }) },
+    { for role in var.eks_access_cross_account_iam_roles : role.role_name => merge({ "role_name" = role.role_name, "access_scope" = role.access_scope, "policy_name" = role.policy_name, "arn" = role.prefix != null ? format("arn:aws:iam::%s:role/%s/%s", role.account, role.prefix, role.role_name) : format("arn:aws:iam::%s:role/%s", role.account, role.role_name) }) }
+  )
+  default_critical_addon_nodegroup = {
+    instance_types = var.default_critical_addon_node_group_instance_types
+    ami_type       = "AL2023_ARM_64_STANDARD"
+    block_device_mappings = {
+      xvda = {
+        device_name = "/dev/xvda"
+        ebs = {
+          volume_size           = 100
+          volume_type           = "gp3"
+          encrypted             = true
+          delete_on_termination = true
+        }
       }
-    ],
-    [
-      for v in var.iam_roles : {
-        rolearn  = try(format("arn:aws:iam::%s:role/%s", v.account, v.role_name), (tolist(data.aws_iam_roles.iam_role[v.role_name].arns.*)[0]))
-        username = "${v.role_name}:{{SessionName}}"
-        groups   = v.groups
-      }
-    ],
-    [
-      {
-        rolearn  = module.karpenter[0].role_arn
-        username = "system:node:{{EC2PrivateDNSName}}"
-        groups = [
-          "system:bootstrappers",
-          "system:nodes",
-        ]
-      }
-    ]
+    }
+    min_size     = 3
+    max_size     = 3
+    desired_size = 3
+
+    labels = {
+      CriticalAddonsOnly = "true"
+    }
+
+    taints = {
+      addons = {
+        key    = "CriticalAddonsOnly"
+        value  = "true"
+        effect = "NO_SCHEDULE"
+      },
+    }
+  }
+  eks_managed_node_groups = merge(
+    { for k, v in var.eks_managed_node_groups : "${var.cluster_name}-${k}" => v },
+    var.create_default_critical_addon_node_group ? {
+      "${var.cluster_name}-critical" = local.default_critical_addon_nodegroup
+    } : {}
   )
 }
 
@@ -68,14 +83,8 @@ provider "helm" {
   }
 }
 
-data "aws_iam_roles" "support_role" {
-  for_each    = toset(var.sso_roles.*.role_name)
-  name_regex  = "${each.key}_*"
-  path_prefix = "/aws-reserved/sso.amazonaws.com/"
-}
-
-data "aws_iam_roles" "iam_role" {
-  for_each   = toset(var.iam_roles.*.role_name)
+data "aws_iam_roles" "eks_access_iam_roles" {
+  for_each   = toset(var.eks_access_account_iam_roles.*.role_name)
   name_regex = each.key
 }
 
@@ -97,20 +106,17 @@ module "ebs_csi_irsa_role" {
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 19.0"
+  version = "~> 20.13"
 
   cluster_name                            = var.cluster_name
   cluster_version                         = var.cluster_version
   cluster_endpoint_private_access         = var.cluster_endpoint_private_access
   cluster_endpoint_public_access          = var.cluster_endpoint_public_access
+  create_cloudwatch_log_group             = var.create_cloudwatch_log_group
   cluster_enabled_log_types               = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
   cluster_security_group_additional_rules = var.cluster_security_group_additional_rules
   node_security_group_additional_rules    = var.node_security_group_additional_rules
   cluster_additional_security_group_ids   = var.cluster_additional_security_group_ids
-
-  #AUTH
-  manage_aws_auth_configmap = true
-  aws_auth_roles            = local.aws_auth_roles
 
   #KMS
   kms_key_users  = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
@@ -124,12 +130,17 @@ module "eks" {
   }
 
   cluster_addons = {
-    aws-ebs-csi-driver = {
-      service_account_role_arn = module.ebs_csi_irsa_role.iam_role_arn
-    }
     vpc-cni = {
-      resolve_conflicts        = "OVERWRITE"
+      most_recent              = true
+      before_compute           = var.vpc_cni_before_compute
       service_account_role_arn = module.vpc_cni_irsa.iam_role_arn
+    }
+    eks-pod-identity-agent = {
+      most_recent = true
+    }
+    aws-ebs-csi-driver = {
+      most_recent              = true
+      service_account_role_arn = module.ebs_csi_irsa_role.iam_role_arn
     }
   }
 
@@ -137,7 +148,7 @@ module "eks" {
   subnet_ids = var.subnets_ids
   tags       = var.tags
 
-  eks_managed_node_groups = { for k, v in var.eks_managed_node_groups : "${var.cluster_name}-${k}" => v }
+  eks_managed_node_groups = local.eks_managed_node_groups
 
   eks_managed_node_group_defaults = {
     iam_role_attach_cni_policy = true
@@ -146,16 +157,39 @@ module "eks" {
   node_security_group_tags = var.enable_karpenter ? { "karpenter.sh/discovery" = var.cluster_name } : {}
 }
 
+resource "aws_eks_access_entry" "access_entries" {
+  for_each = local.eks_access_entries
+
+  cluster_name  = module.eks.cluster_name
+  principal_arn = each.value.arn
+  user_name     = "${each.key}:{{SessionName}}"
+}
+
+resource "aws_eks_access_policy_association" "access_policy_associations" {
+  for_each = local.eks_access_entries
+
+  cluster_name  = module.eks.cluster_name
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/${each.value.policy_name}"
+  principal_arn = each.value.arn
+  dynamic "access_scope" {
+    for_each = each.value.access_scope != null ? [each.value.access_scope] : []
+    content {
+      type       = access_scope.value.type
+      namespaces = access_scope.value.namespaces != null ? access_scope.value.namespaces : []
+    }
+  }
+}
+
 module "karpenter" {
   count   = var.enable_karpenter ? 1 : 0
   source  = "terraform-aws-modules/eks/aws//modules/karpenter"
-  version = "~> 19.0"
+  version = "~> 20.11"
 
-  cluster_name                               = module.eks.cluster_name
-  enable_karpenter_instance_profile_creation = true
-  iam_role_additional_policies = {
+  cluster_name = module.eks.cluster_name
+  node_iam_role_additional_policies = {
     AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
   }
+  enable_irsa                     = true
   irsa_oidc_provider_arn          = module.eks.oidc_provider_arn
   irsa_namespace_service_accounts = ["karpenter:karpenter"]
 
@@ -171,7 +205,7 @@ resource "helm_release" "karpenter" {
   repository_username = data.aws_ecrpublic_authorization_token.token[0].user_name
   repository_password = data.aws_ecrpublic_authorization_token.token[0].password
   chart               = "karpenter"
-  version             = "v0.33.1"
+  version             = var.karpenter_version
 
   values = [
     <<-EOT
@@ -185,9 +219,13 @@ resource "helm_release" "karpenter" {
       prometheus.io/path: /metrics
       prometheus.io/port: '8000'
       prometheus.io/scrape: 'true'
+    nodeSelector:
+      ${jsonencode(var.critical_addons_node_selector.selectors)}
+    tolerations:
+      ${jsonencode(var.critical_addons_node_tolerations.tolerations)}
     serviceAccount:
       annotations:
-        eks.amazonaws.com/role-arn: ${module.karpenter[0].irsa_arn}
+        eks.amazonaws.com/role-arn: ${module.karpenter[0].iam_role_arn}
     EOT
   ]
 }
@@ -201,7 +239,7 @@ resource "kubectl_manifest" "karpenter_node_class" {
     spec:
       amiFamily: ${var.karpenter_provisioner_default_ami_family}
       blockDeviceMappings: ${jsonencode(var.karpenter_provisioner_default_block_device_mappings.specs)}
-      role: ${module.karpenter[0].role_name}
+      role: ${module.karpenter[0].node_iam_role_name}
       subnetSelectorTerms:
         - tags:
             ${jsonencode(var.karpenter_node_template_default.subnetSelector)}
@@ -217,24 +255,51 @@ resource "kubectl_manifest" "karpenter_node_class" {
   ]
 }
 
-resource "kubectl_manifest" "karpenter_node_pool" {
+resource "kubectl_manifest" "karpenter_node_pool_arm" {
   yaml_body = <<-YAML
     apiVersion: karpenter.sh/v1beta1
     kind: NodePool
     metadata:
-      name: default
+      name: default-arm
     spec:
       template:
         spec:
           nodeClassRef:
             name: default
-          requirements: ${jsonencode(var.karpenter_provisioner_default_requirements.requirements)}
+          requirements: ${jsonencode(var.karpenter_node_pool_default_arm_requirements.requirements)}
       limits:
-        cpu: ${var.karpenter_provisioner_default_cpu_limits}
+        cpu: ${var.karpenter_nodepool_default_cpu_limits}
       disruption:
         expireAfter: ${var.karpenter_nodepool_default_expireAfter}
         consolidationPolicy: WhenEmpty
         consolidateAfter: 30s
+      weight: 10
+  YAML
+
+  depends_on = [
+    kubectl_manifest.karpenter_node_class
+  ]
+}
+
+resource "kubectl_manifest" "karpenter_node_pool_amd" {
+  yaml_body = <<-YAML
+    apiVersion: karpenter.sh/v1beta1
+    kind: NodePool
+    metadata:
+      name: default-amd
+    spec:
+      template:
+        spec:
+          nodeClassRef:
+            name: default
+          requirements: ${jsonencode(var.karpenter_node_pool_default_amd_requirements.requirements)}
+      limits:
+        cpu: ${var.karpenter_nodepool_default_cpu_limits}
+      disruption:
+        expireAfter: ${var.karpenter_nodepool_default_expireAfter}
+        consolidationPolicy: WhenEmpty
+        consolidateAfter: 30s
+      weight: 5
   YAML
 
   depends_on = [
@@ -288,36 +353,21 @@ resource "helm_release" "aws_load_balancer_controller" {
   namespace  = "kube-system"
   version    = "1.4.5"
 
-  set {
-    name  = "clusterName"
-    value = module.eks.cluster_name
-  }
-
-  set {
-    name  = "serviceAccount.name"
-    value = "aws-load-balancer-controller"
-  }
-
-  set {
-    name  = "image.repository"
-    value = format("602401143452.dkr.ecr.%s.amazonaws.com/amazon/aws-load-balancer-controller", data.aws_region.current.name)
-  }
-
-  set {
-    name  = "serviceAccount.create"
-    value = true
-  }
-
-  set {
-    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-    value = aws_iam_role.aws_load_balancer_controller.arn
-    type  = "string"
-  }
-
-  set {
-    name  = "image.tag"
-    value = "v2.4.4"
-  }
+  values = [
+    <<-EOT
+    clusterName: ${module.eks.cluster_name}
+    serviceAccount:
+      name: aws-load-balancer-controller
+      create: true
+      annotations:
+        eks.amazonaws.com/role-arn: ${aws_iam_role.aws_load_balancer_controller.arn}
+    image:
+      repository: 602401143452.dkr.ecr.${data.aws_region.current.name}.amazonaws.com/amazon/aws-load-balancer-controller
+      tag: v2.4.4
+    nodeSelector: ${jsonencode(var.critical_addons_node_selector.selectors)}
+    tolerations: ${jsonencode(var.critical_addons_node_tolerations.tolerations)}
+    EOT
+  ]
 }
 
 module "vpc_cni_irsa" {
@@ -337,23 +387,9 @@ module "vpc_cni_irsa" {
   tags = var.tags
 }
 
-resource "kubernetes_storage_class" "gp3_xfs_encrypted" {
+resource "kubernetes_storage_class" "gp3_ext4_encrypted" {
   metadata {
-    name = "gp3-xfs-encrypted"
-  }
-  storage_provisioner = "ebs.csi.aws.com"
-  reclaim_policy      = "Delete"
-  parameters = {
-    fsType    = "xfs"
-    type      = "gp3"
-    encrypted = "true"
-  }
-  volume_binding_mode = "WaitForFirstConsumer"
-}
-
-resource "kubernetes_storage_class" "gp3" {
-  metadata {
-    name = "gp3"
+    name = "gp3-ext4-encrypted"
     annotations = {
       "storageclass.kubernetes.io/is-default-class" = "true"
     }
@@ -361,8 +397,9 @@ resource "kubernetes_storage_class" "gp3" {
   storage_provisioner = "ebs.csi.aws.com"
   reclaim_policy      = "Delete"
   parameters = {
-    fsType = "xfs"
-    type   = "gp3"
+    fsType    = "ext4"
+    type      = "gp3"
+    encrypted = "true"
   }
   volume_binding_mode = "WaitForFirstConsumer"
 }
