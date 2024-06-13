@@ -273,7 +273,7 @@ resource "kubectl_manifest" "karpenter_node_pool_arm" {
         expireAfter: ${var.karpenter_nodepool_default_expireAfter}
         consolidationPolicy: WhenEmpty
         consolidateAfter: 30s
-      weight: 10
+      weight: ${var.karpenter_arm_node_pool_weight}
   YAML
 
   depends_on = [
@@ -299,7 +299,7 @@ resource "kubectl_manifest" "karpenter_node_pool_amd" {
         expireAfter: ${var.karpenter_nodepool_default_expireAfter}
         consolidationPolicy: WhenEmpty
         consolidateAfter: 30s
-      weight: 5
+      weight: ${var.karpenter_amd_node_pool_weight}
   YAML
 
   depends_on = [
