@@ -495,7 +495,7 @@ module "ingress_traefik" {
 module "ingress_istio" {
   count   = var.enable_istio ? 1 : 0
   source  = "truemark/istio/kubernetes"
-  version = "0.0.7"
+  version = "~> 0.1"
 
   vpc_id                   = var.vpc_id
   istio_release_version    = var.istio_release_version
