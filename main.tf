@@ -351,7 +351,7 @@ resource "helm_release" "aws_load_balancer_controller" {
   repository = "https://aws.github.io/eks-charts"
   chart      = "aws-load-balancer-controller"
   namespace  = "kube-system"
-  version    = "1.4.5"
+  version    = "1.8.1"
 
   values = [
     <<-EOT
@@ -361,9 +361,6 @@ resource "helm_release" "aws_load_balancer_controller" {
       create: true
       annotations:
         eks.amazonaws.com/role-arn: ${aws_iam_role.aws_load_balancer_controller.arn}
-    image:
-      repository: 602401143452.dkr.ecr.${data.aws_region.current.name}.amazonaws.com/amazon/aws-load-balancer-controller
-      tag: v2.4.4
     nodeSelector: ${jsonencode(var.critical_addons_node_selector.selectors)}
     tolerations: ${jsonencode(var.critical_addons_node_tolerations.tolerations)}
     EOT
@@ -498,16 +495,36 @@ module "ingress_traefik" {
 module "ingress_istio" {
   count   = var.enable_istio ? 1 : 0
   source  = "truemark/istio/kubernetes"
-  version = "~> 0.0.4"
+  version = "0.0.7"
 
-  vpc_id                              = var.vpc_id
-  istio_enable_external_gateway       = var.istio_enable_external_gateway
-  istio_external_gateway_service_kind = var.istio_external_gateway_service_kind
-  istio_external_gateway_lb_certs     = var.istio_external_gateway_lb_certs
+  vpc_id                   = var.vpc_id
+  istio_release_version    = var.istio_release_version
+  istio_nlb_tls_policy     = var.istio_nlb_tls_policy
+  aws_managed_prefix_lists = var.aws_managed_prefix_lists
+  istio_mesh_id            = var.istio_mesh_id
+  istio_network            = var.istio_network
+  istio_multi_cluster      = var.istio_multi_cluster
+  istio_cluster_name       = module.eks.cluster_name
 
-  istio_enable_internal_gateway       = var.istio_enable_internal_gateway
-  istio_internal_gateway_service_kind = var.istio_internal_gateway_service_kind
-  istio_internal_gateway_lb_certs     = var.istio_internal_gateway_lb_certs
+  istio_enable_external_gateway                         = var.istio_enable_external_gateway
+  istio_external_gateway_service_kind                   = var.istio_external_gateway_service_kind
+  istio_external_gateway_lb_certs                       = var.istio_external_gateway_lb_certs
+  istio_external_gateway_use_prefix_list                = var.istio_external_gateway_use_prefix_list
+  istio_external_gateway_enable_http_port               = var.istio_external_gateway_enable_http_port
+  istio_external_gateway_lb_source_ranges               = var.istio_external_gateway_lb_source_ranges
+  istio_external_gateway_scaling_max_replicas           = var.istio_external_gateway_scaling_max_replicas
+  istio_external_gateway_scaling_target_cpu_utilization = var.istio_external_gateway_scaling_target_cpu_utilization
+  istio_external_gateway_lb_proxy_protocol              = var.istio_external_gateway_lb_proxy_protocol
+
+  istio_enable_internal_gateway                         = var.istio_enable_internal_gateway
+  istio_internal_gateway_enable_http_port               = var.istio_internal_gateway_enable_http_port
+  istio_internal_gateway_service_kind                   = var.istio_internal_gateway_service_kind
+  istio_internal_gateway_lb_certs                       = var.istio_internal_gateway_lb_certs
+  istio_internal_gateway_use_prefix_list                = var.istio_internal_gateway_use_prefix_list
+  istio_internal_gateway_lb_source_ranges               = var.istio_internal_gateway_lb_source_ranges
+  istio_internal_gateway_scaling_max_replicas           = var.istio_internal_gateway_scaling_max_replicas
+  istio_internal_gateway_scaling_target_cpu_utilization = var.istio_internal_gateway_scaling_target_cpu_utilization
+  istio_internal_gateway_lb_proxy_protocol              = var.istio_internal_gateway_lb_proxy_protocol
 }
 
 
