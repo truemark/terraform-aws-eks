@@ -461,9 +461,13 @@ module "ingress_traefik" {
 module "ingress_istio" {
   count   = var.enable_istio ? 1 : 0
   source  = "truemark/istio/kubernetes"
-  version = "~> 0.0.4"
+  version = "0.0.7"
 
   vpc_id                              = var.vpc_id
+  istio_mesh_id                       = var.istio_mesh_id
+  istio_network                       = var.istio_network
+  istio_multi_cluster                 = var.istio_multi_cluster
+  istio_cluster_name                  = var.istio_cluster_name
   istio_enable_external_gateway       = var.istio_enable_external_gateway
   istio_external_gateway_service_kind = var.istio_external_gateway_service_kind
   istio_external_gateway_lb_certs     = var.istio_external_gateway_lb_certs
