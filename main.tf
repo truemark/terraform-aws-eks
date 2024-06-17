@@ -532,7 +532,7 @@ module "cert_manager" {
   count = var.enable_cert_manager ? 1 : 0
 
   source  = "truemark/eks-certmanager/aws"
-  version = "0.0.4"
+  version = "0.0.5"
 
   chart_version                = "v1.13.3"
   enable_recursive_nameservers = true
