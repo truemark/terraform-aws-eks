@@ -162,6 +162,20 @@ module "karpenter" {
   tags = var.tags
 }
 
+locals {
+  karpenter_crds = ["karpenter.sh_nodepools.yaml", "karpenter.sh_nodeclaims.yaml", "karpenter.k8s.aws_ec2nodeclasses.yaml"]
+}
+
+data "http" "karpenter_crds" {
+  for_each = toset(local.karpenter_crds)
+  url = "https://raw.githubusercontent.com/aws/karpenter/v${var.karpenter_version}/pkg/apis/crds/${each.key}"
+}
+
+resource "kubectl_manifest" "karpenter_crds" {
+  for_each = data.http.karpenter_crds
+  yaml_body = each.value.body
+}
+
 resource "helm_release" "karpenter" {
   namespace        = "karpenter"
   create_namespace = true
@@ -171,7 +185,7 @@ resource "helm_release" "karpenter" {
   repository_username = data.aws_ecrpublic_authorization_token.token[0].user_name
   repository_password = data.aws_ecrpublic_authorization_token.token[0].password
   chart               = "karpenter"
-  version             = "v0.33.1"
+  version             = var.karpenter_version
 
   values = [
     <<-EOT
