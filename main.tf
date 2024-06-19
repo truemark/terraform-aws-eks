@@ -60,6 +60,7 @@ locals {
       "${var.cluster_name}-critical" = local.default_critical_addon_nodegroup
     } : {}
   )
+  karpenter_crds = ["karpenter.sh_nodepools.yaml", "karpenter.sh_nodeclaims.yaml", "karpenter.k8s.aws_ec2nodeclasses.yaml"]
 }
 
 provider "kubectl" {
@@ -106,7 +107,7 @@ module "ebs_csi_irsa_role" {
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 20.13"
+  version = "~> 20.14"
 
   cluster_name                            = var.cluster_name
   cluster_version                         = var.cluster_version
@@ -183,7 +184,7 @@ resource "aws_eks_access_policy_association" "access_policy_associations" {
 module "karpenter" {
   count   = var.enable_karpenter ? 1 : 0
   source  = "terraform-aws-modules/eks/aws//modules/karpenter"
-  version = "~> 20.11"
+  version = "~> 20.14"
 
   cluster_name = module.eks.cluster_name
   node_iam_role_additional_policies = {
@@ -194,6 +195,16 @@ module "karpenter" {
   irsa_namespace_service_accounts = ["karpenter:karpenter"]
 
   tags = var.tags
+}
+
+data "http" "karpenter_crds" {
+  for_each = toset(local.karpenter_crds)
+  url      = "https://raw.githubusercontent.com/aws/karpenter/v${var.karpenter_version}/pkg/apis/crds/${each.key}"
+}
+
+resource "kubectl_manifest" "karpenter_crds" {
+  for_each  = data.http.karpenter_crds
+  yaml_body = each.value.body
 }
 
 resource "helm_release" "karpenter" {
