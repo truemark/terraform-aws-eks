@@ -126,7 +126,7 @@ module "eks" {
   # OIDC Identity provider
   cluster_identity_providers = {
     sts = {
-      client_id = "sts.amazonaws.com"
+      client_id  = "sts.amazonaws.com"
       issuer_url = module.eks.cluster_oidc_issuer_url
     }
   }
