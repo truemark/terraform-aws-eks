@@ -60,6 +60,7 @@ locals {
       "${var.cluster_name}-critical" = local.default_critical_addon_nodegroup
     } : {}
   )
+  karpenter_crds = ["karpenter.sh_nodepools.yaml", "karpenter.sh_nodeclaims.yaml", "karpenter.k8s.aws_ec2nodeclasses.yaml"]
 }
 
 provider "kubectl" {
@@ -106,17 +107,18 @@ module "ebs_csi_irsa_role" {
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 20.13"
+  version = "~> 20.14"
 
-  cluster_name                            = var.cluster_name
-  cluster_version                         = var.cluster_version
-  cluster_endpoint_private_access         = var.cluster_endpoint_private_access
-  cluster_endpoint_public_access          = var.cluster_endpoint_public_access
-  create_cloudwatch_log_group             = var.create_cloudwatch_log_group
-  cluster_enabled_log_types               = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
-  cluster_security_group_additional_rules = var.cluster_security_group_additional_rules
-  node_security_group_additional_rules    = var.node_security_group_additional_rules
-  cluster_additional_security_group_ids   = var.cluster_additional_security_group_ids
+  cluster_name                             = var.cluster_name
+  cluster_version                          = var.cluster_version
+  cluster_endpoint_private_access          = var.cluster_endpoint_private_access
+  cluster_endpoint_public_access           = var.cluster_endpoint_public_access
+  create_cloudwatch_log_group              = var.create_cloudwatch_log_group
+  cluster_enabled_log_types                = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+  cluster_security_group_additional_rules  = var.cluster_security_group_additional_rules
+  node_security_group_additional_rules     = var.node_security_group_additional_rules
+  cluster_additional_security_group_ids    = var.cluster_additional_security_group_ids
+  enable_cluster_creator_admin_permissions = true
 
   #KMS
   kms_key_users  = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
@@ -125,7 +127,8 @@ module "eks" {
   # OIDC Identity provider
   cluster_identity_providers = {
     sts = {
-      client_id = "sts.amazonaws.com"
+      client_id  = "sts.amazonaws.com"
+      issuer_url = module.eks.cluster_oidc_issuer_url
     }
   }
 
@@ -183,7 +186,7 @@ resource "aws_eks_access_policy_association" "access_policy_associations" {
 module "karpenter" {
   count   = var.enable_karpenter ? 1 : 0
   source  = "terraform-aws-modules/eks/aws//modules/karpenter"
-  version = "~> 20.11"
+  version = "~> 20.14"
 
   cluster_name = module.eks.cluster_name
   node_iam_role_additional_policies = {
@@ -194,6 +197,16 @@ module "karpenter" {
   irsa_namespace_service_accounts = ["karpenter:karpenter"]
 
   tags = var.tags
+}
+
+data "http" "karpenter_crds" {
+  for_each = toset(local.karpenter_crds)
+  url      = "https://raw.githubusercontent.com/aws/karpenter/v${var.karpenter_version}/pkg/apis/crds/${each.key}"
+}
+
+resource "kubectl_manifest" "karpenter_crds" {
+  for_each  = data.http.karpenter_crds
+  yaml_body = each.value.body
 }
 
 resource "helm_release" "karpenter" {
@@ -351,7 +364,7 @@ resource "helm_release" "aws_load_balancer_controller" {
   repository = "https://aws.github.io/eks-charts"
   chart      = "aws-load-balancer-controller"
   namespace  = "kube-system"
-  version    = "1.8.1"
+  version    = var.lbc_chart_version
 
   values = [
     <<-EOT
@@ -363,6 +376,10 @@ resource "helm_release" "aws_load_balancer_controller" {
         eks.amazonaws.com/role-arn: ${aws_iam_role.aws_load_balancer_controller.arn}
     nodeSelector: ${jsonencode(var.critical_addons_node_selector.selectors)}
     tolerations: ${jsonencode(var.critical_addons_node_tolerations.tolerations)}
+    %{if var.lbc_image_tag != null}
+    image:
+      tag: ${var.lbc_image_tag}
+    %{endif}
     EOT
   ]
 }
@@ -470,7 +487,7 @@ module "monitoring" {
   count = var.enable_monitoring ? 1 : 0
 
   source  = "truemark/eks-monitoring/aws"
-  version = "~> 0.0.15"
+  version = "0.0.16" //Temp change
 
   cluster_name                         = module.eks.cluster_name
   amp_name                             = var.amp_arn == null ? "${var.cluster_name}-monitoring" : null

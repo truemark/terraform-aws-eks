@@ -100,5 +100,5 @@ output "fargate_profiles" {
 
 output "amp_workspace_id" {
   description = "The ID of the AMP workspace"
-  value       = module.monitoring[0].amp_workspace_id
+  value       = try(module.monitoring[0].amp_workspace_id, null)
 }

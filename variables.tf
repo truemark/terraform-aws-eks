@@ -165,6 +165,23 @@ variable "eks_access_cross_account_iam_roles" {
 }
 
 ###############################################
+# Load Balancer Controller Configuration
+###############################################
+
+variable "lbc_chart_version" {
+  description = "The version of the Load Balancer Controller chart to install."
+  type        = string
+  default     = "1.8.1"
+}
+
+variable "lbc_image_tag" {
+  description = "The image tag for the Load Balancer Controller."
+  type        = string
+  default     = null
+  nullable    = true
+}
+
+###############################################
 # Karpenter Configuration
 ###############################################
 variable "enable_karpenter" {
@@ -176,7 +193,7 @@ variable "enable_karpenter" {
 variable "karpenter_version" {
   description = "Version of karpenter to install"
   type        = string
-  default     = "v0.33.1"
+  default     = "0.37.0"
 }
 
 variable "karpenter_settings_featureGates_drift" {
