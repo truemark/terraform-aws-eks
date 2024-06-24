@@ -364,7 +364,7 @@ resource "helm_release" "aws_load_balancer_controller" {
   repository = "https://aws.github.io/eks-charts"
   chart      = "aws-load-balancer-controller"
   namespace  = "kube-system"
-  version    = "1.8.1"
+  version    = var.lbc_chart_version
 
   values = [
     <<-EOT
@@ -376,6 +376,10 @@ resource "helm_release" "aws_load_balancer_controller" {
         eks.amazonaws.com/role-arn: ${aws_iam_role.aws_load_balancer_controller.arn}
     nodeSelector: ${jsonencode(var.critical_addons_node_selector.selectors)}
     tolerations: ${jsonencode(var.critical_addons_node_tolerations.tolerations)}
+    %{if var.lbc_image_tag != null}
+    image:
+      tag: ${var.lbc_image_tag}
+    %{endif}
     EOT
   ]
 }
