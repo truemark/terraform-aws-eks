@@ -260,6 +260,7 @@ resource "kubectl_manifest" "karpenter_node_class" {
         - tags:
             karpenter.sh/discovery: ${module.eks.cluster_name}
       tags:
+        Name: "${module.eks.cluster_name}-default"
         karpenter.sh/discovery: ${module.eks.cluster_name}
   YAML
 
@@ -510,9 +511,10 @@ module "ingress_traefik" {
 }
 
 module "ingress_istio" {
-  count   = var.enable_istio ? 1 : 0
-  source  = "truemark/istio/kubernetes"
-  version = "~> 0.1"
+  count  = var.enable_istio ? 1 : 0
+  source = "/Volumes/code/truemark/terraform-kubernetes-istio"
+  # source  = "truemark/istio/kubernetes"
+  # version = "~> 0.1"
 
   vpc_id                   = var.vpc_id
   istio_release_version    = var.istio_release_version
