@@ -260,6 +260,7 @@ resource "kubectl_manifest" "karpenter_node_class" {
         - tags:
             karpenter.sh/discovery: ${module.eks.cluster_name}
       tags:
+        Name: "${module.eks.cluster_name}-default"
         karpenter.sh/discovery: ${module.eks.cluster_name}
   YAML
 
