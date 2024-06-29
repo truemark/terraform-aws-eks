@@ -35,6 +35,7 @@ locals {
           volume_type           = "gp3"
           encrypted             = true
           delete_on_termination = true
+          kms_key_id            = var.default_critical_nodegroup_kms_key_id
         }
       }
     }
