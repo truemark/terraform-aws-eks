@@ -522,7 +522,7 @@ module "ingress_istio" {
   istio_mesh_id            = var.istio_mesh_id
   istio_network            = var.istio_network
   istio_multi_cluster      = var.istio_multi_cluster
-  istio_cluster_name       = module.eks.cluster_name
+  istio_cluster_name       = var.istio_cluster_name
 
   istio_enable_external_gateway                         = var.istio_enable_external_gateway
   istio_external_gateway_service_kind                   = var.istio_external_gateway_service_kind

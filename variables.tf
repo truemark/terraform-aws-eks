@@ -466,6 +466,13 @@ variable "istio_multi_cluster" {
   default     = false
 }
 
+variable "istio_cluster_name" {
+  type        = string
+  description = "The name of the cluster."
+  default     = null
+  nullable    = true
+}
+
 variable "istio_nlb_tls_policy" {
   type        = string
   default     = "ELBSecurityPolicy-TLS13-1-2-2021-06"
