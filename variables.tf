@@ -81,6 +81,13 @@ variable "default_critical_addon_node_group_instance_types" {
   default     = ["m7g.large"]
 }
 
+variable "default_critical_nodegroup_kms_key_id" {
+  description = "KMS key ID for the default critical addon node group"
+  type        = string
+  default     = null
+  nullable    = true
+}
+
 variable "critical_addons_node_selector" {
   description = "Config for node selector for workloads"
   type        = map(any)
