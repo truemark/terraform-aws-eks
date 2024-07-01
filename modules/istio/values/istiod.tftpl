@@ -1,0 +1,49 @@
+%{~ if istio_mesh_id != null || istio_network != null || istio_multi_cluster ~}
+global:
+  %{~ if istio_mesh_id != null ~}
+  meshID: ${istio_mesh_id}
+  %{~ endif ~}
+  %{~ if istio_network != null ~}
+  network: ${istio_network}
+  %{~ endif ~}
+  %{~ if istio_multi_cluster ~}
+  multiCluster:
+    clusterName: ${istio_cluster_name}
+    enabled: ${istio_multi_cluster}
+  %{~ endif ~}
+%{~ endif ~}
+meshConfig:
+  defaultConfig:
+    holdApplicationUntilProxyStarts: true
+    gatewayTopology:
+      numTrustedProxies: 1
+  enablePrometheusMerge: true
+  accessLogEncoding: JSON
+  accessLogFile: /dev/stdout
+  accessLogFormat: |
+    {
+      "protocol": "%PROTOCOL%",
+      "upstream_service_time": "%REQ(x-envoy-upstream-service-time)%",
+      "upstream_local_address": "%UPSTREAM_LOCAL_ADDRESS%",
+      "duration": "%DURATION%",
+      "upstream_transport_failure_reason": "%UPSTREAM_TRANSPORT_FAILURE_REASON%",
+      "route_name": "%ROUTE_NAME%",
+      "downstream_local_address": "%DOWNSTREAM_LOCAL_ADDRESS%",
+      "user_agent": "%REQ(USER-AGENT)%",
+      "response_code": "%RESPONSE_CODE%",
+      "response_flags": "%RESPONSE_FLAGS%",
+      "start_time": "%START_TIME%",
+      "method": "%REQ(:METHOD)%",
+      "request_id": "%REQ(X-REQUEST-ID)%",
+      "upstream_host": "%UPSTREAM_HOST%",
+      "x_forwarded_for": "%REQ(X-FORWARDED-FOR)%",
+      "client_ip": "%REQ(X-Envoy-External-Address)%",
+      "requested_server_name": "%REQUESTED_SERVER_NAME%",
+      "bytes_received": "%BYTES_RECEIVED%",
+      "bytes_sent": "%BYTES_SENT%",
+      "upstream_cluster": "%UPSTREAM_CLUSTER%",
+      "downstream_remote_address": "%DOWNSTREAM_REMOTE_ADDRESS%",
+      "authority": "%REQ(:AUTHORITY)%",
+      "path": "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%",
+      "response_code_details": "%RESPONSE_CODE_DETAILS%"
+    }

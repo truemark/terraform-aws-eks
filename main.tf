@@ -487,8 +487,7 @@ resource "helm_release" "metrics_server" {
 module "monitoring" {
   count = var.enable_monitoring ? 1 : 0
 
-  source  = "truemark/eks-monitoring/aws"
-  version = "0.0.16" //Temp change
+  source = "./modules/monitoring"
 
   cluster_name                         = module.eks.cluster_name
   amp_name                             = var.amp_arn == null ? "${var.cluster_name}-monitoring" : null
@@ -505,15 +504,13 @@ module "monitoring" {
 }
 
 module "ingress_traefik" {
-  count   = var.enable_traefik ? 1 : 0
-  source  = "truemark/traefik/kubernetes"
-  version = "~> 0.0.1"
+  count  = var.enable_traefik ? 1 : 0
+  source = "./modules/traefik"
 }
 
 module "ingress_istio" {
-  count   = var.enable_istio ? 1 : 0
-  source  = "truemark/istio/kubernetes"
-  version = "~> 0.1"
+  count  = var.enable_istio ? 1 : 0
+  source = "./modules/istio"
 
   vpc_id                   = var.vpc_id
   istio_release_version    = var.istio_release_version
@@ -549,8 +546,7 @@ module "ingress_istio" {
 module "cert_manager" {
   count = var.enable_cert_manager ? 1 : 0
 
-  source  = "truemark/eks-certmanager/aws"
-  version = "0.0.4"
+  source = "./modules/certmanager"
 
   chart_version                = "v1.13.3"
   enable_recursive_nameservers = true
