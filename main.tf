@@ -61,7 +61,7 @@ locals {
       "${var.cluster_name}-critical" = local.default_critical_addon_nodegroup
     } : {}
   )
-  karpenter_crds = ["karpenter.sh_nodepools.yaml", "karpenter.sh_nodeclaims.yaml", "karpenter.k8s.aws_ec2nodeclasses.yaml"]
+  karpenter_crds = var.enable_karpenter ? ["karpenter.sh_nodepools.yaml", "karpenter.sh_nodeclaims.yaml", "karpenter.k8s.aws_ec2nodeclasses.yaml"] : []
 }
 
 provider "kubectl" {
@@ -210,6 +210,7 @@ resource "kubectl_manifest" "karpenter_crds" {
 }
 
 resource "helm_release" "karpenter" {
+  count            = var.enable_karpenter ? 1 : 0
   namespace        = "karpenter"
   create_namespace = true
 
@@ -244,6 +245,7 @@ resource "helm_release" "karpenter" {
 }
 
 resource "kubectl_manifest" "karpenter_node_class" {
+  count     = var.enable_karpenter ? 1 : 0
   yaml_body = <<-YAML
     apiVersion: karpenter.k8s.aws/v1beta1
     kind: EC2NodeClass
@@ -270,6 +272,7 @@ resource "kubectl_manifest" "karpenter_node_class" {
 }
 
 resource "kubectl_manifest" "karpenter_node_pool_arm" {
+  count     = var.enable_karpenter ? 1 : 0
   yaml_body = <<-YAML
     apiVersion: karpenter.sh/v1beta1
     kind: NodePool
