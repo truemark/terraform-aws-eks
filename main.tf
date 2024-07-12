@@ -551,3 +551,43 @@ module "cert_manager" {
   chart_version                = "v1.13.3"
   enable_recursive_nameservers = true
 }
+
+resource "aws_ssm_parameter" "cluster_id" {
+  name        = "/truemark/eks/${var.cluster_name}/cluster_id"
+  description = "The name/id of the EKS cluster. Will block on cluster creation until the cluster is really ready"
+  type        = "String"
+  value       = module.eks.cluster_id
+  tags        = var.tags
+}
+
+resource "aws_ssm_parameter" "cluster_endpoint" {
+  name        = "/truemark/eks/${var.cluster_name}/cluster_endpoint"
+  description = "Endpoint of the Kubernetes API server"
+  type        = "String"
+  value       = module.eks.cluster_endpoint
+  tags        = var.tags
+}
+
+resource "aws_ssm_parameter" "cluster_arn" {
+  name        = "/truemark/eks/${var.cluster_name}/arn"
+  description = "The Amazon Resource Name (ARN) of the cluster"
+  type        = "String"
+  value       = module.eks.cluster_arn
+  tags        = var.tags
+}
+
+resource "aws_ssm_parameter" "oidc_provider" {
+  name        = "/truemark/eks/${var.cluster_name}/oidc_provider"
+  description = "The OpenID Connect identity provider (issuer URL without leading `https://`)"
+  type        = "String"
+  value       = module.eks.oidc_provider
+  tags        = var.tags
+}
+
+resource "aws_ssm_parameter" "oidc_provider_arn" {
+  name        = "/truemark/eks/${var.cluster_name}/oidc_provider_arn"
+  description = "The ARN of the OIDC Provider"
+  type        = "String"
+  value       = module.eks.oidc_provider_arn
+  tags        = var.tags
+}
