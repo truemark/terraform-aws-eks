@@ -553,11 +553,12 @@ module "cert_manager" {
 }
 
 resource "aws_ssm_parameter" "cluster_id" {
-  name        = "/truemark/eks/${var.cluster_name}/cluster_id"
-  description = "The name/id of the EKS cluster. Will block on cluster creation until the cluster is really ready"
-  type        = "String"
-  value       = module.eks.cluster_id
-  tags        = var.tags
+  name           = "/truemark/eks/${var.cluster_name}/cluster_id"
+  description    = "The name/id of the EKS cluster. Will block on cluster creation until the cluster is really ready"
+  type           = "String"
+  value          = module.eks.cluster_id
+  insecure_value = true
+  tags           = var.tags
 }
 
 resource "aws_ssm_parameter" "cluster_endpoint" {
