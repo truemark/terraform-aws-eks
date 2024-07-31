@@ -12,7 +12,7 @@ module "eks" {
   create_cloudwatch_log_group              = true
   vpc_id                                   = data.aws_vpc.services.id
   subnets_ids                              = data.aws_subnets.private.ids
-  create_default_critical_addon_node_group = false
+  create_default_critical_addon_node_group = true
 
   ## RBAC/IAM Roles
   eks_access_account_iam_roles = [
@@ -76,26 +76,27 @@ module "eks" {
     }
   }
 
-  enable_karpenter  = false
-  enable_monitoring = false
-  enable_traefik    = false
-  enable_istio      = false
+  enable_karpenter              = false
+  enable_monitoring             = false
+  enable_traefik                = false
+  enable_istio                  = false
+  istio_enable_external_gateway = false
 
   # Compute
-  eks_managed_node_groups = {
-    system = {
-      disk_size      = 50
-      min_size       = 1
-      max_size       = 3
-      desired_size   = 3
-      ami_type       = "AL2_ARM_64"
-      instance_types = ["t4g.small"]
-      labels = {
-        "managed" : "eks"
-        "purpose" : "system"
-      }
-      subnet_ids    = data.aws_subnets.private.ids
-      capacity_type = "ON_DEMAND"
-    }
-  }
+  # eks_managed_node_groups = {
+  #   system = {
+  #     disk_size      = 50
+  #     min_size       = 1
+  #     max_size       = 3
+  #     desired_size   = 3
+  #     ami_type       = "AL2_ARM_64"
+  #     instance_types = ["t4g.small"]
+  #     labels = {
+  #       "managed" : "eks"
+  #       "purpose" : "system"
+  #     }
+  #     subnet_ids    = data.aws_subnets.private.ids
+  #     capacity_type = "ON_DEMAND"
+  #   }
+  # }
 }
