@@ -32,16 +32,13 @@ jobs:
       with:
         terraform_version: "1.9.3"
 
-    - name: Terraform init
+    - name: Terraform init and plan
+      id: plan
       run: |
         cd examples/${{ matrix.stack }}
         ls
         terraform version
         terraform init
-
-    - name: Terraform plan
-      id: plan
-      run: |
         terraform plan -no-color
 
     - run: echo ${{ steps.plan.outputs.stdout }}
