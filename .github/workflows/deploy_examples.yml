@@ -33,10 +33,22 @@ jobs:
         terraform_version: "1.9.3"
 
     - name: Terraform init and plan
-      id: plan
       run: |
         cd examples/${{ matrix.stack }}
         ls
         terraform version
         terraform init
         terraform plan -no-color
+
+    - name: Terraform apply
+      run: |
+        pwd
+        cd examples/${{ matrix.stack }}
+        terraform apply -auto-approve
+
+    - name: Terraform destroy
+      if: always()
+      run: |
+        pwd
+        cd examples/${{ matrix.stack }}
+        terraform destroy -auto-approve
