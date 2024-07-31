@@ -25,23 +25,7 @@ module "eks" {
       policy_name = "AmazonEKSClusterAdminPolicy"
     },
     {
-      role_name = "TrueMarkServiceAutomation"
-      access_scope = {
-        type       = "cluster"
-        namespaces = null
-      }
-      policy_name = "AmazonEKSClusterAdminPolicy"
-    },
-    {
       role_name = "AWSReservedSSO_Developer_"
-      access_scope = {
-        type       = "cluster"
-        namespaces = null
-      }
-      policy_name = "AmazonEKSClusterAdminPolicy"
-    },
-    {
-      role_name = "AWSReservedSSO_Administrator"
       access_scope = {
         type       = "cluster"
         namespaces = null
@@ -81,22 +65,4 @@ module "eks" {
   enable_traefik                = false
   enable_istio                  = false
   istio_enable_external_gateway = false
-
-  # Compute
-  # eks_managed_node_groups = {
-  #   system = {
-  #     disk_size      = 50
-  #     min_size       = 1
-  #     max_size       = 3
-  #     desired_size   = 3
-  #     ami_type       = "AL2_ARM_64"
-  #     instance_types = ["t4g.small"]
-  #     labels = {
-  #       "managed" : "eks"
-  #       "purpose" : "system"
-  #     }
-  #     subnet_ids    = data.aws_subnets.private.ids
-  #     capacity_type = "ON_DEMAND"
-  #   }
-  # }
 }
