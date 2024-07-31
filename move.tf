@@ -12,3 +12,7 @@ moved {
   from = kubectl_manifest.karpenter_node_pool_arm
   to   = kubectl_manifest.karpenter_node_pool_arm[0]
 }
+moved {
+  from = kubectl_manifest.karpenter_node_pool_amd
+  to   = kubectl_manifest.karpenter_node_pool_amd[0]
+}

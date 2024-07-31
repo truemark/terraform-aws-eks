@@ -299,6 +299,7 @@ resource "kubectl_manifest" "karpenter_node_pool_arm" {
 }
 
 resource "kubectl_manifest" "karpenter_node_pool_amd" {
+  count     = var.enable_karpenter ? 1 : 0
   yaml_body = <<-YAML
     apiVersion: karpenter.sh/v1beta1
     kind: NodePool
