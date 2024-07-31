@@ -1,0 +1,29 @@
+on:
+    push:
+      branches:
+        - example
+    # pull_request:
+    #   branches:
+    #     - example
+    workflow_dispatch:
+permissions:
+    id-token: write
+    contents: read
+env:
+  AWS_REGION : "us-west-2"
+name: terraform_examples
+jobs:
+    TerraformModuleTest:
+        runs-on: ubuntu-latest
+        steps:
+        - name: Git clone the repository
+          uses: actions/checkout@v4
+        - name: configure aws credentials
+          uses: aws-actions/configure-aws-credentials@v4
+          with:
+            role-to-assume: arn:aws:iam::619184238146:role/github-devops-provisioner
+            role-session-name: samplerolesessio
+            aws-region: ${{ env.AWS_REGION }}
+        - name:  Copy index.html to s3
+          run: |
+            aws s3 ls
