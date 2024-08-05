@@ -205,11 +205,19 @@ data "http" "karpenter_crds" {
 }
 
 resource "kubectl_manifest" "karpenter_crds" {
+  depends_on       = [
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations
+  ]
   for_each  = data.http.karpenter_crds
   yaml_body = each.value.body
 }
 
 resource "helm_release" "karpenter" {
+  depends_on       = [
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations
+  ]
   count            = var.enable_karpenter ? 1 : 0
   namespace        = "karpenter"
   create_namespace = true
@@ -267,6 +275,8 @@ resource "kubectl_manifest" "karpenter_node_class" {
   YAML
 
   depends_on = [
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations,
     helm_release.karpenter
   ]
 }
@@ -292,14 +302,15 @@ resource "kubectl_manifest" "karpenter_node_pool_arm" {
         consolidateAfter: 30s
       weight: ${var.karpenter_arm_node_pool_weight}
   YAML
-
   depends_on = [
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations,
     kubectl_manifest.karpenter_node_class
   ]
 }
 
 resource "kubectl_manifest" "karpenter_node_pool_amd" {
-  count = var.enable_karpenter ? 1 : 0
+  count     = var.enable_karpenter ? 1 : 0
   yaml_body = <<-YAML
     apiVersion: karpenter.sh/v1beta1
     kind: NodePool
@@ -321,6 +332,8 @@ resource "kubectl_manifest" "karpenter_node_pool_amd" {
   YAML
 
   depends_on = [
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations,
     kubectl_manifest.karpenter_node_class
   ]
 }
@@ -365,6 +378,10 @@ resource "aws_iam_role_policy_attachment" "aws_load_balancer_controller" {
 
 //https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases
 resource "helm_release" "aws_load_balancer_controller" {
+  depends_on = [
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations
+  ]
   name       = "aws-load-balancer-controller"
   repository = "https://aws.github.io/eks-charts"
   chart      = "aws-load-balancer-controller"
@@ -407,6 +424,10 @@ module "vpc_cni_irsa" {
 }
 
 resource "kubernetes_storage_class" "gp3_ext4_encrypted" {
+  depends_on = [
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations
+  ]
   metadata {
     name = "gp3-ext4-encrypted"
     annotations = {
@@ -424,6 +445,10 @@ resource "kubernetes_storage_class" "gp3_ext4_encrypted" {
 }
 
 resource "kubectl_manifest" "gp2" {
+  depends_on = [
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations
+  ]
   yaml_body = <<YAML
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
@@ -462,12 +487,21 @@ module "external_secrets_irsa" {
 }
 
 resource "kubernetes_namespace" "external_secrets" {
+  depends_on = [
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations
+  ]
   metadata {
     name = "external-secrets"
   }
 }
 
 resource "helm_release" "external_secrets" {
+  depends_on = [
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations,
+    kubernetes_namespace.external_secrets
+  ]
   name       = "external-secrets"
   chart      = "external-secrets"
   repository = "https://charts.external-secrets.io"
@@ -481,6 +515,10 @@ resource "helm_release" "external_secrets" {
 }
 
 resource "helm_release" "metrics_server" {
+  depends_on = [
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations
+  ]
   name       = "metrics-server"
   chart      = "metrics-server"
   repository = "https://kubernetes-sigs.github.io/metrics-server/"
