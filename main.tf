@@ -629,7 +629,7 @@ resource "aws_ssm_parameter" "oidc_provider_arn" {
 }
 
 resource "aws_ssm_parameter" "cluster_certificate_authority_data" {
-  name        = "/truemark/eks/${var.cluster_name}/oidc_provider_arn"
+  name        = "/truemark/eks/${var.cluster_name}/cluster_certificate_authority_data"
   description = "Base64 encoded certificate data required to communicate with the cluster"
   type        = "String"
   value       = module.eks.cluster_certificate_authority_data
