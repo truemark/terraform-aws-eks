@@ -242,7 +242,7 @@ variable "karpenter_node_pool_default_arm_requirements" {
       {
         key      = "kubernetes.io/arch"
         operator = "In"
-        values   = ["arm64", "amd64"]
+        values   = ["arm64"]
       },
       {
         key      = "karpenter.sh/capacity-type"
