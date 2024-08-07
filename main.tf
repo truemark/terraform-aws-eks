@@ -58,7 +58,7 @@ locals {
   eks_managed_node_groups = merge(
     { for k, v in var.eks_managed_node_groups : "${var.cluster_name}-${k}" => v },
     var.create_default_critical_addon_node_group ? {
-      "${var.cluster_name}-critical" = local.default_critical_addon_nodegroup
+      "truemark-system" = local.default_critical_addon_nodegroup
     } : {}
   )
   karpenter_crds = ["karpenter.sh_nodepools.yaml", "karpenter.sh_nodeclaims.yaml", "karpenter.k8s.aws_ec2nodeclasses.yaml"]
@@ -123,14 +123,6 @@ module "eks" {
   #KMS
   kms_key_users  = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
   kms_key_owners = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-
-  # OIDC Identity provider
-  cluster_identity_providers = {
-    sts = {
-      client_id  = "sts.amazonaws.com"
-      issuer_url = module.eks.cluster_oidc_issuer_url
-    }
-  }
 
   cluster_addons = {
     vpc-cni = {
@@ -248,7 +240,7 @@ resource "kubectl_manifest" "karpenter_node_class" {
     apiVersion: karpenter.k8s.aws/v1beta1
     kind: EC2NodeClass
     metadata:
-      name: default
+      name: truemark
     spec:
       amiFamily: ${var.karpenter_provisioner_default_ami_family}
       blockDeviceMappings: ${jsonencode(var.karpenter_provisioner_default_block_device_mappings.specs)}
@@ -274,12 +266,21 @@ resource "kubectl_manifest" "karpenter_node_pool_arm" {
     apiVersion: karpenter.sh/v1beta1
     kind: NodePool
     metadata:
-      name: default-arm
+      name: truemark-arm64
     spec:
+      disruption:
+        budgets:
+          - nodes: 10%
+        consolidationPolicy: WhenUnderutilized
+        expireAfter: 720h
       template:
         spec:
           nodeClassRef:
-            name: default
+            name: truemark
+          taints:
+          - key: karpenter.sh/nodepool
+            value: "truemark-arm64"
+            effect: NoSchedule
           requirements: ${jsonencode(var.karpenter_node_pool_default_arm_requirements.requirements)}
       limits:
         cpu: ${var.karpenter_nodepool_default_cpu_limits}
@@ -300,12 +301,21 @@ resource "kubectl_manifest" "karpenter_node_pool_amd" {
     apiVersion: karpenter.sh/v1beta1
     kind: NodePool
     metadata:
-      name: default-amd
+      name: truemark-amd64
     spec:
+      disruption:
+        budgets:
+          - nodes: 10%
+        consolidationPolicy: WhenUnderutilized
+        expireAfter: 720h
       template:
         spec:
           nodeClassRef:
-            name: default
+            name: truemark
+          taints:
+          - key: karpenter.sh/nodepool
+            value: "truemark-amd64"
+            effect: NoSchedule
           requirements: ${jsonencode(var.karpenter_node_pool_default_amd_requirements.requirements)}
       limits:
         cpu: ${var.karpenter_nodepool_default_cpu_limits}
