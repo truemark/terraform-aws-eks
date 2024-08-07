@@ -219,12 +219,6 @@ variable "karpenter_node_template_default" {
   }
 }
 
-// Add these to defaults
-// Shall we remove two and add one? No
-
-// Sen 1: two node pools default,
-// Sen 2: two nodepoles, choose weight of node pool
-
 variable "karpenter_node_pool_default_arm_requirements" {
   description = "Specifies the default requirements for the Karpenter ARM node pool template, including instance category, CPU, hypervisor, architecture, and capacity type."
   type        = map(any)
