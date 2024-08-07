@@ -92,28 +92,19 @@ variable "critical_addons_node_selector" {
   description = "Config for node selector for workloads"
   type        = map(any)
   default = {
-    selectors = {
-      CriticalAddonsOnly = "true"
-    }
+    CriticalAddonsOnly = "true"
   }
 }
 
 variable "critical_addons_node_tolerations" {
   description = "Config for node tolerations for workloads"
-  type = map(list(object({
-    key      = string
-    operator = string
-    effect   = string
-    value    = string
-  })))
-  default = {
-    tolerations = [{
-      key      = "CriticalAddonsOnly"
-      operator = "Equal"
-      effect   = "NoSchedule"
-      value    = "true"
-    }]
-  }
+  type        = list(any)
+  default = [{
+    key      = "CriticalAddonsOnly"
+    operator = "Equal"
+    effect   = "NoSchedule"
+    value    = "true"
+  }]
 }
 
 variable "eks_managed_node_group_defaults" {
@@ -313,13 +304,13 @@ variable "karpenter_nodepool_default_expireAfter" {
   description = "The amount of time a Node can live on the cluster before being removed"
 }
 
-variable "karpenter_provisioner_default_ami_family" {
+variable "truemark_nodeclass_default_ami_family" {
   description = "Specifies the default Amazon Machine Image (AMI) family to be used by the Karpenter provisioner."
   type        = string
   default     = "Bottlerocket"
 }
 
-variable "karpenter_provisioner_default_block_device_mappings" {
+variable "truemark_nodeclass_default_block_device_mappings" {
   description = "Specifies the default size and characteristics of the volumes used by the Karpenter provisioner. It defines the volume size, type, and encryption settings."
   type        = map(any)
   default = {
@@ -342,12 +333,6 @@ variable "karpenter_provisioner_default_block_device_mappings" {
       }
     ]
   }
-}
-
-variable "karpenter_nodepool_default_cpu_limits" {
-  description = "Defines the default CPU limits for the Karpenter default provisioner, ensuring resource allocation and utilization."
-  type        = number
-  default     = 300
 }
 
 variable "karpenter_nodepool_default_ttl_after_empty" {

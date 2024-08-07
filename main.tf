@@ -225,9 +225,9 @@ resource "helm_release" "karpenter" {
       prometheus.io/port: '8000'
       prometheus.io/scrape: 'true'
     nodeSelector:
-      ${jsonencode(var.critical_addons_node_selector.selectors)}
+      ${jsonencode(var.critical_addons_node_selector)}
     tolerations:
-      ${jsonencode(var.critical_addons_node_tolerations.tolerations)}
+      ${jsonencode(var.critical_addons_node_tolerations)}
     serviceAccount:
       annotations:
         eks.amazonaws.com/role-arn: ${module.karpenter[0].iam_role_arn}
@@ -242,8 +242,8 @@ resource "kubectl_manifest" "karpenter_node_class" {
     metadata:
       name: truemark
     spec:
-      amiFamily: ${var.karpenter_provisioner_default_ami_family}
-      blockDeviceMappings: ${jsonencode(var.karpenter_provisioner_default_block_device_mappings.specs)}
+      amiFamily: ${var.truemark_nodeclass_default_ami_family}
+      blockDeviceMappings: ${jsonencode(var.truemark_nodeclass_default_block_device_mappings.specs)}
       role: ${module.karpenter[0].node_iam_role_name}
       subnetSelectorTerms:
         - tags:
@@ -252,7 +252,7 @@ resource "kubectl_manifest" "karpenter_node_class" {
         - tags:
             karpenter.sh/discovery: ${module.eks.cluster_name}
       tags:
-        Name: "${module.eks.cluster_name}-default"
+        Name: "${module.eks.cluster_name}-truemark-default"
         karpenter.sh/discovery: ${module.eks.cluster_name}
   YAML
 
@@ -282,8 +282,6 @@ resource "kubectl_manifest" "karpenter_node_pool_arm" {
             value: "truemark-arm64"
             effect: NoSchedule
           requirements: ${jsonencode(var.karpenter_node_pool_default_arm_requirements.requirements)}
-      limits:
-        cpu: ${var.karpenter_nodepool_default_cpu_limits}
       disruption:
         expireAfter: ${var.karpenter_nodepool_default_expireAfter}
         consolidationPolicy: WhenEmpty
@@ -317,8 +315,6 @@ resource "kubectl_manifest" "karpenter_node_pool_amd" {
             value: "truemark-amd64"
             effect: NoSchedule
           requirements: ${jsonencode(var.karpenter_node_pool_default_amd_requirements.requirements)}
-      limits:
-        cpu: ${var.karpenter_nodepool_default_cpu_limits}
       disruption:
         expireAfter: ${var.karpenter_nodepool_default_expireAfter}
         consolidationPolicy: WhenEmpty
@@ -385,8 +381,8 @@ resource "helm_release" "aws_load_balancer_controller" {
       create: true
       annotations:
         eks.amazonaws.com/role-arn: ${aws_iam_role.aws_load_balancer_controller.arn}
-    nodeSelector: ${jsonencode(var.critical_addons_node_selector.selectors)}
-    tolerations: ${jsonencode(var.critical_addons_node_tolerations.tolerations)}
+    nodeSelector: ${jsonencode(var.critical_addons_node_selector)}
+    tolerations: ${jsonencode(var.critical_addons_node_tolerations)}
     %{if var.lbc_image_tag != null}
     image:
       tag: ${var.lbc_image_tag}

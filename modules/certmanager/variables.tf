@@ -21,3 +21,23 @@ variable "recursive_nameservers" {
   type        = string
   default     = "8.8.8.8:53\\,1.1.1.1:53"
 }
+
+variable "certmanager_node_selector" {
+  description = "Config for node selector for workloads"
+  type        = map(any)
+  default = {
+    CriticalAddonsOnly = "true"
+  }
+}
+
+variable "certmanager_node_tolerations" {
+  description = "Config for node tolerations for workloads"
+  type = list(any)
+  default = [{
+      key      = "CriticalAddonsOnly"
+      operator = "Equal"
+      effect   = "NoSchedule"
+      value    = "true"
+    }
+  ]
+}

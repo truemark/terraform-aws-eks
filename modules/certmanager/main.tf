@@ -4,28 +4,33 @@ resource "helm_release" "cert_manager" {
   chart            = "cert-manager"
   namespace        = "cert-manager"
   create_namespace = var.create_namespace
-
-  set {
-    name  = "version"
-    value = var.chart_version
-    type  = "string"
-  }
-
-  set {
-    name  = "namespace"
-    value = "cert-manager"
-    type  = "string"
-  }
-
-  set {
-    name  = "create-namespace"
-    value = true
-  }
-
-  set {
-    name  = "installCRDs"
-    value = true
-  }
+  values = [
+    <<-EOT
+    version: ${var.chart_version}
+    crds:
+      enabled: true
+      keep: true
+    nodeSelector:
+      ${jsonencode(var.certmanager_node_selector)}
+    tolerations:
+      ${jsonencode(var.certmanager_node_tolerations)}
+    cainjector:
+      nodeSelector:
+        ${jsonencode(var.certmanager_node_selector)}
+      tolerations:
+        ${jsonencode(var.certmanager_node_tolerations)}
+    webhook:
+      nodeSelector:
+        ${jsonencode(var.certmanager_node_selector)}
+      tolerations:
+        ${jsonencode(var.certmanager_node_tolerations)}
+    startupapicheck:
+      nodeSelector:
+        ${jsonencode(var.certmanager_node_selector)}
+      tolerations:
+        ${jsonencode(var.certmanager_node_tolerations)}
+    EOT
+  ]
 
   dynamic "set" {
     for_each = var.enable_recursive_nameservers == true ? [1] : []

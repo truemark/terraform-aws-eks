@@ -61,16 +61,19 @@ variable "enable_alerts" {
 
 variable "prometheus_node_tolerations" {
   description = "K8S node tolerations for prometheus server"
-  type        = map(any)
-  default = {
-    tolerations : []
-  }
+  type        = list(any)
+  default = [{
+    key      = "CriticalAddonsOnly"
+    operator = "Equal"
+    effect   = "NoSchedule"
+    value    = "true"
+  }]
 }
 variable "prometheus_node_selector" {
   description = "K8S node selector for prometheus"
   type        = map(any)
   default = {
-    nodeSelector : {}
+    CriticalAddonsOnly = "true"
   }
 }
 
