@@ -414,6 +414,26 @@ variable "amp_custom_alerting_rules" {
   default     = ""
 }
 
+variable "prometheus_node_tolerations" {
+  description = "K8S node tolerations for prometheus server"
+  type        = list(any)
+  default = [{
+    key      = "CriticalAddonsOnly"
+    operator = "Equal"
+    effect   = "NoSchedule"
+    value    = "true"
+  }]
+}
+variable "prometheus_node_selector" {
+  description = "K8S node selector for prometheus"
+  type        = map(any)
+  default = {
+    CriticalAddonsOnly = "true"
+  }
+}
+
+
+
 ###############################################
 # Ingress Configuration
 ###############################################

@@ -40,6 +40,12 @@ resource "helm_release" "prometheus_install" {
         ${jsonencode(var.prometheus_node_selector)}
       tolerations:
         ${jsonencode(var.prometheus_node_tolerations)}
+    kube-state-metrics:
+      nodeSelector:
+        ${jsonencode(var.prometheus_node_selector)}
+      tolerations:
+        ${jsonencode(var.prometheus_node_tolerations)}
+
     EOT
   ]
 

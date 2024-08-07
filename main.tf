@@ -476,6 +476,25 @@ resource "helm_release" "external_secrets" {
   version    = "0.7.1"
   namespace  = kubernetes_namespace.external_secrets.id
 
+  values = [
+    <<-EOT
+  nodeSelector:
+    ${jsonencode(var.critical_addons_node_selector)}
+  tolerations:
+    ${jsonencode(var.critical_addons_node_tolerations)}
+  webhook:
+    nodeSelector:
+      ${jsonencode(var.critical_addons_node_selector)}
+    tolerations:
+      ${jsonencode(var.critical_addons_node_tolerations)}
+  certController:
+    nodeSelector:
+      ${jsonencode(var.critical_addons_node_selector)}
+    tolerations:
+      ${jsonencode(var.critical_addons_node_tolerations)}
+  EOT
+  ]
+
   set {
     name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
     value = module.external_secrets_irsa.iam_role_arn
@@ -488,6 +507,14 @@ resource "helm_release" "metrics_server" {
   repository = "https://kubernetes-sigs.github.io/metrics-server/"
   version    = "3.12.0"
   namespace  = "kube-system"
+  values = [
+    <<-EOT
+  nodeSelector:
+    ${jsonencode(var.critical_addons_node_selector)}
+  tolerations:
+    ${jsonencode(var.critical_addons_node_tolerations)}
+  EOT
+  ]
 }
 
 module "monitoring" {
@@ -506,6 +533,8 @@ module "monitoring" {
   region                               = data.aws_region.current.name
   alerts_sns_topics_arn                = var.alerts_sns_topics_arn
   amp_custom_alerting_rules            = var.amp_custom_alerting_rules
+  prometheus_node_selector             = var.prometheus_node_selector
+  prometheus_node_tolerations          = var.prometheus_node_tolerations
   tags                                 = var.tags
 }
 
@@ -596,5 +625,13 @@ resource "aws_ssm_parameter" "oidc_provider_arn" {
   description = "The ARN of the OIDC Provider"
   type        = "String"
   value       = module.eks.oidc_provider_arn
+  tags        = var.tags
+}
+
+resource "aws_ssm_parameter" "cluster_certificate_authority_data" {
+  name        = "/truemark/eks/${var.cluster_name}/oidc_provider_arn"
+  description = "Base64 encoded certificate data required to communicate with the cluster"
+  type        = "String"
+  value       = module.eks.cluster_certificate_authority_data
   tags        = var.tags
 }
