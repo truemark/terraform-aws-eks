@@ -424,6 +424,7 @@ variable "prometheus_node_tolerations" {
     value    = "true"
   }]
 }
+
 variable "prometheus_node_selector" {
   description = "K8S node selector for prometheus"
   type        = map(any)
