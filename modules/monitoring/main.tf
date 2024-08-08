@@ -33,6 +33,22 @@ resource "helm_release" "prometheus_install" {
   chart      = "prometheus"
   namespace  = kubernetes_namespace.prometheus.metadata[0].name
 
+  values = [
+    <<-EOT
+    server:
+      nodeSelector:
+        ${jsonencode(var.prometheus_node_selector)}
+      tolerations:
+        ${jsonencode(var.prometheus_node_tolerations)}
+    kube-state-metrics:
+      nodeSelector:
+        ${jsonencode(var.prometheus_node_selector)}
+      tolerations:
+        ${jsonencode(var.prometheus_node_tolerations)}
+
+    EOT
+  ]
+
   set {
     name  = "serviceAccounts.server.annotations.eks\\.amazonaws\\.com/role-arn"
     value = module.amp_irsa_role.iam_role_arn
@@ -84,11 +100,6 @@ resource "helm_release" "prometheus_install" {
     value = var.prometheus_server_data_volume_size
   }
 
-  set {
-    name  = "server.tolerations"
-    value = jsonencode(var.prometheus_node_tolerations)
-  }
-
   timeout = 600
 }
 
@@ -131,7 +142,7 @@ alertmanager_config: |
 %{if var.alert_role_arn != null}
             role_arn: '${var.alert_role_arn}'
 %{endif}
-          topic_arn: '${var.alerts_sns_topics_arn}'        
+          topic_arn: '${var.alerts_sns_topics_arn}'
           attributes:
             amp_arn: '${var.amp_name != null ? aws_prometheus_workspace.k8s.0.arn : var.amp_arn}'
             cluster_name: '${var.cluster_name}'

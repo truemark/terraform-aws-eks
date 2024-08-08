@@ -58,7 +58,7 @@ locals {
   eks_managed_node_groups = merge(
     { for k, v in var.eks_managed_node_groups : "${var.cluster_name}-${k}" => v },
     var.create_default_critical_addon_node_group ? {
-      "${var.cluster_name}-critical" = local.default_critical_addon_nodegroup
+      "truemark-system" = local.default_critical_addon_nodegroup
     } : {}
   )
   karpenter_crds = ["karpenter.sh_nodepools.yaml", "karpenter.sh_nodeclaims.yaml", "karpenter.k8s.aws_ec2nodeclasses.yaml"]
@@ -123,14 +123,6 @@ module "eks" {
   #KMS
   kms_key_users  = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
   kms_key_owners = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-
-  # OIDC Identity provider
-  cluster_identity_providers = {
-    sts = {
-      client_id  = "sts.amazonaws.com"
-      issuer_url = module.eks.cluster_oidc_issuer_url
-    }
-  }
 
   cluster_addons = {
     vpc-cni = {
@@ -233,9 +225,9 @@ resource "helm_release" "karpenter" {
       prometheus.io/port: '8000'
       prometheus.io/scrape: 'true'
     nodeSelector:
-      ${jsonencode(var.critical_addons_node_selector.selectors)}
+      ${jsonencode(var.critical_addons_node_selector)}
     tolerations:
-      ${jsonencode(var.critical_addons_node_tolerations.tolerations)}
+      ${jsonencode(var.critical_addons_node_tolerations)}
     serviceAccount:
       annotations:
         eks.amazonaws.com/role-arn: ${module.karpenter[0].iam_role_arn}
@@ -248,10 +240,10 @@ resource "kubectl_manifest" "karpenter_node_class" {
     apiVersion: karpenter.k8s.aws/v1beta1
     kind: EC2NodeClass
     metadata:
-      name: default
+      name: truemark
     spec:
-      amiFamily: ${var.karpenter_provisioner_default_ami_family}
-      blockDeviceMappings: ${jsonencode(var.karpenter_provisioner_default_block_device_mappings.specs)}
+      amiFamily: ${var.truemark_nodeclass_default_ami_family}
+      blockDeviceMappings: ${jsonencode(var.truemark_nodeclass_default_block_device_mappings.specs)}
       role: ${module.karpenter[0].node_iam_role_name}
       subnetSelectorTerms:
         - tags:
@@ -260,7 +252,7 @@ resource "kubectl_manifest" "karpenter_node_class" {
         - tags:
             karpenter.sh/discovery: ${module.eks.cluster_name}
       tags:
-        Name: "${module.eks.cluster_name}-default"
+        Name: "${module.eks.cluster_name}-truemark-default"
         karpenter.sh/discovery: ${module.eks.cluster_name}
   YAML
 
@@ -274,15 +266,22 @@ resource "kubectl_manifest" "karpenter_node_pool_arm" {
     apiVersion: karpenter.sh/v1beta1
     kind: NodePool
     metadata:
-      name: default-arm
+      name: truemark-arm64
     spec:
+      disruption:
+        budgets:
+          - nodes: 10%
+        consolidationPolicy: WhenUnderutilized
+        expireAfter: 720h
       template:
         spec:
           nodeClassRef:
-            name: default
+            name: truemark
+          taints:
+          - key: karpenter.sh/nodepool
+            value: "truemark-arm64"
+            effect: NoSchedule
           requirements: ${jsonencode(var.karpenter_node_pool_default_arm_requirements.requirements)}
-      limits:
-        cpu: ${var.karpenter_nodepool_default_cpu_limits}
       disruption:
         expireAfter: ${var.karpenter_nodepool_default_expireAfter}
         consolidationPolicy: WhenEmpty
@@ -300,15 +299,22 @@ resource "kubectl_manifest" "karpenter_node_pool_amd" {
     apiVersion: karpenter.sh/v1beta1
     kind: NodePool
     metadata:
-      name: default-amd
+      name: truemark-amd64
     spec:
+      disruption:
+        budgets:
+          - nodes: 10%
+        consolidationPolicy: WhenUnderutilized
+        expireAfter: 720h
       template:
         spec:
           nodeClassRef:
-            name: default
+            name: truemark
+          taints:
+          - key: karpenter.sh/nodepool
+            value: "truemark-amd64"
+            effect: NoSchedule
           requirements: ${jsonencode(var.karpenter_node_pool_default_amd_requirements.requirements)}
-      limits:
-        cpu: ${var.karpenter_nodepool_default_cpu_limits}
       disruption:
         expireAfter: ${var.karpenter_nodepool_default_expireAfter}
         consolidationPolicy: WhenEmpty
@@ -375,8 +381,8 @@ resource "helm_release" "aws_load_balancer_controller" {
       create: true
       annotations:
         eks.amazonaws.com/role-arn: ${aws_iam_role.aws_load_balancer_controller.arn}
-    nodeSelector: ${jsonencode(var.critical_addons_node_selector.selectors)}
-    tolerations: ${jsonencode(var.critical_addons_node_tolerations.tolerations)}
+    nodeSelector: ${jsonencode(var.critical_addons_node_selector)}
+    tolerations: ${jsonencode(var.critical_addons_node_tolerations)}
     %{if var.lbc_image_tag != null}
     image:
       tag: ${var.lbc_image_tag}
@@ -470,6 +476,25 @@ resource "helm_release" "external_secrets" {
   version    = "0.7.1"
   namespace  = kubernetes_namespace.external_secrets.id
 
+  values = [
+    <<-EOT
+  nodeSelector:
+    ${jsonencode(var.critical_addons_node_selector)}
+  tolerations:
+    ${jsonencode(var.critical_addons_node_tolerations)}
+  webhook:
+    nodeSelector:
+      ${jsonencode(var.critical_addons_node_selector)}
+    tolerations:
+      ${jsonencode(var.critical_addons_node_tolerations)}
+  certController:
+    nodeSelector:
+      ${jsonencode(var.critical_addons_node_selector)}
+    tolerations:
+      ${jsonencode(var.critical_addons_node_tolerations)}
+  EOT
+  ]
+
   set {
     name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
     value = module.external_secrets_irsa.iam_role_arn
@@ -482,6 +507,14 @@ resource "helm_release" "metrics_server" {
   repository = "https://kubernetes-sigs.github.io/metrics-server/"
   version    = "3.12.0"
   namespace  = "kube-system"
+  values = [
+    <<-EOT
+  nodeSelector:
+    ${jsonencode(var.critical_addons_node_selector)}
+  tolerations:
+    ${jsonencode(var.critical_addons_node_tolerations)}
+  EOT
+  ]
 }
 
 module "monitoring" {
@@ -500,6 +533,8 @@ module "monitoring" {
   region                               = data.aws_region.current.name
   alerts_sns_topics_arn                = var.alerts_sns_topics_arn
   amp_custom_alerting_rules            = var.amp_custom_alerting_rules
+  prometheus_node_selector             = var.prometheus_node_selector
+  prometheus_node_tolerations          = var.prometheus_node_tolerations
   tags                                 = var.tags
 }
 
@@ -590,5 +625,13 @@ resource "aws_ssm_parameter" "oidc_provider_arn" {
   description = "The ARN of the OIDC Provider"
   type        = "String"
   value       = module.eks.oidc_provider_arn
+  tags        = var.tags
+}
+
+resource "aws_ssm_parameter" "cluster_certificate_authority_data" {
+  name        = "/truemark/eks/${var.cluster_name}/cluster_certificate_authority_data"
+  description = "Base64 encoded certificate data required to communicate with the cluster"
+  type        = "String"
+  value       = module.eks.cluster_certificate_authority_data
   tags        = var.tags
 }
