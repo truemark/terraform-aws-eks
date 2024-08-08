@@ -53,6 +53,11 @@ output "oidc_provider_arn" {
   value       = module.eks.oidc_provider_arn
 }
 
+output "cluster_certificate_authority_data" {
+  description = "Base64 encoded certificate data required to communicate with the cluster"
+  value       = module.eks.cluster_certificate_authority_data
+}
+
 output "cluster_tls_certificate_sha1_fingerprint" {
   description = "The SHA1 fingerprint of the public key of the cluster's certificate"
   value       = module.eks.cluster_tls_certificate_sha1_fingerprint
