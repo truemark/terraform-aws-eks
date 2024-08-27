@@ -537,6 +537,7 @@ module "monitoring" {
   region                               = data.aws_region.current.name
   alerts_sns_topics_arn                = var.alerts_sns_topics_arn
   amp_custom_alerting_rules            = var.amp_custom_alerting_rules
+  prometheus_server_request_memory     = var.prometheus_server_request_memory
   prometheus_node_selector             = var.prometheus_node_selector
   prometheus_node_tolerations          = var.prometheus_node_tolerations
   tags                                 = var.tags

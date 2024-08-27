@@ -433,6 +433,12 @@ variable "prometheus_node_selector" {
   }
 }
 
+variable "prometheus_server_request_memory" {
+  type        = string
+  description = "Requested memory for prometheus instance"
+  default     = "4Gi"
+}
+
 ###############################################
 # Ingress Configuration
 ###############################################
