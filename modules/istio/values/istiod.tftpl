@@ -47,3 +47,10 @@ meshConfig:
       "path": "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%",
       "response_code_details": "%RESPONSE_CODE_DETAILS%"
     }
+nodeSelector:
+  karpenter.sh/nodepool: truemark-arm64
+tolerations:
+- key: "karpenter.sh/nodepool"
+  operator: "Equal"
+  value: "truemark-arm64"
+  effect: "NoSchedule"
