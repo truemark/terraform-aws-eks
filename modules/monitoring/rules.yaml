@@ -324,3 +324,31 @@ groups:
       annotations:
         summary: Cluster worker nodes drop by 10% in 5 minutes
         description: "The amount of cluster worker nodes has dropped by 10 percent in the last 5 minutes. VALUE = {{ $value }}"
+- name: KarpenterNodepoolAlerts
+  rules:
+  - alert: KarpenterNodepoolUsageHigh
+    expr: |
+      (
+        (
+          sum by (nodepool, resource_type) (karpenter_nodepool_usage)
+          /
+          sum by (nodepool, resource_type) (karpenter_nodepool_limit)
+        ) * 100
+      ) > 85
+      and
+      (
+        (
+          (
+            sum by (nodepool, resource_type) (karpenter_nodepool_usage)
+            - sum by (nodepool, resource_type) (karpenter_nodepool_usage offset 10m)
+          )
+          /
+          sum by (nodepool, resource_type) (karpenter_nodepool_usage offset 10m)
+        ) * 100
+      ) > 20
+    for: 10m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Karpenter nodepool usage is high"
+      description: "The usage of karpenter nodepool {{ $labels.nodepool }} for resource type {{ $labels.resource_type }} has grown by more than 20% in the last 10 minutes and is currently above 85%."
