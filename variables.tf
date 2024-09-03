@@ -625,4 +625,17 @@ variable "enable_cert_manager" {
   description = "Enables cert-manager deployment."
 }
 
+###############################################
+# EKS Addons
+###############################################
+variable "vpa_enabled" {
+  description = "Enable Vertical Pod Autoscaler"
+  type        = bool
+  default     = false
+}
 
+variable "goldilocks_enabled" {
+  description = "Enable Goldilocks operator"
+  type        = bool
+  default     = false
+}

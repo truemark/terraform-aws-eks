@@ -593,9 +593,9 @@ module "cert_manager" {
 }
 
 module "vpa" {
-  source = "./modules/addons"
-  vpa_enabled = true
-  goldilocks_enabled = true
+  source             = "./modules/addons"
+  vpa_enabled        = var.vpa_enabled
+  goldilocks_enabled = var.goldilocks_enabled
 }
 
 resource "aws_ssm_parameter" "cluster_id" {
