@@ -592,6 +592,12 @@ module "cert_manager" {
   enable_recursive_nameservers = true
 }
 
+module "vpa" {
+  source = "./modules/addons"
+  vpa_enabled = true
+  goldilocks_enabled = true
+}
+
 resource "aws_ssm_parameter" "cluster_id" {
   name           = "/truemark/eks/${var.cluster_name}/cluster_id"
   description    = "The name/id of the EKS cluster. Will block on cluster creation until the cluster is really ready"
