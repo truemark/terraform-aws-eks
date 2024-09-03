@@ -6,7 +6,7 @@ resource "helm_release" "vpa" {
   create_namespace = true
   repository       = "https://charts.fairwinds.com/stable"
   values = [
-  <<-EOT
+    <<-EOT
   recommender:
     nodeSelector:
       ${jsonencode(var.critical_addons_node_selector)}
