@@ -61,7 +61,7 @@ locals {
       "truemark-system" = local.default_critical_addon_nodegroup
     } : {}
   )
-  karpenter_crds = var.enable_karpenter ? ["karpenter.sh_nodepools.yaml", "karpenter.sh_nodeclaims.yaml", "karpenter.k8s.aws_ec2nodeclasses.yaml"] : []
+  karpenter_crds = var.enable_karpenter ? var.enable_karpenter ? ["karpenter.sh_nodepools.yaml", "karpenter.sh_nodeclaims.yaml", "karpenter.k8s.aws_ec2nodeclasses.yaml"] : [] : []
 }
 
 provider "kubectl" {
@@ -197,11 +197,19 @@ data "http" "karpenter_crds" {
 }
 
 resource "kubectl_manifest" "karpenter_crds" {
+  depends_on       = [
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations
+  ]
   for_each  = data.http.karpenter_crds
   yaml_body = each.value.body
 }
 
 resource "helm_release" "karpenter" {
+  depends_on       = [
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations
+  ]
   count            = var.enable_karpenter ? 1 : 0
   namespace        = "karpenter"
   create_namespace = true
@@ -259,7 +267,9 @@ resource "kubectl_manifest" "karpenter_node_class" {
   YAML
 
   depends_on = [
-    helm_release.karpenter
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations,
+    helm_release.karpenter[0]
   ]
 }
 
@@ -293,7 +303,9 @@ resource "kubectl_manifest" "karpenter_node_pool_arm" {
   YAML
 
   depends_on = [
-    kubectl_manifest.karpenter_node_class
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations,
+    kubectl_manifest.karpenter_node_class[0]
   ]
 }
 
@@ -327,7 +339,9 @@ resource "kubectl_manifest" "karpenter_node_pool_amd" {
   YAML
 
   depends_on = [
-    kubectl_manifest.karpenter_node_class
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations,
+    kubectl_manifest.karpenter_node_class[0]
   ]
 }
 
@@ -371,6 +385,10 @@ resource "aws_iam_role_policy_attachment" "aws_load_balancer_controller" {
 
 //https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases
 resource "helm_release" "aws_load_balancer_controller" {
+  depends_on = [
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations
+  ]
   name       = "aws-load-balancer-controller"
   repository = "https://aws.github.io/eks-charts"
   chart      = "aws-load-balancer-controller"
@@ -413,6 +431,10 @@ module "vpc_cni_irsa" {
 }
 
 resource "kubernetes_storage_class" "gp3_ext4_encrypted" {
+  depends_on = [
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations
+  ]
   metadata {
     name = "gp3-ext4-encrypted"
     annotations = {
@@ -430,6 +452,10 @@ resource "kubernetes_storage_class" "gp3_ext4_encrypted" {
 }
 
 resource "kubectl_manifest" "gp2" {
+  depends_on = [
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations
+  ]
   yaml_body = <<YAML
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
@@ -468,12 +494,21 @@ module "external_secrets_irsa" {
 }
 
 resource "kubernetes_namespace" "external_secrets" {
+  depends_on = [
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations
+  ]
   metadata {
     name = "external-secrets"
   }
 }
 
 resource "helm_release" "external_secrets" {
+  depends_on = [
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations,
+    kubernetes_namespace.external_secrets
+  ]
   name       = "external-secrets"
   chart      = "external-secrets"
   repository = "https://charts.external-secrets.io"
@@ -506,6 +541,10 @@ resource "helm_release" "external_secrets" {
 }
 
 resource "helm_release" "metrics_server" {
+  depends_on = [
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations
+  ]
   name       = "metrics-server"
   chart      = "metrics-server"
   repository = "https://kubernetes-sigs.github.io/metrics-server/"
@@ -625,16 +664,8 @@ resource "aws_ssm_parameter" "oidc_provider" {
   tags        = var.tags
 }
 
-resource "aws_ssm_parameter" "oidc_provider_arn" {
-  name        = "/truemark/eks/${var.cluster_name}/oidc_provider_arn"
-  description = "The ARN of the OIDC Provider"
-  type        = "String"
-  value       = module.eks.oidc_provider_arn
-  tags        = var.tags
-}
-
 resource "aws_ssm_parameter" "cluster_certificate_authority_data" {
-  name        = "/truemark/eks/${var.cluster_name}/cluster_certificate_authority_data"
+  name        = "/truemark/eks/${var.cluster_name}/oidc_provider_arn"
   description = "Base64 encoded certificate data required to communicate with the cluster"
   type        = "String"
   value       = module.eks.cluster_certificate_authority_data
