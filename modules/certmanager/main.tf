@@ -3,14 +3,11 @@ resource "helm_release" "cert_manager" {
   repository       = "https://charts.jetstack.io"
   chart            = "cert-manager"
   namespace        = "cert-manager"
+  version          = var.chart_version
   create_namespace = var.create_namespace
   values = [
     <<-EOT
-    version: ${var.chart_version}
     installCRDs: true
-    crds:
-      enabled: true
-      keep: true
     nodeSelector:
       ${jsonencode(var.certmanager_node_selector)}
     tolerations:

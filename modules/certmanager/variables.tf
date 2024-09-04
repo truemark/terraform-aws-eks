@@ -32,12 +32,12 @@ variable "certmanager_node_selector" {
 
 variable "certmanager_node_tolerations" {
   description = "Config for node tolerations for workloads"
-  type = list(any)
+  type        = list(any)
   default = [{
-      key      = "CriticalAddonsOnly"
-      operator = "Equal"
-      effect   = "NoSchedule"
-      value    = "true"
+    key      = "CriticalAddonsOnly"
+    operator = "Equal"
+    effect   = "NoSchedule"
+    value    = "true"
     }
   ]
 }
