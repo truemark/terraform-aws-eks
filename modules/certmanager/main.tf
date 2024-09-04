@@ -7,6 +7,7 @@ resource "helm_release" "cert_manager" {
   values = [
     <<-EOT
     version: ${var.chart_version}
+    installCRDs: true
     crds:
       enabled: true
       keep: true
