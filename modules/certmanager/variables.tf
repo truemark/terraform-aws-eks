@@ -1,7 +1,7 @@
 variable "cert_manager_chart_version" {
   description = "The version of the Helm chart to install."
   type        = string
-  default     = "v1.14.1"
+  default     = "v1.13.3"
 
   validation {
     condition     = can(regex("^v1\\.(1[2-9]|[2-9][0-9])\\.[0-9]+$", var.cert_manager_chart_version))
