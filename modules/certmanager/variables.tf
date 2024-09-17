@@ -1,7 +1,12 @@
-variable "chart_version" {
+variable "cert_manager_chart_version" {
   description = "The version of the Helm chart to install."
   type        = string
   default     = "v1.13.3"
+
+  validation {
+    condition     = can(regex("^v1\\.(1[2-9]|[2-9][0-9])\\.[0-9]+$", var.cert_manager_chart_version))
+    error_message = "The version must be v1.12.x or greater."
+  }
 }
 
 variable "create_namespace" {
@@ -32,12 +37,12 @@ variable "certmanager_node_selector" {
 
 variable "certmanager_node_tolerations" {
   description = "Config for node tolerations for workloads"
-  type = list(any)
+  type        = list(any)
   default = [{
-      key      = "CriticalAddonsOnly"
-      operator = "Equal"
-      effect   = "NoSchedule"
-      value    = "true"
+    key      = "CriticalAddonsOnly"
+    operator = "Equal"
+    effect   = "NoSchedule"
+    value    = "true"
     }
   ]
 }

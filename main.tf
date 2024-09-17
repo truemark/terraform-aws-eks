@@ -588,7 +588,7 @@ module "cert_manager" {
 
   source = "./modules/certmanager"
 
-  chart_version                = "v1.13.3"
+  cert_manager_chart_version   = var.cert_manager_chart_version
   enable_recursive_nameservers = true
 }
 
