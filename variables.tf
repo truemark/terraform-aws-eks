@@ -625,6 +625,12 @@ variable "enable_cert_manager" {
   description = "Enables cert-manager deployment."
 }
 
+variable "cert_manager_chart_version" {
+  description = "The version of the Helm chart to install."
+  type        = string
+  default     = "v1.15.3"
+}
+
 ###############################################
 # EKS Addons
 ###############################################
