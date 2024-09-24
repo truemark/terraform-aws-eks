@@ -625,15 +625,17 @@ variable "enable_cert_manager" {
   description = "Enables cert-manager deployment."
 }
 
-variable "cert_manager_chart_version" {
-  description = "The version of the Helm chart to install."
-  type        = string
-  default     = "v1.13.3"
-
-  validation {
-    condition     = can(regex("^v1\\.(1[2-9]|[2-9][0-9])\\.[0-9]+$", var.cert_manager_chart_version))
-    error_message = "The version must be v1.12.x or greater."
-  }
+###############################################
+# EKS Addons
+###############################################
+variable "vpa_enabled" {
+  description = "Enable Vertical Pod Autoscaler"
+  type        = bool
+  default     = false
 }
 
-
+variable "goldilocks_enabled" {
+  description = "Enable Goldilocks operator"
+  type        = bool
+  default     = false
+}
