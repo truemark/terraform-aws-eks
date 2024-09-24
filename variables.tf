@@ -50,6 +50,12 @@ variable "create_cloudwatch_log_group" {
   default     = true
 }
 
+variable "enable_cluster_creator_admin_permissions" {
+  description = "Indicates whether or not to add the cluster creator (the identity used by Terraform) as an administrator via access entry"
+  type        = bool
+  default     = false
+}
+
 ###############################################
 # EKS Addons Configuration
 ###############################################
@@ -104,6 +110,25 @@ variable "critical_addons_node_tolerations" {
     operator = "Equal"
     effect   = "NoSchedule"
     value    = "true"
+  }]
+}
+
+variable "truemark_arm_node_selector" {
+  description = "Config for node selector for workloads"
+  type        = map(any)
+  default = {
+    "karpenter.sh/nodepool" = "truemark-arm64"
+  }
+}
+
+variable "truemark_arm_node_tolerations" {
+  description = "Config for node tolerations for workloads"
+  type        = list(any)
+  default = [{
+    key      = "karpenter.sh/nodepool"
+    operator = "Equal"
+    effect   = "NoSchedule"
+    value    = "truemark-arm64"
   }]
 }
 
@@ -347,282 +372,45 @@ variable "karpenter_nodepool_default_ttl_until_expired" {
   default     = 2592000
 }
 
-###############################################
-# External Secrets Configuration
-###############################################
-variable "external_secrets_ssm_parameter_arns" {
-  description = "List of Systems Manager Parameter ARNs that contain secrets to mount using External Secrets"
-  type        = list(string)
-  default     = ["arn:aws:ssm:*:*:parameter/*"]
+
+
+##
+
+variable "environment" {}
+
+variable "addons" {
+  description = "Kubernetes addons"
+  type        = any
+  default = {
+    enable_cert_manager                 = true
+    enable_external_dns                 = false
+    enable_external_secrets             = false
+    enable_aws_load_balancer_controller = false
+    enable_vpa                          = false
+  }
 }
-
-variable "external_secrets_secrets_manager_arns" {
-  description = "List of Secrets Manager ARNs that contain secrets to mount using External Secrets"
-  type        = list(string)
-  default     = ["arn:aws:secretsmanager:*:*:secret:*"]
-}
-
-variable "external_secrets_kms_key_arns" {
-  description = "List of KMS Key ARNs that are used by Secrets Manager that contain secrets to mount using External Secrets"
-  type        = list(string)
-  default     = ["arn:aws:kms:*:*:key/*"]
-}
-
-
-###############################################
-# Monitoring Configuration
-###############################################
-variable "amp_id" {
-  description = "The AMP workspace id"
+variable "gitops_addons_org" {
+  description = "Git repository org/user contains for addons"
   type        = string
-  default     = null
+  default     = "https://github.com/d3vb0ox"
 }
-
-variable "amp_arn" {
-  description = "The AMP workspace arn"
+variable "gitops_addons_repo" {
+  description = "Git repository contains for addons"
   type        = string
-  default     = null
+  default     = "k8s-addons"
 }
-
-variable "enable_monitoring" {
-  description = "Enable monitoring"
-  type        = bool
-  default     = false
-}
-
-variable "alerts_sns_topics_arn" {
-  description = "The ARN of the SNS topic to send alerts to"
+variable "gitops_addons_revision" {
+  description = "Git repository revision/branch/ref for addons"
   type        = string
-  default     = null
+  default     = "main"
 }
-
-variable "amp_alerting_rules_exclude_namespace" {
-  description = "Namespaces to exclude from alerting"
+variable "gitops_addons_basepath" {
+  description = "Git repository base path for addons"
   type        = string
   default     = ""
 }
-
-variable "prometheus_server_data_volume_size" {
-  description = "Volume size for prometheus data"
+variable "gitops_addons_path" {
+  description = "Git repository path for addons"
   type        = string
-  default     = "150Gi"
+  default     = "addons"
 }
-
-variable "amp_custom_alerting_rules" {
-  description = "Prometheus K8s custom alerting rules"
-  type        = string
-  default     = ""
-}
-
-variable "prometheus_node_tolerations" {
-  description = "K8S node tolerations for prometheus server"
-  type        = list(any)
-  default = [{
-    key      = "CriticalAddonsOnly"
-    operator = "Equal"
-    effect   = "NoSchedule"
-    value    = "true"
-  }]
-}
-
-variable "prometheus_node_selector" {
-  description = "K8S node selector for prometheus"
-  type        = map(any)
-  default = {
-    CriticalAddonsOnly = "true"
-  }
-}
-
-variable "prometheus_server_request_memory" {
-  type        = string
-  description = "Requested memory for prometheus instance"
-  default     = "4Gi"
-}
-
-###############################################
-# Ingress Configuration
-###############################################
-
-## Traefik
-variable "enable_traefik" {
-  type        = bool
-  default     = false
-  description = "Enables traefik deployment."
-}
-
-## Istio
-variable "enable_istio" {
-  type        = bool
-  default     = false
-  description = "Enables istio deployment"
-}
-
-variable "istio_release_version" {
-  type        = string
-  default     = "1.18.3"
-  description = "The version of Istio to be installed."
-}
-
-variable "istio_mesh_id" {
-  type        = string
-  description = "The ID of the Istio mesh."
-  default     = null
-  nullable    = true
-}
-
-variable "istio_network" {
-  type        = string
-  description = "The network for the Istio mesh."
-  default     = null
-  nullable    = true
-}
-
-variable "istio_multi_cluster" {
-  type        = bool
-  description = "Enable multi-cluster support for Istio."
-  default     = false
-}
-
-variable "istio_cluster_name" {
-  type        = string
-  description = "The name of the cluster."
-  default     = null
-  nullable    = true
-}
-
-variable "istio_nlb_tls_policy" {
-  type        = string
-  default     = "ELBSecurityPolicy-TLS13-1-2-2021-06"
-  description = "The TLS policy for the NLB."
-}
-
-variable "aws_managed_prefix_lists" {
-  type        = map(string)
-  description = "The AWS managed prefix lists."
-  default = {
-    cloudfront = "com.amazonaws.global.cloudfront.origin-facing"
-  }
-}
-
-## External Gateway configs
-variable "istio_enable_external_gateway" {
-  type        = bool
-  default     = true
-  description = "Determines whether to enable an external gateway for Istio, allowing external traffic to reach Istio services."
-}
-
-variable "istio_external_gateway_lb_certs" {
-  type        = list(string)
-  description = "The certificates for the Istio external gateway load balancer."
-  default     = []
-}
-
-variable "istio_external_gateway_service_kind" {
-  type        = string
-  default     = "NodePort"
-  description = "The type of service for the Istio external gateway."
-}
-
-variable "istio_external_gateway_scaling_max_replicas" {
-  type        = number
-  description = "The maximum number of replicas for scaling the Istio external gateway."
-  default     = 5
-}
-
-variable "istio_external_gateway_scaling_target_cpu_utilization" {
-  type        = number
-  description = "The target CPU utilization percentage for scaling the external gateway."
-  default     = 80
-}
-
-variable "istio_external_gateway_enable_http_port" {
-  description = "Enable http port"
-  type        = bool
-  default     = true
-}
-
-variable "istio_external_gateway_use_prefix_list" {
-  description = "Use prefix list for security group rules"
-  type        = bool
-  default     = false
-}
-
-variable "istio_external_gateway_lb_source_ranges" {
-  description = "List of CIDR blocks to allow traffic from"
-  type        = list(string)
-  default     = []
-}
-
-variable "istio_external_gateway_lb_proxy_protocol" {
-  description = "Enable proxy protocol for the external gateway load balancer"
-  type        = string
-  default     = "*"
-  nullable    = true
-}
-
-## Internal Gateway configs
-variable "istio_enable_internal_gateway" {
-  type        = bool
-  default     = false
-  description = "Controls the enabling of an internal gateway for Istio, which manages traffic within the Kubernetes cluster."
-}
-
-variable "istio_internal_gateway_lb_certs" {
-  type        = list(string)
-  description = "The certificates for the Istio internal gateway load balancer."
-  default     = []
-}
-
-variable "istio_internal_gateway_service_kind" {
-  type        = string
-  default     = "NodePort"
-  description = "The type of service for the Istio internal gateway."
-}
-
-variable "istio_internal_gateway_scaling_max_replicas" {
-  type        = number
-  description = "The maximum number of replicas for scaling the Istio internal gateway."
-  default     = 5
-}
-
-variable "istio_internal_gateway_scaling_target_cpu_utilization" {
-  type        = number
-  description = "The target CPU utilization percentage for scaling the internal gateway."
-  default     = 80
-}
-
-variable "istio_internal_gateway_enable_http_port" {
-  description = "Enable http port"
-  type        = bool
-  default     = false
-}
-
-variable "istio_internal_gateway_lb_proxy_protocol" {
-  description = "Enable proxy protocol for the external gateway load balancer"
-  type        = string
-  default     = "*"
-  nullable    = true
-}
-
-variable "istio_internal_gateway_use_prefix_list" {
-  description = "Use prefix list for security group rules"
-  type        = bool
-  default     = false
-}
-
-variable "istio_internal_gateway_lb_source_ranges" {
-  description = "List of CIDR blocks to allow traffic from"
-  type        = list(string)
-  default     = []
-}
-
-###############################################
-# Certmanager Configuration
-###############################################
-variable "enable_cert_manager" {
-  type        = bool
-  default     = false
-  description = "Enables cert-manager deployment."
-}
-
-

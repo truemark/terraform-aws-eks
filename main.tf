@@ -108,17 +108,18 @@ module "ebs_csi_irsa_role" {
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 20.14"
+  version = "~> 20.24"
 
-  cluster_name                            = var.cluster_name
-  cluster_version                         = var.cluster_version
-  cluster_endpoint_private_access         = var.cluster_endpoint_private_access
-  cluster_endpoint_public_access          = var.cluster_endpoint_public_access
-  create_cloudwatch_log_group             = var.create_cloudwatch_log_group
-  cluster_enabled_log_types               = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
-  cluster_security_group_additional_rules = var.cluster_security_group_additional_rules
-  node_security_group_additional_rules    = var.node_security_group_additional_rules
-  cluster_additional_security_group_ids   = var.cluster_additional_security_group_ids
+  cluster_name                             = var.cluster_name
+  cluster_version                          = var.cluster_version
+  cluster_endpoint_private_access          = var.cluster_endpoint_private_access
+  cluster_endpoint_public_access           = var.cluster_endpoint_public_access
+  create_cloudwatch_log_group              = var.create_cloudwatch_log_group
+  cluster_enabled_log_types                = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+  cluster_security_group_additional_rules  = var.cluster_security_group_additional_rules
+  node_security_group_additional_rules     = var.node_security_group_additional_rules
+  cluster_additional_security_group_ids    = var.cluster_additional_security_group_ids
+  enable_cluster_creator_admin_permissions = var.enable_cluster_creator_admin_permissions
 
   #KMS
   kms_key_users  = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
@@ -175,226 +176,6 @@ resource "aws_eks_access_policy_association" "access_policy_associations" {
   }
 }
 
-module "karpenter" {
-  count   = var.enable_karpenter ? 1 : 0
-  source  = "terraform-aws-modules/eks/aws//modules/karpenter"
-  version = "~> 20.14"
-
-  cluster_name = module.eks.cluster_name
-  node_iam_role_additional_policies = {
-    AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-  }
-  enable_irsa                     = true
-  irsa_oidc_provider_arn          = module.eks.oidc_provider_arn
-  irsa_namespace_service_accounts = ["karpenter:karpenter"]
-
-  tags = var.tags
-}
-
-data "http" "karpenter_crds" {
-  for_each = toset(local.karpenter_crds)
-  url      = "https://raw.githubusercontent.com/aws/karpenter/v${var.karpenter_version}/pkg/apis/crds/${each.key}"
-}
-
-resource "kubectl_manifest" "karpenter_crds" {
-  for_each  = data.http.karpenter_crds
-  yaml_body = each.value.body
-}
-
-resource "helm_release" "karpenter" {
-  count            = var.enable_karpenter ? 1 : 0
-  namespace        = "karpenter"
-  create_namespace = true
-
-  name                = "karpenter"
-  repository          = "oci://public.ecr.aws/karpenter"
-  repository_username = data.aws_ecrpublic_authorization_token.token[0].user_name
-  repository_password = data.aws_ecrpublic_authorization_token.token[0].password
-  chart               = "karpenter"
-  version             = var.karpenter_version
-
-  values = [
-    <<-EOT
-    settings:
-      clusterName: ${module.eks.cluster_name}
-      clusterEndpoint: ${module.eks.cluster_endpoint}
-      interruptionQueueName: ${module.karpenter[0].queue_name}
-      featureGates:
-        drift: ${var.karpenter_settings_featureGates_drift}
-    podAnnotations:
-      prometheus.io/path: /metrics
-      prometheus.io/port: '8000'
-      prometheus.io/scrape: 'true'
-    nodeSelector:
-      ${jsonencode(var.critical_addons_node_selector)}
-    tolerations:
-      ${jsonencode(var.critical_addons_node_tolerations)}
-    serviceAccount:
-      annotations:
-        eks.amazonaws.com/role-arn: ${module.karpenter[0].iam_role_arn}
-    EOT
-  ]
-}
-
-resource "kubectl_manifest" "karpenter_node_class" {
-  count     = var.enable_karpenter ? 1 : 0
-  yaml_body = <<-YAML
-    apiVersion: karpenter.k8s.aws/v1beta1
-    kind: EC2NodeClass
-    metadata:
-      name: truemark
-    spec:
-      amiFamily: ${var.truemark_nodeclass_default_ami_family}
-      blockDeviceMappings: ${jsonencode(var.truemark_nodeclass_default_block_device_mappings.specs)}
-      role: ${module.karpenter[0].node_iam_role_name}
-      subnetSelectorTerms:
-        - tags:
-            ${jsonencode(var.karpenter_node_template_default.subnetSelector)}
-      securityGroupSelectorTerms:
-        - tags:
-            karpenter.sh/discovery: ${module.eks.cluster_name}
-      tags:
-        Name: "${module.eks.cluster_name}-truemark-default"
-        karpenter.sh/discovery: ${module.eks.cluster_name}
-  YAML
-
-  depends_on = [
-    helm_release.karpenter
-  ]
-}
-
-resource "kubectl_manifest" "karpenter_node_pool_arm" {
-  count     = var.enable_karpenter ? 1 : 0
-  yaml_body = <<-YAML
-    apiVersion: karpenter.sh/v1beta1
-    kind: NodePool
-    metadata:
-      name: truemark-arm64
-    spec:
-      disruption:
-        budgets:
-          - nodes: 10%
-        consolidationPolicy: WhenUnderutilized
-        expireAfter: 720h
-      template:
-        spec:
-          nodeClassRef:
-            name: truemark
-          taints:
-          - key: karpenter.sh/nodepool
-            value: "truemark-arm64"
-            effect: NoSchedule
-          requirements: ${jsonencode(var.karpenter_node_pool_default_arm_requirements.requirements)}
-      disruption:
-        expireAfter: ${var.karpenter_nodepool_default_expireAfter}
-        consolidationPolicy: WhenEmpty
-        consolidateAfter: 30s
-      weight: ${var.karpenter_arm_node_pool_weight}
-  YAML
-
-  depends_on = [
-    kubectl_manifest.karpenter_node_class
-  ]
-}
-
-resource "kubectl_manifest" "karpenter_node_pool_amd" {
-  count     = var.enable_karpenter ? 1 : 0
-  yaml_body = <<-YAML
-    apiVersion: karpenter.sh/v1beta1
-    kind: NodePool
-    metadata:
-      name: truemark-amd64
-    spec:
-      disruption:
-        budgets:
-          - nodes: 10%
-        consolidationPolicy: WhenUnderutilized
-        expireAfter: 720h
-      template:
-        spec:
-          nodeClassRef:
-            name: truemark
-          taints:
-          - key: karpenter.sh/nodepool
-            value: "truemark-amd64"
-            effect: NoSchedule
-          requirements: ${jsonencode(var.karpenter_node_pool_default_amd_requirements.requirements)}
-      disruption:
-        expireAfter: ${var.karpenter_nodepool_default_expireAfter}
-        consolidationPolicy: WhenEmpty
-        consolidateAfter: 30s
-      weight: ${var.karpenter_amd_node_pool_weight}
-  YAML
-
-  depends_on = [
-    kubectl_manifest.karpenter_node_class
-  ]
-}
-
-resource "aws_iam_policy" "aws_load_balancer_controller" {
-  name   = "${var.cluster_name}-AWSLoadBalancerControllerIAMPolicy"
-  policy = data.aws_iam_policy_document.aws_load_balancer_controller_full.json
-
-  tags = var.tags
-}
-
-resource "aws_iam_role" "aws_load_balancer_controller" {
-  name               = "${var.cluster_name}-AmazonEKSLoadBalancerControllerRole"
-  assume_role_policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-     "Effect": "Allow",
-     "Principal": {
-      "Federated": "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/${trimprefix(module.eks.cluster_oidc_issuer_url, "https://")}"
-     },
-     "Action": "sts:AssumeRoleWithWebIdentity",
-     "Condition": {
-       "StringEquals": {
-        "${local.oidc_provider}:aud": "sts.amazonaws.com",
-        "${local.oidc_provider}:sub": "system:serviceaccount:kube-system:aws-load-balancer-controller"
-       }
-     }
-    }
-  ]
-}
-EOF
-
-  tags = var.tags
-}
-
-resource "aws_iam_role_policy_attachment" "aws_load_balancer_controller" {
-  role       = aws_iam_role.aws_load_balancer_controller.name
-  policy_arn = aws_iam_policy.aws_load_balancer_controller.arn
-}
-
-//https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases
-resource "helm_release" "aws_load_balancer_controller" {
-  name       = "aws-load-balancer-controller"
-  repository = "https://aws.github.io/eks-charts"
-  chart      = "aws-load-balancer-controller"
-  namespace  = "kube-system"
-  version    = var.lbc_chart_version
-
-  values = [
-    <<-EOT
-    clusterName: ${module.eks.cluster_name}
-    serviceAccount:
-      name: aws-load-balancer-controller
-      create: true
-      annotations:
-        eks.amazonaws.com/role-arn: ${aws_iam_role.aws_load_balancer_controller.arn}
-    nodeSelector: ${jsonencode(var.critical_addons_node_selector)}
-    tolerations: ${jsonencode(var.critical_addons_node_tolerations)}
-    %{if var.lbc_image_tag != null}
-    image:
-      tag: ${var.lbc_image_tag}
-    %{endif}
-    EOT
-  ]
-}
-
 module "vpc_cni_irsa" {
   source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
 
@@ -429,167 +210,131 @@ resource "kubernetes_storage_class" "gp3_ext4_encrypted" {
   volume_binding_mode = "WaitForFirstConsumer"
 }
 
-resource "kubectl_manifest" "gp2" {
-  yaml_body = <<YAML
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  annotations:
-    kubectl.kubernetes.io/last-applied-configuration: |
-      {"apiVersion":"storage.k8s.io/v1","kind":"StorageClass","metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class":"false"},"name":"gp2"},"parameters":{"fsType":"ext4","type":"gp2"},"provisioner":"kubernetes.io/aws-ebs","volumeBindingMode":"WaitForFirstConsumer"}
-  creationTimestamp: "2022-10-11T15:05:47Z"
-  name: gp2
-parameters:
-  fsType: ext4
-  type: gp2
-provisioner: kubernetes.io/aws-ebs
-reclaimPolicy: Delete
-volumeBindingMode: WaitForFirstConsumer
-YAML
-}
-
-module "external_secrets_irsa" {
-  source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
-
-  role_name                             = "${var.cluster_name}-ExternalSecrets"
-  attach_external_secrets_policy        = true
-  external_secrets_ssm_parameter_arns   = var.external_secrets_ssm_parameter_arns
-  external_secrets_secrets_manager_arns = var.external_secrets_secrets_manager_arns
-  external_secrets_kms_key_arns         = var.external_secrets_kms_key_arns
-
-  oidc_providers = {
-    main = {
-      provider_arn               = module.eks.oidc_provider_arn
-      namespace_service_accounts = ["external-secrets:external-secrets"]
-    }
-  }
-
-  tags = var.tags
-}
-
-resource "kubernetes_namespace" "external_secrets" {
+resource "kubernetes_annotations" "remove_default_gp2" {
+  api_version = "storage.k8s.io/v1"
+  kind        = "StorageClass"
   metadata {
-    name = "external-secrets"
+    name = "gp2"
+  }
+  annotations = {
+    "storageclass.kubernetes.io/is-default-class" = "false"
   }
 }
 
-resource "helm_release" "external_secrets" {
-  name       = "external-secrets"
-  chart      = "external-secrets"
-  repository = "https://charts.external-secrets.io"
-  version    = "0.7.1"
-  namespace  = kubernetes_namespace.external_secrets.id
-
-  values = [
-    <<-EOT
-  nodeSelector:
-    ${jsonencode(var.critical_addons_node_selector)}
-  tolerations:
-    ${jsonencode(var.critical_addons_node_tolerations)}
-  webhook:
-    nodeSelector:
-      ${jsonencode(var.critical_addons_node_selector)}
-    tolerations:
-      ${jsonencode(var.critical_addons_node_tolerations)}
-  certController:
-    nodeSelector:
-      ${jsonencode(var.critical_addons_node_selector)}
-    tolerations:
-      ${jsonencode(var.critical_addons_node_tolerations)}
-  EOT
-  ]
-
-  set {
-    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-    value = module.external_secrets_irsa.iam_role_arn
+################################################################################
+# GitOps Bridge: Bootstrap
+################################################################################
+locals {
+  environment            = var.environment
+  gitops_addons_url      = "${var.gitops_addons_org}/${var.gitops_addons_repo}"
+  gitops_addons_basepath = var.gitops_addons_basepath
+  gitops_addons_path     = var.gitops_addons_path
+  gitops_addons_revision = var.gitops_addons_revision
+  aws_addons = {
+    enable_cert_manager                 = try(var.addons.enable_cert_manager, false)
+    enable_cluster_autoscaler           = try(var.addons.enable_cluster_autoscaler, false)
+    enable_external_dns                 = try(var.addons.enable_external_dns, false)
+    enable_external_secrets             = try(var.addons.enable_external_secrets, false)
+    enable_aws_load_balancer_controller = try(var.addons.enable_aws_load_balancer_controller, false)
+    enable_karpenter                    = try(var.addons.enable_karpenter, false)
+    enable_velero                       = try(var.addons.enable_velero, false)
+  }
+  oss_addons = {
+    enable_argocd                = try(var.addons.enable_argocd, true)
+    enable_argo_rollouts         = try(var.addons.enable_argo_rollouts, false)
+    enable_argo_events           = try(var.addons.enable_argo_events, false)
+    enable_argo_workflows        = try(var.addons.enable_argo_workflows, false)
+    enable_keda                  = try(var.addons.enable_keda, false)
+    enable_kyverno               = try(var.addons.enable_kyverno, false)
+    enable_kube_prometheus_stack = try(var.addons.enable_kube_prometheus_stack, false)
+    enable_metrics_server        = try(var.addons.enable_metrics_server, false)
+    enable_prometheus_adapter    = try(var.addons.enable_prometheus_adapter, false)
+    enable_vpa                   = try(var.addons.enable_vpa, false)
+  }
+  addons = merge(
+    local.aws_addons,
+    local.oss_addons,
+    { kubernetes_version = var.cluster_version },
+    { aws_cluster_name = module.eks.cluster_name }
+  )
+  addons_metadata = merge(
+    module.eks_blueprints_addons.gitops_metadata,
+    {
+      aws_cluster_name = module.eks.cluster_name
+      aws_region       = data.aws_region.current.name
+      aws_account_id   = data.aws_caller_identity.current.account_id
+      aws_vpc_id       = var.vpc_id
+    },
+    {
+      # Required for external dns addon
+      external_dns_domain_filters = "example.com"
+    },
+    {
+      addons_repo_url      = local.gitops_addons_url
+      addons_repo_basepath = local.gitops_addons_basepath
+      addons_repo_path     = local.gitops_addons_path
+      addons_repo_revision = local.gitops_addons_revision
+    },
+    {
+      critical_addons_node_selector    = jsonencode(var.critical_addons_node_selector)
+      critical_addons_node_tolerations = jsonencode(var.critical_addons_node_tolerations)
+      arm_64_node_selector             = jsonencode(var.truemark_arm_node_selector)
+      arm_64_node_tolerations          = jsonencode(var.truemark_arm_node_tolerations)
+    }
+  )
+  argocd_apps = {
+    addons    = file("${path.module}/bootstrap/addons.yaml")
+    workloads = file("${path.module}/bootstrap/workloads.yaml")
   }
 }
 
-resource "helm_release" "metrics_server" {
-  name       = "metrics-server"
-  chart      = "metrics-server"
-  repository = "https://kubernetes-sigs.github.io/metrics-server/"
-  version    = "3.12.0"
-  namespace  = "kube-system"
-  values = [
-    <<-EOT
-  nodeSelector:
-    ${jsonencode(var.critical_addons_node_selector)}
-  tolerations:
-    ${jsonencode(var.critical_addons_node_tolerations)}
-  EOT
-  ]
+module "gitops_bridge_bootstrap" {
+  source = "./modules/terraform-helm-gitops-bridge"
+
+  cluster = {
+    cluster_name = module.eks.cluster_name
+    environment  = local.environment
+    metadata     = local.addons_metadata
+    addons       = local.addons
+  }
+  argocd = {
+    values = [
+      <<-EOT
+    global:
+      nodeSelector:
+        ${jsonencode(var.critical_addons_node_selector)}
+      tolerations:
+        ${jsonencode(var.critical_addons_node_tolerations)}
+    EOT
+    ]
+  }
+  apps = local.argocd_apps
 }
 
-module "monitoring" {
-  count = var.enable_monitoring ? 1 : 0
+module "eks_blueprints_addons" {
+  source = "./modules/kubernetes-addons"
+  #   version = "~> 1.0"
 
-  source = "./modules/monitoring"
+  cluster_name      = module.eks.cluster_name
+  cluster_endpoint  = module.eks.cluster_endpoint
+  cluster_version   = module.eks.cluster_version
+  oidc_provider_arn = module.eks.oidc_provider_arn
 
-  cluster_name                         = module.eks.cluster_name
-  amp_name                             = var.amp_arn == null ? "${var.cluster_name}-monitoring" : null
-  amp_id                               = var.amp_id
-  amp_arn                              = var.amp_arn
-  amp_alerting_rules_exclude_namespace = var.amp_alerting_rules_exclude_namespace
-  prometheus_server_data_volume_size   = var.prometheus_server_data_volume_size
-  cluster_oidc_issuer_url              = module.eks.oidc_provider
-  oidc_provider_arn                    = module.eks.oidc_provider_arn
-  region                               = data.aws_region.current.name
-  alerts_sns_topics_arn                = var.alerts_sns_topics_arn
-  amp_custom_alerting_rules            = var.amp_custom_alerting_rules
-  prometheus_server_request_memory     = var.prometheus_server_request_memory
-  prometheus_node_selector             = var.prometheus_node_selector
-  prometheus_node_tolerations          = var.prometheus_node_tolerations
-  tags                                 = var.tags
+  # Using GitOps Bridge
+  create_kubernetes_resources = false
+
+  # EKS Blueprints Addons
+  enable_cert_manager = true
+  cert_manager = {
+    chart_version = "v1.15.3"
+  }
 }
 
-module "ingress_traefik" {
-  count  = var.enable_traefik ? 1 : 0
-  source = "./modules/traefik"
-}
-
-module "ingress_istio" {
-  count  = var.enable_istio ? 1 : 0
-  source = "./modules/istio"
-
-  vpc_id                   = var.vpc_id
-  istio_release_version    = var.istio_release_version
-  istio_nlb_tls_policy     = var.istio_nlb_tls_policy
-  aws_managed_prefix_lists = var.aws_managed_prefix_lists
-  istio_mesh_id            = var.istio_mesh_id
-  istio_network            = var.istio_network
-  istio_multi_cluster      = var.istio_multi_cluster
-  istio_cluster_name       = var.istio_cluster_name
-
-  istio_enable_external_gateway                         = var.istio_enable_external_gateway
-  istio_external_gateway_service_kind                   = var.istio_external_gateway_service_kind
-  istio_external_gateway_lb_certs                       = var.istio_external_gateway_lb_certs
-  istio_external_gateway_use_prefix_list                = var.istio_external_gateway_use_prefix_list
-  istio_external_gateway_enable_http_port               = var.istio_external_gateway_enable_http_port
-  istio_external_gateway_lb_source_ranges               = var.istio_external_gateway_lb_source_ranges
-  istio_external_gateway_scaling_max_replicas           = var.istio_external_gateway_scaling_max_replicas
-  istio_external_gateway_scaling_target_cpu_utilization = var.istio_external_gateway_scaling_target_cpu_utilization
-  istio_external_gateway_lb_proxy_protocol              = var.istio_external_gateway_lb_proxy_protocol
-
-  istio_enable_internal_gateway                         = var.istio_enable_internal_gateway
-  istio_internal_gateway_enable_http_port               = var.istio_internal_gateway_enable_http_port
-  istio_internal_gateway_service_kind                   = var.istio_internal_gateway_service_kind
-  istio_internal_gateway_lb_certs                       = var.istio_internal_gateway_lb_certs
-  istio_internal_gateway_use_prefix_list                = var.istio_internal_gateway_use_prefix_list
-  istio_internal_gateway_lb_source_ranges               = var.istio_internal_gateway_lb_source_ranges
-  istio_internal_gateway_scaling_max_replicas           = var.istio_internal_gateway_scaling_max_replicas
-  istio_internal_gateway_scaling_target_cpu_utilization = var.istio_internal_gateway_scaling_target_cpu_utilization
-  istio_internal_gateway_lb_proxy_protocol              = var.istio_internal_gateway_lb_proxy_protocol
-}
-
-
-module "cert_manager" {
-  count = var.enable_cert_manager ? 1 : 0
-
-  source = "./modules/certmanager"
-
-  chart_version                = "v1.13.3"
-  enable_recursive_nameservers = true
+output "argocd" {
+  value = {
+    labels      = module.gitops_bridge_bootstrap.argocd_labels
+    annotations = module.gitops_bridge_bootstrap.argocd_annotations
+  }
 }
 
 resource "aws_ssm_parameter" "cluster_id" {
