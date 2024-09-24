@@ -110,15 +110,16 @@ module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 20.14"
 
-  cluster_name                            = var.cluster_name
-  cluster_version                         = var.cluster_version
-  cluster_endpoint_private_access         = var.cluster_endpoint_private_access
-  cluster_endpoint_public_access          = var.cluster_endpoint_public_access
-  create_cloudwatch_log_group             = var.create_cloudwatch_log_group
-  cluster_enabled_log_types               = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
-  cluster_security_group_additional_rules = var.cluster_security_group_additional_rules
-  node_security_group_additional_rules    = var.node_security_group_additional_rules
-  cluster_additional_security_group_ids   = var.cluster_additional_security_group_ids
+  cluster_name                             = var.cluster_name
+  cluster_version                          = var.cluster_version
+  cluster_endpoint_private_access          = var.cluster_endpoint_private_access
+  cluster_endpoint_public_access           = var.cluster_endpoint_public_access
+  create_cloudwatch_log_group              = var.create_cloudwatch_log_group
+  cluster_enabled_log_types                = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+  cluster_security_group_additional_rules  = var.cluster_security_group_additional_rules
+  node_security_group_additional_rules     = var.node_security_group_additional_rules
+  cluster_additional_security_group_ids    = var.cluster_additional_security_group_ids
+  enable_cluster_creator_admin_permissions = var.enable_cluster_creator_admin_permissions
 
   #KMS
   kms_key_users  = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
@@ -640,3 +641,107 @@ resource "aws_ssm_parameter" "cluster_certificate_authority_data" {
   value       = module.eks.cluster_certificate_authority_data
   tags        = var.tags
 }
+
+#### GitOPS Bridge
+locals {
+  gitops_addons_url      = "${var.gitops_addons_org}/${var.gitops_addons_repo}"
+  gitops_addons_basepath = var.gitops_addons_basepath
+  gitops_addons_path     = var.gitops_addons_path
+  gitops_addons_revision = var.gitops_addons_revision
+
+  addons_metadata = merge(
+    #     module.eks_blueprints_addons.gitops_metadata, #TODO: Add again once starting to add blueprints pattern
+    {
+      aws_cluster_name = module.eks.cluster_name
+      aws_region       = data.aws_region.current.name
+      aws_account_id   = data.aws_caller_identity.current.account_id
+      aws_vpc_id       = var.vpc_id
+    },
+    {
+      addons_repo_url      = local.gitops_addons_url
+      addons_repo_basepath = local.gitops_addons_basepath
+      addons_repo_path     = local.gitops_addons_path
+      addons_repo_revision = local.gitops_addons_revision
+    }
+  )
+
+  aws_addons = {
+    enable_cert_manager                          = try(var.addons.enable_cert_manager, false)
+    enable_aws_efs_csi_driver                    = try(var.addons.enable_aws_efs_csi_driver, false)
+    enable_aws_fsx_csi_driver                    = try(var.addons.enable_aws_fsx_csi_driver, false)
+    enable_aws_cloudwatch_metrics                = try(var.addons.enable_aws_cloudwatch_metrics, false)
+    enable_aws_privateca_issuer                  = try(var.addons.enable_aws_privateca_issuer, false)
+    enable_cluster_autoscaler                    = try(var.addons.enable_cluster_autoscaler, false)
+    enable_external_dns                          = try(var.addons.enable_external_dns, false)
+    enable_external_secrets                      = try(var.addons.enable_external_secrets, false)
+    enable_aws_load_balancer_controller          = try(var.addons.enable_aws_load_balancer_controller, false)
+    enable_fargate_fluentbit                     = try(var.addons.enable_fargate_fluentbit, false)
+    enable_aws_for_fluentbit                     = try(var.addons.enable_aws_for_fluentbit, false)
+    enable_aws_node_termination_handler          = try(var.addons.enable_aws_node_termination_handler, false)
+    enable_karpenter                             = try(var.addons.enable_karpenter, false)
+    enable_velero                                = try(var.addons.enable_velero, false)
+    enable_aws_gateway_api_controller            = try(var.addons.enable_aws_gateway_api_controller, false)
+    enable_aws_ebs_csi_resources                 = try(var.addons.enable_aws_ebs_csi_resources, false)
+    enable_aws_secrets_store_csi_driver_provider = try(var.addons.enable_aws_secrets_store_csi_driver_provider, false)
+    enable_ack_apigatewayv2                      = try(var.addons.enable_ack_apigatewayv2, false)
+    enable_ack_dynamodb                          = try(var.addons.enable_ack_dynamodb, false)
+    enable_ack_s3                                = try(var.addons.enable_ack_s3, false)
+    enable_ack_rds                               = try(var.addons.enable_ack_rds, false)
+    enable_ack_prometheusservice                 = try(var.addons.enable_ack_prometheusservice, false)
+    enable_ack_emrcontainers                     = try(var.addons.enable_ack_emrcontainers, false)
+    enable_ack_sfn                               = try(var.addons.enable_ack_sfn, false)
+    enable_ack_eventbridge                       = try(var.addons.enable_ack_eventbridge, false)
+    enable_aws_argocd_ingress                    = try(var.addons.enable_aws_argocd_ingress, false)
+  }
+  oss_addons = {
+    enable_argocd                          = try(var.addons.enable_argocd, true)
+    enable_argo_rollouts                   = try(var.addons.enable_argo_rollouts, false)
+    enable_argo_events                     = try(var.addons.enable_argo_events, false)
+    enable_argo_workflows                  = try(var.addons.enable_argo_workflows, false)
+    enable_cluster_proportional_autoscaler = try(var.addons.enable_cluster_proportional_autoscaler, false)
+    enable_gatekeeper                      = try(var.addons.enable_gatekeeper, false)
+    enable_gpu_operator                    = try(var.addons.enable_gpu_operator, false)
+    enable_ingress_nginx                   = try(var.addons.enable_ingress_nginx, false)
+    enable_keda                            = try(var.addons.enable_keda, false)
+    enable_kyverno                         = try(var.addons.enable_kyverno, false)
+    enable_kube_prometheus_stack           = try(var.addons.enable_kube_prometheus_stack, false)
+    enable_metrics_server                  = try(var.addons.enable_metrics_server, false)
+    enable_prometheus_adapter              = try(var.addons.enable_prometheus_adapter, false)
+    enable_secrets_store_csi_driver        = try(var.addons.enable_secrets_store_csi_driver, false)
+    enable_vpa                             = try(var.addons.enable_vpa, false)
+  }
+  addons = merge(
+    local.aws_addons,
+    local.oss_addons,
+    { kubernetes_version = var.cluster_version },
+    { aws_cluster_name = module.eks.cluster_name }
+  )
+  argocd_apps = {
+    addons = file("${path.module}/bootstrap/addons.yaml")
+  }
+
+}
+module "gitops_bridge_bootstrap" {
+  source  = "gitops-bridge-dev/gitops-bridge/helm"
+  version = "0.1.0"
+
+  cluster = {
+    cluster_name = module.eks.cluster_name
+    environment  = var.environment
+    metadata     = local.addons_metadata
+    addons       = local.addons
+  }
+  argocd = {
+    values = [
+      <<-EOT
+    global:
+      nodeSelector:
+        ${jsonencode(var.critical_addons_node_selector)}
+      tolerations:
+        ${jsonencode(var.critical_addons_node_tolerations)}
+    EOT
+    ]
+  }
+  apps = local.argocd_apps
+}
+

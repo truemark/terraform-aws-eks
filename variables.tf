@@ -50,6 +50,12 @@ variable "create_cloudwatch_log_group" {
   default     = true
 }
 
+variable "enable_cluster_creator_admin_permissions" {
+  description = "Indicates whether or not to add the cluster creator (the identity used by Terraform) as an administrator via access entry"
+  type        = bool
+  default     = false
+}
+
 ###############################################
 # EKS Addons Configuration
 ###############################################
@@ -636,4 +642,69 @@ variable "cert_manager_chart_version" {
   }
 }
 
+#### GitOPS Bridge
+variable "environment" {
+  description = "The environment name"
+  type        = string
+  default     = ""
+}
 
+# Addons Git
+# TODO: This will be the same repo as our current repo
+variable "gitops_addons_org" {
+  description = "Git repository org/user contains for addons"
+  type        = string
+  default     = "https://github.com/gitops-bridge-dev"
+}
+variable "gitops_addons_repo" {
+  description = "Git repository contains for addons"
+  type        = string
+  default     = "gitops-bridge-argocd-control-plane-template"
+}
+variable "gitops_addons_revision" {
+  description = "Git repository revision/branch/ref for addons"
+  type        = string
+  default     = "main"
+}
+variable "gitops_addons_basepath" {
+  description = "Git repository base path for addons"
+  type        = string
+  default     = ""
+}
+variable "gitops_addons_path" {
+  description = "Git repository path for addons"
+  type        = string
+  default     = "bootstrap/control-plane/addons"
+}
+
+variable "addons" {
+  description = "Kubernetes addons"
+  type        = any
+  default = {
+    enable_cert_manager                          = false
+    enable_aws_efs_csi_driver                    = false
+    enable_aws_fsx_csi_driver                    = false
+    enable_aws_cloudwatch_metrics                = false
+    enable_aws_privateca_issuer                  = false
+    enable_cluster_autoscaler                    = false
+    enable_external_dns                          = false
+    enable_external_secrets                      = false
+    enable_aws_load_balancer_controller          = false
+    enable_aws_for_fluentbit                     = false
+    enable_aws_node_termination_handler          = false
+    enable_karpenter                             = false
+    enable_velero                                = false
+    enable_aws_gateway_api_controller            = false
+    enable_aws_ebs_csi_resources                 = false # generate gp2 and gp3 storage classes for ebs-csi
+    enable_aws_secrets_store_csi_driver_provider = false
+    enable_argo_rollouts                         = false
+    enable_argo_workflows                        = false
+    enable_gpu_operator                          = false
+    enable_kube_prometheus_stack                 = false
+    enable_metrics_server                        = false
+    enable_prometheus_adapter                    = false
+    enable_secrets_store_csi_driver              = false
+    enable_vpa                                   = false
+    enable_foo                                   = false # you can add any addon here, make sure to update the gitops repo with the corresponding application set
+  }
+}
