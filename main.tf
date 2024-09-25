@@ -198,7 +198,7 @@ data "http" "karpenter_crds" {
 
 resource "kubectl_manifest" "karpenter_crds" {
   for_each  = data.http.karpenter_crds
-  yaml_body = each.value.body
+  yaml_body = replace(each.value.body, "kube-system", "karpenter")
 }
 
 resource "helm_release" "karpenter" {
