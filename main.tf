@@ -62,6 +62,7 @@ locals {
     } : {}
   )
   karpenter_crds = var.enable_karpenter ? ["karpenter.sh_nodepools.yaml", "karpenter.sh_nodeclaims.yaml", "karpenter.k8s.aws_ec2nodeclasses.yaml"] : []
+
 }
 
 provider "kubectl" {
@@ -427,6 +428,10 @@ resource "kubernetes_storage_class" "gp3_ext4_encrypted" {
     encrypted = "true"
   }
   volume_binding_mode = "WaitForFirstConsumer"
+  depends_on = [
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations
+  ]
 }
 
 resource "kubectl_manifest" "gp2" {
@@ -446,6 +451,10 @@ provisioner: kubernetes.io/aws-ebs
 reclaimPolicy: Delete
 volumeBindingMode: WaitForFirstConsumer
 YAML
+  depends_on = [
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations
+  ]
 }
 
 module "external_secrets_irsa" {
@@ -465,12 +474,20 @@ module "external_secrets_irsa" {
   }
 
   tags = var.tags
+  depends_on = [
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations
+  ]
 }
 
 resource "kubernetes_namespace" "external_secrets" {
   metadata {
     name = "external-secrets"
   }
+  depends_on = [
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations
+  ]
 }
 
 resource "helm_release" "external_secrets" {
@@ -519,6 +536,10 @@ resource "helm_release" "metrics_server" {
     ${jsonencode(var.critical_addons_node_tolerations)}
   EOT
   ]
+  depends_on = [
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations
+  ]
 }
 
 module "monitoring" {
@@ -541,6 +562,10 @@ module "monitoring" {
   prometheus_node_selector             = var.prometheus_node_selector
   prometheus_node_tolerations          = var.prometheus_node_tolerations
   tags                                 = var.tags
+  depends_on = [
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations
+  ]
 }
 
 module "ingress_traefik" {
@@ -582,6 +607,36 @@ module "ingress_istio" {
   istio_internal_gateway_lb_proxy_protocol              = var.istio_internal_gateway_lb_proxy_protocol
 }
 
+module "external_snapshotter" {
+  depends_on = [
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations
+  ]
+  count               = var.enable_snapshotter ? 1 : 0
+  source              = "./modules/external_snapshotter"
+  snapshotter_version = "v8.1.0"
+  node_selector       = var.critical_addons_node_selector
+  node_tolerations    = var.critical_addons_node_tolerations
+}
+
+module "snapscheduler" {
+  depends_on = [
+    module.karpenter,
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations,
+  ]
+  count         = var.enable_snapscheduler && var.enable_karpenter ? 1 : 0
+  source        = "./modules/snapscheduler"
+  chart_version = "3.4.0"
+  node_tolerations = [
+    {
+      key      = "karpenter.sh/nodepool"
+      value    = "truemark-amd64"
+      operator = "Equal"
+      effect   = "NoSchedule"
+    }
+  ]
+}
 
 module "cert_manager" {
   count = var.enable_cert_manager ? 1 : 0
@@ -590,6 +645,10 @@ module "cert_manager" {
 
   cert_manager_chart_version   = var.cert_manager_chart_version
   enable_recursive_nameservers = true
+  depends_on = [
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations
+  ]
 }
 
 module "vpa" {
