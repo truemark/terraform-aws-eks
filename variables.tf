@@ -163,6 +163,21 @@ variable "eks_access_cross_account_iam_roles" {
 }
 
 ###############################################
+# CSI Snapshotter configuration
+###############################################
+variable "enable_snapshotter" {
+  description = "Add external-snapshotter to the cluster"
+  type        = bool
+  default     = true
+}
+
+variable "enable_snapscheduler" {
+  description = "Add snapscheduler to the cluster. Requires amd64 karpenter nodes"
+  type        = bool
+  default     = false
+}
+
+###############################################
 # Load Balancer Controller Configuration
 ###############################################
 
