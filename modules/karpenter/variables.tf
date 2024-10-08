@@ -8,6 +8,16 @@ variable "karpenter_crds_version" {
   type        = string
 }
 
+variable "enable_karpenter_controller_webhook" {
+  description = "Enable or disable karpenter controller webhook"
+  type        = bool
+}
+
+variable "enable_karpenter_crd_webhook" {
+  description = "Enable or disable karpenter CRD webhook"
+  type        = bool
+}
+
 variable "karpenter_settings_featureGates_drift" {
   type        = bool
   description = "Enable or disable drift feature of karpenter"
@@ -26,4 +36,29 @@ variable "critical_addons_node_tolerations" {
 variable "tags" {
   description = "A map of tags to add to all resources."
   type        = map(string)
+}
+
+variable "cluster_name" {
+  description = "Name of the EKS cluster"
+  type        = string
+}
+
+variable "oidc_provider_arn" {
+  description = "OIDC provider ARN"
+  type        = string
+}
+
+variable "cluster_endpoint" {
+  description = "EKS cluster endpoint"
+  type        = string
+}
+
+variable "aws_ecrpublic_authorization_token_user_name" {
+  description = "ECR public authorization token user_name"
+  type        = string
+}
+
+variable "aws_ecrpublic_authorization_token_user_password" {
+  description = "ECR public authorization token password"
+  type        = string
 }

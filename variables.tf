@@ -693,3 +693,15 @@ variable "enable_castai_cluster_controller" {
   type        = bool
   default     = false
 }
+
+variable "enable_karpenter_controller_webhook" {
+  description = "Enable or disable karpenter controller webhook"
+  type        = bool
+  default     = false
+}
+
+variable "enable_karpenter_crd_webhook" {
+  description = "Enable or disable karpenter CRD webhook"
+  type        = bool
+  default     = false
+}
