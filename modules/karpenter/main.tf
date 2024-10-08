@@ -2,12 +2,12 @@ module "karpenter" {
   source  = "terraform-aws-modules/eks/aws//modules/karpenter"
   version = "~> 20.14"
 
-  cluster_name = module.eks.cluster_name
+  cluster_name = var.cluster_name
   node_iam_role_additional_policies = {
     AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
   }
   enable_irsa                     = true
-  irsa_oidc_provider_arn          = module.eks.oidc_provider_arn
+  irsa_oidc_provider_arn          = var.oidc_provider_arn
   irsa_namespace_service_accounts = ["karpenter:karpenter"]
 
   tags = var.tags
@@ -19,8 +19,8 @@ resource "helm_release" "karpenter" {
 
   name                = "karpenter"
   repository          = "oci://public.ecr.aws/karpenter"
-  repository_username = data.aws_ecrpublic_authorization_token.token[0].user_name
-  repository_password = data.aws_ecrpublic_authorization_token.token[0].password
+  repository_username = var.aws_ecrpublic_authorization_token_user_name
+  repository_password = var.aws_ecrpublic_authorization_token_user_password
   chart               = "karpenter"
   version             = var.karpenter_controller_version
   skip_crds           = true
@@ -28,9 +28,9 @@ resource "helm_release" "karpenter" {
   values = [
     <<-EOT
     settings:
-      clusterName: ${module.eks.cluster_name}
-      clusterEndpoint: ${module.eks.cluster_endpoint}
-      interruptionQueueName: ${module.karpenter[0].queue_name}
+      clusterName: ${var.cluster_name}
+      clusterEndpoint: ${var.cluster_endpoint}
+      interruptionQueueName: ${module.karpenter.queue_name}
       featureGates:
         drift: ${var.karpenter_settings_featureGates_drift}
     podAnnotations:
@@ -48,14 +48,30 @@ resource "helm_release" "karpenter" {
   ]
 }
 
-resource "helm_release" "karpenter_crds" {
+resource "helm_release" "karpenter_crd" {
   namespace           = "karpenter"
-  name                = "karpenter-crds"
+  name                = "karpenter-crd"
   repository          = "oci://public.ecr.aws/karpenter"
-  chart               = "karpenter-crds"
-  repository_username = data.aws_ecrpublic_authorization_token.token[0].user_name
-  repository_password = data.aws_ecrpublic_authorization_token.token[0].password
+  chart               = "karpenter-crd"
+  repository_username = var.aws_ecrpublic_authorization_token_user_name
+  repository_password = var.aws_ecrpublic_authorization_token_user_password
   version             = var.karpenter_crds_version
+
+  dynamic "set" {
+    for_each = [1] //split(var.karpenter_crds_version)[0] >= 1 ? [1] : []
+    content {
+      name  = "webhook.enabled"
+      value = "true"
+    }
+  }
+
+  dynamic "set" {
+    for_each = [1] //split(var.karpenter_crds_version)[0] >= 1 ? [1] : []
+    content {
+      name  = "webhook.serviceNamespace"
+      value = "karpenter"
+    }
+  }
 
   depends_on = [
     helm_release.karpenter

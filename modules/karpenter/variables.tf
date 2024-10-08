@@ -27,3 +27,28 @@ variable "tags" {
   description = "A map of tags to add to all resources."
   type        = map(string)
 }
+
+variable "cluster_name" {
+  description = "Name of the EKS cluster"
+  type        = string
+}
+
+variable "oidc_provider_arn" {
+  description = "OIDC provider ARN"
+  type        = string
+}
+
+variable "cluster_endpoint" {
+  description = "EKS cluster endpoint"
+  type        = string
+}
+
+variable "aws_ecrpublic_authorization_token_user_name" {
+  description = "ECR public authorization token user_name"
+  type        = string
+}
+
+variable "aws_ecrpublic_authorization_token_user_password" {
+  description = "ECR public authorization token password"
+  type        = string
+}
