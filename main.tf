@@ -744,4 +744,3 @@ module "gitops_bridge_bootstrap" {
   }
   apps = local.argocd_apps
 }
-
