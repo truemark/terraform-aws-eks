@@ -203,7 +203,13 @@ variable "enable_karpenter" {
   default     = true
 }
 
-variable "karpenter_version" {
+variable "karpenter_controller_version" {
+  description = "Version of karpenter to install"
+  type        = string
+  default     = "0.37.0"
+}
+
+variable "karpenter_crds_version" {
   description = "Version of karpenter to install"
   type        = string
   default     = "0.37.0"
@@ -657,6 +663,45 @@ variable "vpa_enabled" {
 
 variable "goldilocks_enabled" {
   description = "Enable Goldilocks operator"
+  type        = bool
+  default     = false
+}
+
+###############################################
+# Cast AI Configuration
+###############################################
+variable "cast_ai_agent_api_key" {
+  description = "Cast AI agent API key"
+  type        = string
+  default     = ""
+}
+
+variable "enable_castai_spot_handler" {
+  description = "Enable Cast AI spot handler"
+  type        = bool
+  default     = false
+}
+
+variable "enable_cast_ai_agent" {
+  description = "Enable Cast AI agent"
+  type        = bool
+  default     = false
+}
+
+variable "enable_castai_cluster_controller" {
+  description = "Enable Cast AI cluster controller"
+  type        = bool
+  default     = false
+}
+
+variable "enable_karpenter_controller_webhook" {
+  description = "Enable or disable karpenter controller webhook"
+  type        = bool
+  default     = false
+}
+
+variable "enable_karpenter_crd_webhook" {
+  description = "Enable or disable karpenter CRD webhook"
   type        = bool
   default     = false
 }

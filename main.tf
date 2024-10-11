@@ -1,21 +1,21 @@
-data "aws_region" "current" {}
-
-data "aws_caller_identity" "current" {}
-
 provider "aws" {
   region = "us-east-1"
   alias  = "us-east-1"
 }
+
+data "aws_region" "current" {}
+
+data "aws_caller_identity" "current" {}
 
 data "aws_eks_cluster_auth" "cluster" {
   name = module.eks.cluster_name
 }
 
 data "aws_ecrpublic_authorization_token" "token" {
-  count    = var.enable_karpenter ? 1 : 0
+  count = var.enable_karpenter ? 1 : 0
+
   provider = aws.us-east-1
 }
-
 locals {
   oidc_provider            = replace(module.eks.cluster_oidc_issuer_url, "https://", "")
   iamproxy-service-account = "${var.cluster_name}-iamproxy-service-account"
@@ -174,162 +174,6 @@ resource "aws_eks_access_policy_association" "access_policy_associations" {
       namespaces = access_scope.value.namespaces != null ? access_scope.value.namespaces : []
     }
   }
-}
-
-module "karpenter" {
-  count   = var.enable_karpenter ? 1 : 0
-  source  = "terraform-aws-modules/eks/aws//modules/karpenter"
-  version = "~> 20.14"
-
-  cluster_name = module.eks.cluster_name
-  node_iam_role_additional_policies = {
-    AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-  }
-  enable_irsa                     = true
-  irsa_oidc_provider_arn          = module.eks.oidc_provider_arn
-  irsa_namespace_service_accounts = ["karpenter:karpenter"]
-
-  tags = var.tags
-}
-
-data "http" "karpenter_crds" {
-  for_each = toset(local.karpenter_crds)
-  url      = "https://raw.githubusercontent.com/aws/karpenter/v${var.karpenter_version}/pkg/apis/crds/${each.key}"
-}
-
-resource "kubectl_manifest" "karpenter_crds" {
-  for_each  = data.http.karpenter_crds
-  yaml_body = replace(each.value.body, "kube-system", "karpenter")
-}
-
-resource "helm_release" "karpenter" {
-  count            = var.enable_karpenter ? 1 : 0
-  namespace        = "karpenter"
-  create_namespace = true
-
-  name                = "karpenter"
-  repository          = "oci://public.ecr.aws/karpenter"
-  repository_username = data.aws_ecrpublic_authorization_token.token[0].user_name
-  repository_password = data.aws_ecrpublic_authorization_token.token[0].password
-  chart               = "karpenter"
-  version             = var.karpenter_version
-
-  values = [
-    <<-EOT
-    settings:
-      clusterName: ${module.eks.cluster_name}
-      clusterEndpoint: ${module.eks.cluster_endpoint}
-      interruptionQueueName: ${module.karpenter[0].queue_name}
-      featureGates:
-        drift: ${var.karpenter_settings_featureGates_drift}
-    podAnnotations:
-      prometheus.io/path: /metrics
-      prometheus.io/port: '8000'
-      prometheus.io/scrape: 'true'
-    nodeSelector:
-      ${jsonencode(var.critical_addons_node_selector)}
-    tolerations:
-      ${jsonencode(var.critical_addons_node_tolerations)}
-    serviceAccount:
-      annotations:
-        eks.amazonaws.com/role-arn: ${module.karpenter[0].iam_role_arn}
-    EOT
-  ]
-}
-
-resource "kubectl_manifest" "karpenter_node_class" {
-  count     = var.enable_karpenter ? 1 : 0
-  yaml_body = <<-YAML
-    apiVersion: karpenter.k8s.aws/v1beta1
-    kind: EC2NodeClass
-    metadata:
-      name: truemark
-    spec:
-      amiFamily: ${var.truemark_nodeclass_default_ami_family}
-      blockDeviceMappings: ${jsonencode(var.truemark_nodeclass_default_block_device_mappings.specs)}
-      role: ${module.karpenter[0].node_iam_role_name}
-      subnetSelectorTerms:
-        - tags:
-            ${jsonencode(var.karpenter_node_template_default.subnetSelector)}
-      securityGroupSelectorTerms:
-        - tags:
-            karpenter.sh/discovery: ${module.eks.cluster_name}
-      tags:
-        Name: "${module.eks.cluster_name}-truemark-default"
-        karpenter.sh/discovery: ${module.eks.cluster_name}
-  YAML
-
-  depends_on = [
-    helm_release.karpenter
-  ]
-}
-
-resource "kubectl_manifest" "karpenter_node_pool_arm" {
-  count     = var.enable_karpenter ? 1 : 0
-  yaml_body = <<-YAML
-    apiVersion: karpenter.sh/v1beta1
-    kind: NodePool
-    metadata:
-      name: truemark-arm64
-    spec:
-      disruption:
-        budgets:
-          - nodes: 10%
-        consolidationPolicy: WhenUnderutilized
-        expireAfter: 720h
-      template:
-        spec:
-          nodeClassRef:
-            name: truemark
-          taints:
-          - key: karpenter.sh/nodepool
-            value: "truemark-arm64"
-            effect: NoSchedule
-          requirements: ${jsonencode(var.karpenter_node_pool_default_arm_requirements.requirements)}
-      disruption:
-        expireAfter: ${var.karpenter_nodepool_default_expireAfter}
-        consolidationPolicy: WhenEmpty
-        consolidateAfter: 30s
-      weight: ${var.karpenter_arm_node_pool_weight}
-  YAML
-
-  depends_on = [
-    kubectl_manifest.karpenter_node_class
-  ]
-}
-
-resource "kubectl_manifest" "karpenter_node_pool_amd" {
-  count     = var.enable_karpenter ? 1 : 0
-  yaml_body = <<-YAML
-    apiVersion: karpenter.sh/v1beta1
-    kind: NodePool
-    metadata:
-      name: truemark-amd64
-    spec:
-      disruption:
-        budgets:
-          - nodes: 10%
-        consolidationPolicy: WhenUnderutilized
-        expireAfter: 720h
-      template:
-        spec:
-          nodeClassRef:
-            name: truemark
-          taints:
-          - key: karpenter.sh/nodepool
-            value: "truemark-amd64"
-            effect: NoSchedule
-          requirements: ${jsonencode(var.karpenter_node_pool_default_amd_requirements.requirements)}
-      disruption:
-        expireAfter: ${var.karpenter_nodepool_default_expireAfter}
-        consolidationPolicy: WhenEmpty
-        consolidateAfter: 30s
-      weight: ${var.karpenter_amd_node_pool_weight}
-  YAML
-
-  depends_on = [
-    kubectl_manifest.karpenter_node_class
-  ]
 }
 
 resource "aws_iam_policy" "aws_load_balancer_controller" {
