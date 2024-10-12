@@ -224,7 +224,7 @@ resource "helm_release" "karpenter" {
         drift: ${var.karpenter_settings_featureGates_drift}
     podAnnotations:
       prometheus.io/path: /metrics
-      prometheus.io/port: '8000'
+      prometheus.io/port: '8080'
       prometheus.io/scrape: 'true'
     nodeSelector:
       ${jsonencode(var.critical_addons_node_selector)}
