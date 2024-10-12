@@ -1,6 +1,6 @@
 module "karpenter" {
   source  = "terraform-aws-modules/eks/aws//modules/karpenter"
-  version = "~> 20.14"
+  version = "~> 20.24"
 
   cluster_name = var.cluster_name
   node_iam_role_additional_policies = {
@@ -9,6 +9,7 @@ module "karpenter" {
   enable_irsa                     = true
   irsa_oidc_provider_arn          = var.oidc_provider_arn
   irsa_namespace_service_accounts = ["karpenter:karpenter"]
+  enable_v1_permissions           = true
 
   tags = var.tags
 }
