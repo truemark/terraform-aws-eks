@@ -19,7 +19,7 @@ resource "helm_release" "cert_manager" {
   version          = var.cert_manager_chart_version
   values = [
     <<-EOT
-    ${tonumber(split(".", var.cert_manager_chart_version)[1]) >= 15 ? yamlencode(local.cert_manager_v15_or_greater) : yamlencode(local.cert_manager_v14_or_lower)}
+    ${replace(tonumber(split(".", var.cert_manager_chart_version)[1]) >= 15 ? yamlencode(local.cert_manager_v15_or_greater) : yamlencode(local.cert_manager_v14_or_lower), "\"", "")}
     nodeSelector:
       ${jsonencode(var.certmanager_node_selector)}
     tolerations:

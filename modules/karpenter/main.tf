@@ -1,6 +1,10 @@
+locals {
+  karpenterv1 = split(".", var.karpenter_controller_version)[0] >= 1
+}
+
 module "karpenter" {
   source  = "terraform-aws-modules/eks/aws//modules/karpenter"
-  version = "~> 20.14"
+  version = "~> 20.24"
 
   cluster_name = var.cluster_name
   node_iam_role_additional_policies = {
@@ -9,6 +13,7 @@ module "karpenter" {
   enable_irsa                     = true
   irsa_oidc_provider_arn          = var.oidc_provider_arn
   irsa_namespace_service_accounts = ["karpenter:karpenter"]
+  enable_v1_permissions           = local.karpenterv1
 
   tags = var.tags
 }
@@ -38,7 +43,7 @@ resource "helm_release" "karpenter" {
       serviceNamespace: karpenter
     podAnnotations:
       prometheus.io/path: /metrics
-      prometheus.io/port: '8000'
+      prometheus.io/port: '${local.karpenterv1 ? "8080" : "8000"}'
       prometheus.io/scrape: 'true'
     nodeSelector:
       ${jsonencode(var.critical_addons_node_selector)}
