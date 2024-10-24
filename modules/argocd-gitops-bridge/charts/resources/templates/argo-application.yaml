@@ -6,11 +6,12 @@ metadata:
 spec:
   project: {{ .Values.argocd_project }}
   source:
-    repoURL: {{ .Values.source.repoURL }}
+    repoURL: {{ .Values.source.repoUrl }}
     targetRevision: {{ .Values.source.targetRevision }}
     path: {{ .Values.source.path }}
     helm:
-      values: {{ .Values.source.helm.values }}
+      values: |
+        {{- toYaml .Values.source.helm.values | toString | nindent 8  }}
       valueFiles: {{ .Values.source.helm.valueFiles }}
   destination:
     server: {{ .Values.destination.server }}

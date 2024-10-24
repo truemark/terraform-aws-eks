@@ -140,65 +140,28 @@ resource "kubernetes_secret_v1" "cluster" {
 # Create App of Apps
 ################################################################################
 resource "helm_release" "eks_addons" {
-  name      = "eks-addons"
+  for_each = var.create ? var.apps : {}
+
+  name      = each.key
   namespace = try(var.argocd.namespace, "argocd")
   chart     = "${path.module}/charts/resources"
   version   = "1.0.0"
 
-  set {
-    name  = "name"
-    value = each.key
-  }
-
-  set {
-    name  = "project"
-    value = each.value.project
-  }
-
-  set {
-    name  = "source.repoUrl"
-    value = each.value.repo_url
-  }
-
-  set {
-    name  = "source.targetRevision"
-    value = each.value.target_revision
-  }
-
-  set {
-    name  = "source.path"
-    value = each.value.path
-  }
-
-  set {
-    name  = "source.helm.releaseName"
-    value = each.key
-  }
-
-  set {
-    name  = "source.helm.values"
-    value = yamlencode(merge(
-      { repoUrl = each.value.repo_url },
-      each.value.values,
-      local.global_application_values,
-      each.value.add_on_application ? var.addon_config : null
-    ))
-  }
-
-  set {
-    name  = "source.helm.valueFiles"
-    value = each.value.value_files
-  }
-
-  set {
-    name  = "destination.server"
-    value = each.value.destination_server
-  }
-
   values = [
-    yamlencode({
-      ignoreDifferences = lookup(each.value, "ignoreDifferences", [])
-    })
+    yamlencode(merge(
+      {
+        source = {
+          repoUrl       = each.value.repo_url,
+          targetRevision = each.value.target_revision,
+          path          = each.value.path,
+          helm = {
+            values = try(each.value.values, ""),
+            valueFiles = try(each.value.value_files, "")
+          }
+        }
+        argocd_application_name = each.key,
+      },
+    ))
   ]
 
   depends_on = [resource.kubernetes_secret_v1.cluster]

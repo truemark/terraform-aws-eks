@@ -3,9 +3,10 @@ provider "aws" {
   alias  = "us-east-1"
 }
 
+data "aws_partition" "current" {}
+data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
-data "aws_caller_identity" "current" {}
 
 data "aws_eks_cluster_auth" "cluster" {
   name = module.eks.cluster_name
@@ -107,9 +108,11 @@ module "ebs_csi_irsa_role" {
   tags = var.tags
 }
 
+variable "enable_cluster_creator_admin_permissions" {}
+
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 20.14"
+  version = "~> 20"
 
   cluster_name                            = var.cluster_name
   cluster_version                         = var.cluster_version
@@ -120,6 +123,7 @@ module "eks" {
   cluster_security_group_additional_rules = var.cluster_security_group_additional_rules
   node_security_group_additional_rules    = var.node_security_group_additional_rules
   cluster_additional_security_group_ids   = var.cluster_additional_security_group_ids
+  enable_cluster_creator_admin_permissions = var.enable_cluster_creator_admin_permissions
 
   #KMS
   kms_key_users  = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
