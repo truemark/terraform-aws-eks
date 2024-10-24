@@ -1,0 +1,45 @@
+{{- if and (.Values.certManager) (.Values.certManager.enabled) }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: addons-cert-manager
+  namespace: {{ .Values.argocdNamespace | default "argocd" }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocdProject | default "default" }}
+  sources:
+    - repoURL: '{{ .Values.addons_repo_url }}'
+      targetRevision: '{{ .Values.addons_repo_revision }}'
+      ref: values
+    - repoURL: https://charts.jetstack.io
+      targetRevision: {{ .Values.certManager.chartVersion }}
+      chart: cert-manager
+      helm:
+        releaseName: cert-manager
+        ignoreMissingValueFiles: true
+        valueFiles:
+          - $values/{{ .Values.addons_repo_basepath }}addons/cert-manager/values.yaml
+          - $values/{{ .Values.addons_repo_basepath }}addons/cert-manager/values-{{ .Values.certManager.chartVersion }}.yaml
+        values: |
+          {{- if semverCompare "~1.14.0" .Values.certManager.chartVersion }}
+          installCRDs: true
+          {{- else if semverCompare "~1.15.0" .Values.certManager.chartVersion }}
+          crds:
+            install: true
+            keep: true
+          {{- end }}
+          serviceAccount:
+            name: cert-manager
+            annotations:
+              eks.amazonaws.com/role-arn: {{ .Values.certManager.iamRoleArn }}
+  destination:
+    namespace: '{{ .Values.certManager.namespace }}'
+    name: '{{ .Values.certManager.name }}'
+  syncPolicy:
+    automated: { }
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true  # Big CRDs.
+{{- end }}

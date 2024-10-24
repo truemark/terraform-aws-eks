@@ -1,0 +1,19 @@
+argocdNamespace: argocd
+argocdProject: default
+addons_repo_url: https://github.com/truemark/terraform-aws-eks
+addons_repo_revision: main
+addons_repo_basepath: bootstrap
+
+# Cert Manager
+certManager:
+  enabled: false
+  name: cert-manager
+  createNamespace: true
+  chartVersion: v1.14.3
+  iamRoleArn: ""
+  serviceAccount:
+    create: true
+    name: cert-manager
+  namespace: cert-manager
+vpa:
+  enabled: true
