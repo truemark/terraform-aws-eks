@@ -1,5 +1,6 @@
 argocdNamespace: argocd
 argocdProject: default
+clusterName: in-cluster
 addons_repo_url: https://github.com/truemark/terraform-aws-eks
 addons_repo_revision: main
 addons_repo_basepath: bootstrap
