@@ -705,3 +705,12 @@ variable "enable_karpenter_crd_webhook" {
   type        = bool
   default     = false
 }
+
+
+####
+variable "addons_enable_cert_manager" {
+  default = false
+}
+
+variable "cert_manager_helm_config" {
+}

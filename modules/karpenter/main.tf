@@ -16,6 +16,7 @@ module "karpenter" {
   enable_v1_permissions           = local.karpenterv1
 
   tags = var.tags
+  depends_on = [helm_release.karpenter_crd]
 }
 
 resource "helm_release" "karpenter" {
@@ -81,7 +82,4 @@ resource "helm_release" "karpenter_crd" {
     }
   }
 
-  depends_on = [
-    helm_release.karpenter
-  ]
 }
