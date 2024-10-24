@@ -36,7 +36,7 @@ spec:
               eks.amazonaws.com/role-arn: {{ .Values.certManager.iamRoleArn }}
   destination:
     namespace: '{{ .Values.certManager.namespace }}'
-    name: '{{ .Values.certManager.name }}'
+    name: 'https://kubernetes.default.svc'
   syncPolicy:
     automated: { }
     syncOptions:
