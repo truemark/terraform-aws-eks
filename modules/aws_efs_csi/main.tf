@@ -6,21 +6,22 @@ resource "helm_release" "efs_csi_driver" {
   version    = var.chart_version
   repository = var.helm_repo_name
   namespace  = "kube-system"
-
   set {
     name  = "controller.serviceAccount.create"
     value = "false"
   }
-
   set {
     name  = "controller.serviceAccount.name"
     value = "efs-csi-controller-sa"
   }
-
   set {
     name  = "controller.replicaCount"
     value = "2"
   }
+  depends_on = [
+    kubernetes_service_account.efs_csi_driver_sa,
+    aws_iam_role_policy_attachment.efs_csi_policy_attach
+  ]
 }
 
 data "aws_iam_policy" "efs_csi_driver_managed_policy" {
@@ -40,6 +41,7 @@ resource "aws_iam_role" "efs_csi_driver_role" {
         }
         Condition = {
           StringEquals = {
+            "${var.oidc_issuer_url}:aud" = "sts.amazonaws.com",
             "${var.oidc_issuer_url}:sub" = "system:serviceaccount:kube-system:efs-csi-controller-sa"
           }
         }
@@ -62,4 +64,24 @@ resource "kubernetes_service_account" "efs_csi_driver_sa" {
     }
   }
   automount_service_account_token = true
+}
+
+resource "kubernetes_storage_class" "efs_sc" {
+  for_each            = { for sc in var.storage_classes : sc.name => sc }
+  storage_provisioner = "efs.csi.aws.com"
+  metadata {
+    name = each.value.name
+  }
+  parameters = {
+    provisioningMode      = each.value.provisioningMode
+    fileSystemId          = each.value.fileSystemId
+    directoryPerms        = each.value.directoryPerms
+    basePath              = each.value.basePath
+    ensureUniqueDirectory = tostring(each.value.ensureUniqueDirectory)
+    reuseAccessPoint      = tostring(each.value.reuseAccessPoint)
+    gidRangeStart         = each.value.gidRangeStart
+    gidRangeEnd           = each.value.gidRangeEnd
+  }
+  reclaim_policy = each.value.reclaim_policy
+  depends_on     = [helm_release.efs_csi_driver]
 }
