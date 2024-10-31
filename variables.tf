@@ -163,7 +163,7 @@ variable "eks_access_cross_account_iam_roles" {
 }
 
 ###############################################
-# CSI Snapshotter configuration
+# Cluster Backup Configuration
 ###############################################
 variable "enable_snapshotter" {
   description = "Add external-snapshotter to the cluster"
@@ -173,6 +173,12 @@ variable "enable_snapshotter" {
 
 variable "enable_snapscheduler" {
   description = "Add snapscheduler to the cluster. Requires amd64 karpenter nodes"
+  type        = bool
+  default     = false
+}
+
+variable "enable_velero" {
+  description = "Install Velero tool to the cluster. It supports k8s objects backups and snapshots"
   type        = bool
   default     = false
 }
