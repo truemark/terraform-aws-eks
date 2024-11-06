@@ -23,7 +23,9 @@ spec:
           - $values/{{ .Values.addons_repo_basepath }}addons/external-dns/values.yaml
           - $values/{{ .Values.addons_repo_basepath }}addons/external-dns/values-{{ .Values.externalDNS.chartVersion }}.yaml
         values: |
-          {{- if ne .Values.externalDNS.values "" }}{{- toYaml .Values.externalDNS.values | nindent 10 }}{{- end }}
+          {{- if and (.Values.externalDNS.values) (not (empty .Values.externalDNS.values)) }}
+            {{- toYaml .Values.externalDNS.values | nindent 10 }}
+          {{- end }}
   destination:
     namespace: '{{ .Values.externalDNS.namespace }}'
     name: '{{ .Values.clusterName }}'
