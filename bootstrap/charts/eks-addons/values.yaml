@@ -16,5 +16,19 @@ certManager:
     create: true
     name: cert-manager
   namespace: cert-manager
+  values: {}
+
+# External DNS
+externalDNS:
+  enabled: false
+  name: external-dns
+  createNamespace: true
+  chartVersion: v1.15.0
+  iamRoleArn: ""
+  serviceAccount:
+    create: true
+    name: external-dns
+  namespace: external-dns
+  values: {}
 vpa:
   enabled: true
