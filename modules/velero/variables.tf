@@ -27,14 +27,33 @@ variable "critical_addons_node_selector" {
   }
 }
 
+variable "resource_limits_velero" {
+  description = "Resource limits for Velero deployment"
+  type        = map(string)
+  default = {
+    cpu    = "500m"
+    memory = "512Mi"
+  }
+}
+
+variable "resource_limits_node_agent" {
+  description = "Resource limits for Velero node_agent daemonset"
+  type        = map(string)
+  default = {
+    cpu    = "500m"
+    memory = "512Mi"
+  }
+}
+
 variable "critical_addons_node_tolerations" {
   description = "Config for node tolerations for workloads"
   type        = list(any)
-  default = [{
-    key      = "CriticalAddonsOnly"
-    operator = "Equal"
-    effect   = "NoSchedule"
-    value    = "true"
+  default = [
+    {
+      key      = "CriticalAddonsOnly"
+      operator = "Equal"
+      effect   = "NoSchedule"
+      value    = "true"
     },
     {
       key      = "karpenter.sh/nodepool"

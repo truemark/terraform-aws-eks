@@ -183,6 +183,11 @@ variable "enable_velero" {
   default     = false
 }
 
+variable "velero_s3_bucket" {
+  description = "S3 bucket for Velero Backups"
+  type        = string
+}
+
 ###############################################
 # Load Balancer Controller Configuration
 ###############################################

@@ -120,9 +120,7 @@ resources:
   requests:
     cpu: 100m
     memory: 128Mi
-  limits:
-    cpu: 100m
-    memory: 128Mi
+  limits:  ${jsonencode(var.resource_limits_velero)}
 
 # The node-agent daemonset
 deployNodeAgent: true
@@ -135,9 +133,7 @@ nodeAgent:
     requests:
       cpu: 100m
       memory: 128Mi
-    limits:
-      cpu: 100m
-      memory: 128Mi
+    limits:  ${jsonencode(var.resource_limits_node_agent)}
 
 # The kubectl upgrade/cleanup job
 kubectl:
@@ -145,9 +141,7 @@ kubectl:
     requests:
       cpu: 100m
       memory: 128Mi
-    limits:
-      cpu: 100m
-      memory: 128Mi
+    limits: ${jsonencode(var.resource_limits_velero)}
 dnsPolicy: ClusterFirst
 
 # Init containers to add to the Velero deployment's pod spec. At least one plugin provider image is required.
