@@ -14,18 +14,18 @@ spec:
       targetRevision: '{{ .Values.addons_repo_revision }}'
       ref: values
     - repoURL: https://charts.jetstack.io
-      targetRevision: {{ .Values.certManager.chart_version }}
+      targetRevision: {{ .Values.certManager.chartVersion }}
       chart: cert-manager
       helm:
         releaseName: cert-manager
         ignoreMissingValueFiles: true
         valueFiles:
           - $values/{{ .Values.addons_repo_basepath }}addons/cert-manager/values.yaml
-          - $values/{{ .Values.addons_repo_basepath }}addons/cert-manager/values-{{ .Values.certManager.chart_version }}.yaml
+          - $values/{{ .Values.addons_repo_basepath }}addons/cert-manager/values-{{ .Values.certManager.chartVersion }}.yaml
         values: |
-          {{- if semverCompare "~1.14.0" .Values.certManager.chart_version }}
+          {{- if semverCompare "~1.14.0" .Values.certManager.chartVersion }}
           installCRDs: true
-          {{- else if semverCompare "~1.15.0" .Values.certManager.chart_version }}
+          {{- else if semverCompare "~1.15.0" .Values.certManager.chartVersion }}
           crds:
             install: true
             keep: true
