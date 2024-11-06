@@ -73,15 +73,10 @@ locals {
   gitops_workload_revision = var.gitops_workload_revision
 
   eks_addons = {
-    enable_cert_manager = try(var.addons.enable_cert_manager, false)
     enable_argocd       = try(var.addons.enable_argocd, false)
+    enable_cert_manager = try(var.addons.enable_cert_manager, false)
+    enable_external_dns = try(var.addons.enable_external_dns, false)
   }
-  #   addons = merge(
-  #     local.aws_addons,
-  #     local.oss_addons,
-  #     { kubernetes_version = var.cluster_version },
-  #     { aws_cluster_name = module.eks.cluster_name }
-  #   )
 
   addons_metadata = merge(
     #     module.eks_addons.gitops_metadata,
@@ -117,13 +112,21 @@ locals {
       target_revision = "feat/argocd"
       path            = "bootstrap/charts/eks-addons"
       values = {
-        certManager = merge({
-          enabled = var.addons_enable_cert_manager
-          iamRoleArn = module.eks_addons.gitops_metadata.cert_manager_iam_role_arn
-        }, var.cert_manager_helm_config)
+        certManager = {
+          enabled      = local.eks_addons.enable_cert_manager,
+          iamRoleArn   = module.eks_addons.gitops_metadata.cert_manager_iam_role_arn,
+          values       = try(yamldecode(join("\n", var.cert_manager_helm_config.values)), {}),
+          chartVersion = try(var.cert_manager_helm_config.chart_version, [])
+        }
+        externalDNS = {
+          enabled      = local.eks_addons.enable_external_dns,
+          iamRoleArn   = module.eks_addons.gitops_metadata.external_dns_iam_role_arn,
+          values       = try(yamldecode(join("\n", var.external_dns_helm_config.values)), {}),
+          chartVersion = try(var.external_dns_helm_config.chart_version, [])
+
+        }
       }
     }
-    #     workloads = file("${path.module}/bootstrap/workloads.yaml")
   }
 }
 
@@ -166,13 +169,22 @@ module "eks_addons" {
   aws_region        = data.aws_region.current.name
   aws_account_id    = data.aws_caller_identity.current.account_id
   aws_partition     = data.aws_partition.current.partition
+  cluster_name      = module.eks.cluster_name
+  cluster_endpoint  = module.eks.cluster_endpoint
+  cluster_version   = var.cluster_version
 
 
   # Using GitOps Bridge
-  create_kubernetes_resources = false
+  create_kubernetes_resources = var.enable_gitops_bridge_bootstrap ? false : true
 
-  # EKS Blueprints Addons
+  # Cert Manager
   enable_cert_manager = local.eks_addons.enable_cert_manager
+  cert_manager        = var.cert_manager_helm_config
+
+  # External DNS
+  enable_external_dns = local.eks_addons.enable_external_dns
+  external_dns        = var.external_dns_helm_config
+  external_dns_route53_zone_arns = try(var.external_dns_helm_config.route53_zone_arns, [])
 
   #   tags = local.tags
 }

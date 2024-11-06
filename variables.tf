@@ -714,3 +714,5 @@ variable "addons_enable_cert_manager" {
 
 variable "cert_manager_helm_config" {
 }
+
+variable "external_dns_helm_config" {}

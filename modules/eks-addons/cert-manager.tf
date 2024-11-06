@@ -27,6 +27,7 @@ locals {
   cert_manager_service_account = try(var.cert_manager.service_account_name, "cert-manager")
   create_cert_manager_irsa     = var.enable_cert_manager && length(var.cert_manager_route53_hosted_zone_arns) > 0
   cert_manager_namespace       = try(var.cert_manager.namespace, "cert-manager")
+  cert_manager_install_crd_value = tonumber(split(".", var.cert_manager.chart_version)[1]) >= 15 ? [{name = "crds.install", value = "true"}, {name = "crds.keep", value = "true"}] : [{name = "installCRDs", value = "true"}]
 }
 
 data "aws_iam_policy_document" "cert_manager" {
@@ -101,16 +102,14 @@ module "cert_manager" {
   lint                       = try(var.cert_manager.lint, null)
 
   postrender = try(var.cert_manager.postrender, [])
-  set = concat([
-    {
-      name  = "installCRDs"
-      value = true
-    },
-    {
-      name  = "serviceAccount.name"
-      value = local.cert_manager_service_account
-    }
+  set = concat(
+    [
+      {
+        name  = "serviceAccount.name"
+        value = local.cert_manager_service_account
+      }
     ],
+    local.cert_manager_install_crd_value,
     try(var.cert_manager.set, [])
   )
   set_sensitive = try(var.cert_manager.set_sensitive, [])

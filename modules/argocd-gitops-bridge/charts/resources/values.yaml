@@ -13,6 +13,3 @@ destination:
   server: "https://kubernetes.default.svc"
 
 ignoreDifferences: []
-
-certManager:
-  values: {}
