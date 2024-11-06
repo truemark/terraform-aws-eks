@@ -34,7 +34,7 @@ spec:
             name: cert-manager
             annotations:
               eks.amazonaws.com/role-arn: {{ .Values.certManager.iamRoleArn }}
-          {{- if .Values.certManager.values }}
+          {{- if and .Values.certManager.values (ne .Values.certManager.values "") }}
           {{- toYaml .Values.certManager.values | nindent 10 }}
           {{- end }}
   destination:
