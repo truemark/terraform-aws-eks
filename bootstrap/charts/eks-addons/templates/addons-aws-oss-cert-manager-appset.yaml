@@ -21,11 +21,11 @@ spec:
         ignoreMissingValueFiles: true
         valueFiles:
           - $values/{{ .Values.addons_repo_basepath }}addons/cert-manager/values.yaml
-          - $values/{{ .Values.addons_repo_basepath }}addons/cert-manager/values-{{ .Values.certManager.chartVersion }}.yaml
+          - $values/{{ .Values.addons_repo_basepath }}addons/cert-manager/values-{{ .Values.certManager.chart_version }}.yaml
         values: |
-          {{- if semverCompare "~1.14.0" .Values.certManager.chartVersion }}
+          {{- if semverCompare "~1.14.0" .Values.certManager.chart_version }}
           installCRDs: true
-          {{- else if semverCompare "~1.15.0" .Values.certManager.chartVersion }}
+          {{- else if semverCompare "~1.15.0" .Values.certManager.chart_version }}
           crds:
             install: true
             keep: true
