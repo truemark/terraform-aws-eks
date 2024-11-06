@@ -23,12 +23,31 @@ externalDNS:
   enabled: false
   name: external-dns
   createNamespace: true
-  chartVersion: v1.15.0
+  chartVersion: 1.15.0
   iamRoleArn: ""
   serviceAccount:
     create: true
     name: external-dns
   namespace: external-dns
   values: {}
-vpa:
-  enabled: true
+
+# ISTIO
+istio:
+  base:
+    enabled: true
+    name: istio-base
+    createNamespace: true
+    chartVersion: 1.23.3
+    serviceAccount:
+      create: true
+    namespace: istio-base
+    values: {}
+  ingress:
+    enabled: false
+    name: istio-ingress
+    createNamespace: true
+    chartVersion: 1.23.3
+    serviceAccount:
+      create: true
+    namespace: istio-ingress
+    values: {}

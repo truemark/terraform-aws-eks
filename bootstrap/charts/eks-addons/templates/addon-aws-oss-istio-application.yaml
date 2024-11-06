@@ -1,0 +1,39 @@
+{{- if and (.Values.istio) (.Values.istio.base.enabled) }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: addons-external-dns
+  namespace: {{ .Values.argocdNamespace | default "argocd" }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocdProject | default "default" }}
+  sources:
+    - repoURL: '{{ .Values.addons_repo_url }}'
+      targetRevision: '{{ .Values.addons_repo_revision }}'
+      ref: values
+    - repoURL: https://istio-release.storage.googleapis.com/charts
+      targetRevision: {{ .Values.istio.base.chartVersion }}
+      chart: base
+      helm:
+        releaseName: istio-base
+        ignoreMissingValueFiles: true
+        values: |
+          defaultRevision: default
+    - repoURL: https://istio-release.storage.googleapis.com/charts
+      targetRevision: {{ .Values.istio.ingress.chartVersion }}
+      chart: istiod
+      helm:
+        releaseName: istiod
+        ignoreMissingValueFiles: true
+        values: |
+          defaultRevision: default
+  destination:
+    namespace: '{{ .Values.istio.base.namespace }}'
+    name: '{{ .Values.clusterName }}'
+  syncPolicy:
+    automated: { }
+    syncOptions:
+      - CreateNamespace=true
+{{- end }}
