@@ -14,7 +14,7 @@ spec:
       targetRevision: '{{ .Values.addons_repo_revision }}'
       ref: values
     - repoURL: https://charts.jetstack.io
-      targetRevision: {{ .Values.certManager.chartVersion }}
+      targetRevision: {{ .Values.certManager.chart_version }}
       chart: cert-manager
       helm:
         releaseName: cert-manager
@@ -34,6 +34,7 @@ spec:
             name: cert-manager
             annotations:
               eks.amazonaws.com/role-arn: {{ .Values.certManager.iamRoleArn }}
+          {{- toYaml .Values.certManager.values | nindent 10 }}
   destination:
     namespace: '{{ .Values.certManager.namespace }}'
     name: '{{ .Values.clusterName }}'
