@@ -40,7 +40,7 @@ istio:
     chartVersion: 1.23.3
     serviceAccount:
       create: true
-    namespace: istio-base
+    namespace: istio-system
     values: {}
   ingress:
     enabled: false
