@@ -34,7 +34,7 @@ spec:
             name: cert-manager
             annotations:
               eks.amazonaws.com/role-arn: {{ .Values.certManager.iamRoleArn }}
-          {{ .Values.certManager.values | nindent 10 }}
+          {{ toYaml .Values.certManager.values | nindent 10 }}
   destination:
     namespace: '{{ .Values.certManager.namespace }}'
     name: '{{ .Values.clusterName }}'
