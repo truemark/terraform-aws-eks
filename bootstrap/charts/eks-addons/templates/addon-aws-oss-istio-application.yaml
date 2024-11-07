@@ -175,7 +175,7 @@ spec:
                 protocol: TCP
                 targetPort: 443
             annotations:
-              {{- if .Values.istio.ingress.external.serviceType == "LoadBalancer" }}
+              {{- if eq .Values.istio.ingress.external.serviceType "LoadBalancer" }}
               service.beta.kubernetes.io/aws-load-balancer-name: "istio-external-gateway"
               service.beta.kubernetes.io/aws-load-balancer-type: "external"
               service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
