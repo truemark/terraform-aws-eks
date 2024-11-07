@@ -33,11 +33,18 @@ externalDNS:
 
 # ISTIO
 istio:
+  chartVersion: 1.23.3
+  createNamespace: true
   base:
     enabled: true
     name: istio-base
-    createNamespace: true
-    chartVersion: 1.23.3
+    serviceAccount:
+      create: true
+    namespace: istio-system
+    values: {}
+  istiod:
+    enabled: true
+    name: istio-discovery
     serviceAccount:
       create: true
     namespace: istio-system
@@ -45,8 +52,6 @@ istio:
   ingress:
     enabled: false
     name: istio-ingress
-    createNamespace: true
-    chartVersion: 1.23.3
     serviceAccount:
       create: true
     namespace: istio-ingress

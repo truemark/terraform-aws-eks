@@ -5,6 +5,45 @@ kind: Application
 metadata:
   name: addons-istio-base
   namespace: {{ .Values.argocdNamespace | default "argocd" }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocdProject | default "default" }}
+  sources:
+    - repoURL: https://istio-release.storage.googleapis.com/charts
+      targetRevision: {{ .Values.istio.chartVersion }}
+      chart: base
+      helm:
+        releaseName: {{ .Values.istio.base.name }}
+        ignoreMissingValueFiles: true
+        values: |
+          defaultRevision: default
+  destination:
+    namespace: '{{ .Values.istio.base.namespace }}'
+    name: '{{ .Values.clusterName }}'
+  syncPolicy:
+    automated:
+      allowEmpty: false
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - "CreateNamespace=true"
+      - "Validate=false"
+      - "PrunePropagationPolicy=Foreground"
+      - "PruneLast=true"
+      - "RespectIgnoreDifferences=false"
+{{- end }}
+---
+{{- if and (.Values.istio) (.Values.istio.istiod.enabled) }}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: addons-istio-discovery
+  namespace: {{ .Values.argocdNamespace | default "argocd" }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -14,18 +53,10 @@ spec:
       targetRevision: '{{ .Values.addons_repo_revision }}'
       ref: values
     - repoURL: https://istio-release.storage.googleapis.com/charts
-      targetRevision: {{ .Values.istio.base.chartVersion }}
-      chart: base
-      helm:
-        releaseName: istio-base
-        ignoreMissingValueFiles: true
-        values: |
-          defaultRevision: default
-    - repoURL: https://istio-release.storage.googleapis.com/charts
       targetRevision: {{ .Values.istio.ingress.chartVersion }}
       chart: istiod
       helm:
-        releaseName: istiod
+        releaseName: {{ .Values.istio.istiod.name }}
         ignoreMissingValueFiles: true
         valuesObject:
           global:
@@ -89,12 +120,18 @@ spec:
               operator: "Exists"
               effect: "NoSchedule"
             {{- end }}
-
   destination:
     namespace: '{{ .Values.istio.base.namespace }}'
     name: '{{ .Values.clusterName }}'
   syncPolicy:
-    automated: { }
+    automated:
+      allowEmpty: false
+      prune: true
+      selfHeal: true
     syncOptions:
-      - CreateNamespace=true
+      - "CreateNamespace=true"
+      - "Validate=false"
+      - "PrunePropagationPolicy=Foreground"
+      - "PruneLast=true"
+      - "RespectIgnoreDifferences=false"
 {{- end }}

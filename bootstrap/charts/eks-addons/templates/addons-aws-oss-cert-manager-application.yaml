@@ -41,8 +41,15 @@ spec:
     namespace: '{{ .Values.certManager.namespace }}'
     name: '{{ .Values.clusterName }}'
   syncPolicy:
-    automated: { }
+    automated:
+      allowEmpty: false
+      prune: true
+      selfHeal: true
     syncOptions:
-      - CreateNamespace=true
+      - "CreateNamespace=true"
+      - "Validate=false"
+      - "PrunePropagationPolicy=Foreground"
+      - "PruneLast=true"
+      - "RespectIgnoreDifferences=false"
       - ServerSideApply=true  # Big CRDs.
 {{- end }}

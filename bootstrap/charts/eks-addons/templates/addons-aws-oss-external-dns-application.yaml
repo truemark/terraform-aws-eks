@@ -34,8 +34,14 @@ spec:
     namespace: '{{ .Values.externalDNS.namespace }}'
     name: '{{ .Values.clusterName }}'
   syncPolicy:
-    automated: { }
+    automated:
+      allowEmpty: false
+      prune: true
+      selfHeal: true
     syncOptions:
-      - CreateNamespace=true
-      - ServerSideApply=true  # Big CRDs.
+      - "CreateNamespace=true"
+      - "Validate=false"
+      - "PrunePropagationPolicy=Foreground"
+      - "PruneLast=true"
+      - "RespectIgnoreDifferences=false"
 {{- end }}
