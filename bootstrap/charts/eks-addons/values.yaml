@@ -57,7 +57,9 @@ istio:
       serviceAccount:
         create: true
       namespace: istio-ingress
-      values: {}
+      values:
+        serviceType: LoadBalancer
+
     internal:
       enabled: true
       name: istio-ingress-internal
