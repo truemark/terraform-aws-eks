@@ -52,6 +52,9 @@ spec:
     - repoURL: '{{ .Values.addons_repo_url }}'
       targetRevision: '{{ .Values.addons_repo_revision }}'
       ref: values
+    - repoURL: '{{ .Values.addons_repo_url }}'
+      targetRevision: '{{ .Values.addons_repo_revision }}'
+      path: bootstrap/addons/istio/envoy_filters
     - repoURL: https://istio-release.storage.googleapis.com/charts
       targetRevision: {{ .Values.istio.chartVersion }}
       chart: istiod
@@ -135,3 +138,85 @@ spec:
       - "PruneLast=true"
       - "RespectIgnoreDifferences=false"
 {{- end }}
+{{/*---*/}}
+{{/*{{- if and (.Values.istio) (.Values.istio.ingress.enabled) }}*/}}
+{{/*apiVersion: argoproj.io/v1alpha1*/}}
+{{/*kind: Application*/}}
+{{/*metadata:*/}}
+{{/*  name: addons-istio-ingress*/}}
+{{/*  namespace: {{ .Values.argocdNamespace | default "argocd" }}*/}}
+{{/*  annotations:*/}}
+{{/*    argocd.argoproj.io/sync-wave: "3"*/}}
+{{/*  finalizers:*/}}
+{{/*    - resources-finalizer.argocd.argoproj.io*/}}
+{{/*spec:*/}}
+{{/*  project: {{ .Values.argocdProject | default "default" }}*/}}
+{{/*  sources:*/}}
+{{/*    - repoURL: '{{ .Values.addons_repo_url }}'*/}}
+{{/*      targetRevision: '{{ .Values.addons_repo_revision }}'*/}}
+{{/*      ref: values*/}}
+{{/*    {{- if .Values.istio.ingress.external.enabled }}*/}}
+{{/*    - repoURL: https://istio-release.storage.googleapis.com/charts*/}}
+{{/*      targetRevision: {{ .Values.istio.chartVersion }}*/}}
+{{/*      chart: gateway*/}}
+{{/*      helm:*/}}
+{{/*        releaseName: {{ .Values.istio.ingress.external.name }}*/}}
+{{/*        ignoreMissingValueFiles: true*/}}
+{{/*        valuesObject:*/}}
+{{/*          service:*/}}
+{{/*            type: {{ .Values.istio.ingress.external.serviceType }}*/}}
+{{/*          nodeSelector:*/}}
+{{/*            {{- if .Values.istio.base.nodeSelector }}*/}}
+{{/*            {{- toYaml .Values.istio.base.nodeSelector | nindent 12 }}*/}}
+{{/*            {{- else }}*/}}
+{{/*            CriticalAddonsOnly: true*/}}
+{{/*            {{- end }}*/}}
+{{/*          tolerations:*/}}
+{{/*            {{- if .Values.istio.base.tolerations }}*/}}
+{{/*            {{- toYaml .Values.istio.base.tolerations | nindent 12 }}*/}}
+{{/*            {{- else }}*/}}
+{{/*            - key: "CriticalAddonsOnly"*/}}
+{{/*              operator: "Exists"*/}}
+{{/*              effect: "NoSchedule"*/}}
+{{/*            {{- end }}*/}}
+{{/*    {{- end }}*/}}
+{{/*    {{- if .Values.istio.ingress.internal.enabled }}*/}}
+{{/*    - repoURL: https://istio-release.storage.googleapis.com/charts*/}}
+{{/*      targetRevision: {{ .Values.istio.chartVersion }}*/}}
+{{/*      chart: gateway*/}}
+{{/*      helm:*/}}
+{{/*        releaseName: {{ .Values.istio.ingress.internal.name }}*/}}
+{{/*        ignoreMissingValueFiles: true*/}}
+{{/*        valuesObject:*/}}
+
+{{/*          nodeSelector:*/}}
+{{/*        {{- if .Values.istio.base.nodeSelector }}*/}}
+{{/*        {{- toYaml .Values.istio.base.nodeSelector | nindent 12 }}*/}}
+{{/*        {{- else }}*/}}
+{{/*            CriticalAddonsOnly: true*/}}
+{{/*        {{- end }}*/}}
+{{/*          tolerations:*/}}
+{{/*        {{- if .Values.istio.base.tolerations }}*/}}
+{{/*        {{- toYaml .Values.istio.base.tolerations | nindent 12 }}*/}}
+{{/*        {{- else }}*/}}
+{{/*            - key: "CriticalAddonsOnly"*/}}
+{{/*              operator: "Exists"*/}}
+{{/*              effect: "NoSchedule"*/}}
+{{/*        {{- end }}*/}}
+{{/*{{- end }}*/}}
+
+{{/*  destination:*/}}
+{{/*    namespace: '{{ .Values.istio.base.namespace }}'*/}}
+{{/*    name: '{{ .Values.clusterName }}'*/}}
+{{/*  syncPolicy:*/}}
+{{/*    automated:*/}}
+{{/*      allowEmpty: false*/}}
+{{/*      prune: true*/}}
+{{/*      selfHeal: true*/}}
+{{/*    syncOptions:*/}}
+{{/*      - "CreateNamespace=true"*/}}
+{{/*      - "Validate=false"*/}}
+{{/*      - "PrunePropagationPolicy=Foreground"*/}}
+{{/*      - "PruneLast=true"*/}}
+{{/*      - "RespectIgnoreDifferences=false"*/}}
+{{/*{{- end }}*/}}
