@@ -53,7 +53,7 @@ spec:
       targetRevision: '{{ .Values.addons_repo_revision }}'
       ref: values
     - repoURL: https://istio-release.storage.googleapis.com/charts
-      targetRevision: {{ .Values.istio.ingress.chartVersion }}
+      targetRevision: {{ .Values.istio.chartVersion }}
       chart: istiod
       helm:
         releaseName: {{ .Values.istio.istiod.name }}
