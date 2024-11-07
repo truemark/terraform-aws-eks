@@ -42,7 +42,6 @@ spec:
     name: '{{ .Values.clusterName }}'
   syncPolicy:
     automated:
-      allowEmpty: false
       prune: true
       selfHeal: true
     syncOptions:
