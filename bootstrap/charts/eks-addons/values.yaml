@@ -2,7 +2,7 @@ argocdNamespace: argocd
 argocdProject: default
 clusterName: in-cluster
 addons_repo_url: https://github.com/truemark/terraform-aws-eks
-addons_repo_revision: main
+addons_repo_revision: feat/argocd
 addons_repo_basepath: bootstrap
 
 # Cert Manager
@@ -35,6 +35,7 @@ externalDNS:
 istio:
   chartVersion: 1.23.3
   createNamespace: true
+  enabled: true
   base:
     enabled: true
     name: istio-base
@@ -50,9 +51,17 @@ istio:
     namespace: istio-system
     values: {}
   ingress:
-    enabled: false
-    name: istio-ingress
-    serviceAccount:
-      create: true
-    namespace: istio-ingress
-    values: {}
+    external:
+      enabled: true
+      name: istio-ingress-external
+      serviceAccount:
+        create: true
+      namespace: istio-ingress
+      values: {}
+    internal:
+      enabled: true
+      name: istio-ingress-internal
+      serviceAccount:
+          create: true
+      namespace: istio-ingress
+      values: {}
