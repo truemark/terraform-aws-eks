@@ -139,12 +139,10 @@ spec:
   ignoreDifferences:
     - group: admissionregistration.k8s.io
       kind: MutatingWebhookConfiguration
-      name: istio-sidecar-injector
       jqPathExpressions:
         - '.webhooks[]?.clientConfig.caBundle'
     - group: admissionregistration.k8s.io
       kind: ValidatingWebhookConfiguration
-      name: istiod-default-validator
       jqPathExpressions:
         - '.webhooks[]?.failurePolicy'
 {{- end }}
