@@ -1,0 +1,47 @@
+{{- if and (.Values.metricsServer) (.Values.metricsServer.enabled) }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: addons-metrics-server
+  namespace: {{ .Values.argocdNamespace | default "argocd" }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocdProject | default "default" }}
+  sources:
+    - repoURL: '{{ .Values.addons_repo_url }}'
+      targetRevision: '{{ .Values.addons_repo_revision }}'
+      ref: values
+    - repoURL: https://charts.metrics-server.io
+      targetRevision: {{ .Values.metricsServer.chartVersion }}
+      chart: metrics-server
+      helm:
+        releaseName: metrics-server
+        ignoreMissingValueFiles: true
+        valueFiles:
+          - $values/{{ .Values.addons_repo_basepath }}addons/metrics-server/values.yaml
+          - $values/{{ .Values.addons_repo_basepath }}addons/metrics-server/values-{{ .Values.metricsServer.chartVersion }}.yaml
+        values: |
+          serviceAccount:
+            name: metrics-server
+            annotations:
+              eks.amazonaws.com/role-arn: {{ .Values.metricsServer.iamRoleArn }}
+          {{- if and (.Values.metricsServer.values) (not (empty .Values.metricsServer.values)) }}
+            {{- toYaml .Values.metricsServer.values | nindent 10 }}
+          {{- end }}
+  destination:
+    namespace: '{{ .Values.metricsServer.namespace }}'
+    name: '{{ .Values.clusterName }}'
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - "CreateNamespace=true"
+      - "Validate=false"
+      - "PrunePropagationPolicy=Foreground"
+      - "PruneLast=true"
+      - "RespectIgnoreDifferences=false"
+      - ServerSideApply=true  # Big CRDs.
+{{- end }}
