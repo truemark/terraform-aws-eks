@@ -31,6 +31,19 @@ externalDNS:
   namespace: external-dns
   values: {}
 
+# External Secrets
+externalSecrets:
+  enabled: false
+  name: external-secrets
+  createNamespace: true
+  chartVersion: 0.7.0
+  iamRoleArn: ""
+  serviceAccount:
+    create: true
+    name: external-secrets
+  namespace: external-secrets
+  values: {}
+
 # ISTIO
 istio:
   chartVersion: 1.23.3
