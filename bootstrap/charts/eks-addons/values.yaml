@@ -80,3 +80,9 @@ istio:
           create: true
       namespace: istio-ingress
       values: {}
+
+metricsServer:
+    enabled: true
+    chartVersion: v3.12.0
+    namespace: kube-system
+    values: {}
