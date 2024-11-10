@@ -13,11 +13,11 @@ spec:
     - repoURL: '{{ .Values.addons_repo_url }}'
       targetRevision: '{{ .Values.addons_repo_revision }}'
       ref: values
-    - repoURL: https://charts.external-secrets.io
+    - repoURL: https://kedacore.github.io/charts
       targetRevision: {{ .Values.keda.chartVersion }}
-      chart: external-secrets
+      chart: keda
       helm:
-        releaseName: external-secrets
+        releaseName: keda
         ignoreMissingValueFiles: true
         valueFiles:
           - $values/{{ .Values.addons_repo_basepath }}addons/.keda/values.yaml
