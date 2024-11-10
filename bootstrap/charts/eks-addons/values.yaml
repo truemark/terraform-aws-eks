@@ -82,7 +82,13 @@ istio:
       values: {}
 
 metricsServer:
-    enabled: true
-    chartVersion: v3.12.0
-    namespace: kube-system
-    values: {}
+  enabled: true
+  chartVersion: v3.12.0
+  namespace: kube-system
+  values: {}
+
+keda:
+  enabled: true
+  chartVersion: 2.16.0
+  namespace: keda
+  values : {}
