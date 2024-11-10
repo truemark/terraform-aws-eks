@@ -23,6 +23,10 @@ spec:
           - $values/{{ .Values.addons_repo_basepath }}addons/.keda/values.yaml
           - $values/{{ .Values.addons_repo_basepath }}addons/.keda/values-{{ .Values.keda.chartVersion }}.yaml
         values: |
+          serviceAccount:
+            name: keda
+            annotations:
+              eks.amazonaws.com/role-arn: {{ .Values.keda.iamRoleArn }}
           {{- if and (.Values.keda.values) (not (empty .Values.keda.values)) }}
             {{- toYaml .Values.keda.values | nindent 10 }}
           {{- end }}
