@@ -18,6 +18,20 @@ certManager:
   namespace: cert-manager
   values: {}
 
+# Karpenter
+karpenter:
+  enabled: false
+  name: karpenter
+  createNamespace: true
+  chartVersion: 1.0.7
+  iamRoleArn: ""
+  serviceAccount:
+    create: true
+    name: karpenter
+  namespace: karpenter
+  enableCrdWebhookConfig: false
+  values: {}
+
 # External DNS
 externalDNS:
   enabled: false

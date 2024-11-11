@@ -22,7 +22,7 @@ spec:
           - $values/{{ .Values.addons_repo_basepath }}addons/karpenter/values.yaml
           - $values/{{ .Values.addons_repo_basepath }}addons/karpenter/values-{{ .Values.karpenter.chartVersion }}.yaml
         values: |
-          {{- if enable_crd_webhook_config }}
+          {{- if .Values.karpenter.enableCrdWebhookConfig }}
           webhook:
             enabled: true
             serviceNamespace: {{ .Values.karpenter.namespace }}
