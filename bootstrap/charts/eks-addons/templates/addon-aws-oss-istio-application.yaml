@@ -183,7 +183,7 @@ spec:
         valuesObject:
           service:
             type: {{ $v.serviceType }}
-            {{- if $v.serviceType == "LoadBalancer" }}
+            {{- if eq $v.serviceType "LoadBalancer" }}
             annotations:
               service.beta.kubernetes.io/aws-load-balancer-name: {{ $v.name }}
               service.beta.kubernetes.io/aws-load-balancer-type: "external"
