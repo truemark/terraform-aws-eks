@@ -156,7 +156,7 @@ spec:
         - '.webhooks[]?.failurePolicy'
 {{- end }}
 ---
-{{- if and (.Values.istio) (.Values.istio.ingress.enabled) }}
+{{- if and (.Values.istio) (.Values.istio.ingress_enabled) }}
 {{- range $k, $v := .Values.istio.ingress }}
 {{- if $v.enabled }}
 apiVersion: argoproj.io/v1alpha1
