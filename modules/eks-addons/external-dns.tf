@@ -20,7 +20,7 @@ variable "external_dns_route53_zone_arns" {
 }
 
 locals {
-  external_dns_service_account = try(var.external_dns.service_account_name, "external-dns-sa")
+  external_dns_service_account = try(var.external_dns.service_account_name, "external-dns")
   external_dns_namespace       = try(var.external_dns.namespace, "external-dns")
 }
 

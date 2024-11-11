@@ -165,6 +165,26 @@ locals {
           values = try(yamldecode(join("\n", var.keda_helm_config.values)), {}),
           chartVersion = try(var.keda_helm_config.chart_version, [])
         }
+        istio = {
+          chartVersion = try(var.istio_helm_config.chart_version, "1.23.3")
+          values = try(yamldecode(join("\n", var.istio_helm_config.values)), {}),
+          base = {
+            enabled = local.eks_addons.enable_istio
+          }
+          ingress_enabled = true
+          ingress = {
+            external = {
+              enabled = true
+              serviceType = "LoadBalancer"
+              certificateArns = try(join(",", var.istio_helm_config.ingress_certificate_arns), "")
+            }
+            internal = {
+              enabled = false
+              serviceType = "LoadBalancer"
+              certificateArns = try(join(",", var.istio_helm_config.ingress_certificate_arns), "")
+            }
+          }
+        }
       }
     }
   }

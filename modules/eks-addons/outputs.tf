@@ -30,11 +30,11 @@ output "gitops_metadata" {
       } : "keda_${k}" => v if var.enable_keda
     },
     { for k, v in {
-      iam_role_arn    = module.karpenter[0].iam_role_arn
-      node_iam_role_arn = module.karpenter[0].node_iam_role_name
+      iam_role_arn       = module.karpenter[0].iam_role_arn
+      node_iam_role_arn  = module.karpenter[0].node_iam_role_name
       interruption_queue = module.karpenter[0].queue_name
-      namespace       = local.karpenter_namespace
-      service_account = local.karpenter_service_account
+      namespace          = local.karpenter_namespace
+      service_account    = local.karpenter_service_account
       } : "karpenter_${k}" => v if var.enable_karpenter
     }
   )

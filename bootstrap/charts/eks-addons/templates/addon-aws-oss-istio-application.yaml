@@ -63,7 +63,10 @@ spec:
       ref: values
     - repoURL: '{{ .Values.addons_repo_url }}'
       targetRevision: '{{ .Values.addons_repo_revision }}'
-      path: bootstrap/addons/istio/envoy_filters
+      path: bootstrap/addons/istio
+      helm:
+        releaseName: istio-settings
+        ignoreMissingValueFiles: true
     - repoURL: https://istio-release.storage.googleapis.com/charts
       targetRevision: {{ .Values.istio.chartVersion }}
       chart: istiod

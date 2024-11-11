@@ -754,3 +754,4 @@ variable "karpenter_helm_config" {}
 variable "external_secrets_helm_config" {}
 variable "metrics_server_helm_config" {}
 variable "keda_helm_config" {}
+variable "istio_helm_config" {}
