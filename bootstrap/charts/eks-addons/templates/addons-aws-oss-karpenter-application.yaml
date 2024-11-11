@@ -1,0 +1,97 @@
+{{- if and (.Values.karpenter) (.Values.karpenter.enabled) }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: addons-karpenter-crds
+  namespace: {{ .Values.argocdNamespace | default "argocd" }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocdProject | default "default" }}
+  sources:
+    - repoURL: oci://public.ecr.aws/karpenter
+      targetRevision: {{ .Values.karpenter.chartVersion }}
+      chart: karpenter-crd
+      helm:
+        releaseName: karpenter-crds
+        ignoreMissingValueFiles: true
+        valueFiles:
+          - $values/{{ .Values.addons_repo_basepath }}addons/karpenter/values.yaml
+          - $values/{{ .Values.addons_repo_basepath }}addons/karpenter/values-{{ .Values.karpenter.chartVersion }}.yaml
+        values: |
+          {{- if enable_crd_webhook_config }}
+          webhook:
+            enabled: true
+            serviceNamespace: {{ .Values.karpenter.namespace }}
+          {{- end }}
+          {{- if and (.Values.karpenter.values) (not (empty .Values.karpenter.values)) }}
+            {{- toYaml .Values.karpenter.values | nindent 10 }}
+          {{- end }}
+  destination:
+    namespace: '{{ .Values.karpenter.namespace }}'
+    name: '{{ .Values.clusterName }}'
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - "CreateNamespace=true"
+      - "Validate=false"
+      - "PrunePropagationPolicy=Foreground"
+      - "PruneLast=true"
+      - "RespectIgnoreDifferences=false"
+      - ServerSideApply=true  # Big CRDs.
+---
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: addons-karpenter
+  namespace: {{ .Values.argocdNamespace | default "argocd" }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocdProject | default "default" }}
+  sources:
+    - repoURL: oci://public.ecr.aws/karpenter
+      targetRevision: {{ .Values.karpenter.chartVersion }}
+      chart: karpenter
+      helm:
+        releaseName: karpenter
+        ignoreMissingValueFiles: true
+        valueFiles:
+          - $values/{{ .Values.addons_repo_basepath }}addons/karpenter/values.yaml
+          - $values/{{ .Values.addons_repo_basepath }}addons/karpenter/values-{{ .Values.karpenter.chartVersion }}.yaml
+        values: |
+          settings:
+            clusterName: {{ .Values.karpenter.clusterName }}
+            clusterEndpoint: {{ .Values.karpenter.clusterEndpoint }}
+            interruptionQueue: {{ .Values.karpenter.interruptionQueue }}
+          serviceAccount:
+            name: karpenter
+            annotations:
+              eks.amazonaws.com/role-arn: {{ .Values.karpenter.iamRoleArn }}
+          {{- if and (.Values.karpenter.values) (not (empty .Values.karpenter.values)) }}
+            {{- toYaml .Values.karpenter.values | nindent 10 }}
+          {{- end }}
+  destination:
+    namespace: '{{ .Values.karpenter.namespace }}'
+    name: '{{ .Values.clusterName }}'
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - "CreateNamespace=true"
+      - "Validate=false"
+      - "PrunePropagationPolicy=Foreground"
+      - "PruneLast=true"
+      - "RespectIgnoreDifferences=false"
+      - ServerSideApply=true  # Big CRDs.
+---
+{{- end }}
