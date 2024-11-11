@@ -156,3 +156,84 @@ spec:
         - '.webhooks[]?.failurePolicy'
 {{- end }}
 ---
+{{- if and (.Values.istio) (.Values.istio.ingress.enabled) }}
+{{- range $k, $v := .Values.istio.ingress }}
+{{- if $v.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: addons-istio-ingress-{{ $k }}
+  namespace: {{ .Values.argocdNamespace | default "argocd" }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocdProject | default "default" }}
+  sources:
+    - repoURL: '{{ .Values.addons_repo_url }}'
+      targetRevision: '{{ .Values.addons_repo_revision }}'
+      ref: values
+    - repoURL: https://istio-release.storage.googleapis.com/charts
+      targetRevision: {{ .Values.istio.chartVersion }}
+      chart: gateway
+      helm:
+        releaseName: {{ $v.name }}
+        ignoreMissingValueFiles: true
+        valuesObject:
+          service:
+            type: {{ $v.serviceType }}
+            {{- if $v.serviceType == "LoadBalancer" }}
+            annotations:
+              service.beta.kubernetes.io/aws-load-balancer-name: {{ $v.name }}
+              service.beta.kubernetes.io/aws-load-balancer-type: "external"
+              service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
+              service.beta.kubernetes.io/aws-load-balancer-subnets: {{ $v.subnets }}
+              service.beta.kubernetes.io/aws-load-balancer-scheme: {{ $v.loadBalancerScheme }}
+              service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"
+              service.beta.kubernetes.io/aws-load-balancer-manage-backend-security-group-rules: "true"
+              service.beta.kubernetes.io/aws-load-balancer-target-group-attributes: "preserve_client_ip.enabled=true"
+              {{- if and $v.certificateArns (ne $v.certificateArns "") }}
+              service.beta.kubernetes.io/aws-load-balancer-ssl-cert: {{ $v.certificateArns }}
+              service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "https"
+              service.beta.kubernetes.io/aws-load-balancer-ssl-negotiation-policy: "ELBSecurityPolicy-TLS13-1-2-2021-06"
+              {{- end }}
+              {{- if and $v.prefixLists (ne $v.prefixLists "") }}
+              service.beta.kubernetes.io/aws-load-balancer-security-group-prefix-lists: {{ $v.prefixLists }}
+              {{- end }}
+              {{- if and $v.loadBalancerSouraceRanges (ne $v.loadBalancerSouraceRanges "") }}
+              service.beta.kubernetes.io/load-balancer-source-ranges: {{ $v.loadBalancerSouraceRanges }}
+              {{- end }}
+            {{- end }}
+          nodeSelector:
+            {{- if $v.nodeSelector }}
+            {{- toYaml $v.nodeSelector | nindent 12 }}
+            {{- else }}
+            karpenter.sh/nodepool: truemark-arm64
+            {{- end }}
+          tolerations:
+            {{- if $v.tolerations }}
+            {{- toYaml $v.tolerations | nindent 12 }}
+            {{- else }}
+            - key: "karpenter.sh/nodepool"
+              operator: "Equal"
+              value: "truemark-arm64"
+              effect: "NoSchedule"
+            {{- end }}
+  destination:
+    namespace: '{{ .Values.istio.base.namespace }}'
+    name: '{{ .Values.clusterName }}'
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - "CreateNamespace=true"
+      - "Validate=false"
+      - "PrunePropagationPolicy=Foreground"
+      - "PruneLast=true"
+      - "RespectIgnoreDifferences=false"
+{{- end }}
+---
+{{- end }}
+{{- end }}
