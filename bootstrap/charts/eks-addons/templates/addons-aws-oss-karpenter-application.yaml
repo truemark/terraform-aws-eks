@@ -92,6 +92,5 @@ spec:
       - "PrunePropagationPolicy=Foreground"
       - "PruneLast=true"
       - "RespectIgnoreDifferences=false"
-      - ServerSideApply=true  # Big CRDs.
 ---
 {{- end }}
