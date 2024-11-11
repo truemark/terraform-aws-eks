@@ -163,19 +163,19 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: addons-istio-ingress-{{ $k }}
-  namespace: {{ .Values.argocdNamespace | default "argocd" }}
+  namespace: {{ $.Values.argocdNamespace | default "argocd" }}
   annotations:
     argocd.argoproj.io/sync-wave: "2"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
-  project: {{ .Values.argocdProject | default "default" }}
+  project: {{ $.Values.argocdProject | default "default" }}
   sources:
-    - repoURL: '{{ .Values.addons_repo_url }}'
-      targetRevision: '{{ .Values.addons_repo_revision }}'
+    - repoURL: '{{ $.Values.addons_repo_url }}'
+      targetRevision: '{{ $.Values.addons_repo_revision }}'
       ref: values
     - repoURL: https://istio-release.storage.googleapis.com/charts
-      targetRevision: {{ .Values.istio.chartVersion }}
+      targetRevision: {{ $.Values.istio.chartVersion }}
       chart: gateway
       helm:
         releaseName: {{ $v.name }}
@@ -221,8 +221,8 @@ spec:
               effect: "NoSchedule"
             {{- end }}
   destination:
-    namespace: '{{ .Values.istio.base.namespace }}'
-    name: '{{ .Values.clusterName }}'
+    namespace: '{{ $.Values.istio.base.namespace }}'
+    name: '{{ $.Values.clusterName }}'
   syncPolicy:
     automated:
       prune: true
