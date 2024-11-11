@@ -1,0 +1,25 @@
+apiVersion: karpenter.k8s.aws/v1
+kind: EC2NodeClass
+metadata:
+  name: truemark
+spec:
+  amiFamily: {{ .Values.karpenter.truemarkNodeClassDefaults.amiFamily }}
+  amiSelectorTerms:
+    {{- toYaml .Values.karpenter.truemarkNodeClassDefaults.amiSelectorTerms | nindent 4 }}
+  blockDeviceMappings:
+    {{- toYaml .Values.karpenter.truemarkNodeClassDefaults.blockDeviceMappings | nindent 4 }}
+  metadataOptions:
+    httpEndpoint: enabled
+    httpProtocolIPv6: disabled
+    httpPutResponseHopLimit: 1
+    httpTokens: required
+  role: {{ .Values.karpenter.nodeIamRoleName}}
+  securityGroupSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: {{ .Values.karpenter.clusterName }}
+  subnetSelectorTerms:
+    - tags:
+        network: private
+  tags:
+    Name: {{ .Values.karpenter.clusterName }}-node
+    karpenter.sh/discovery: {{ .Values.karpenter.clusterName }}

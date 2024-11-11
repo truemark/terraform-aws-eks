@@ -75,6 +75,16 @@ spec:
           {{- if and (.Values.karpenter.values) (not (empty .Values.karpenter.values)) }}
             {{- toYaml .Values.karpenter.values | nindent 10 }}
           {{- end }}
+    - repoURL: '{{ .Values.addons_repo_url }}'
+      targetRevision: '{{ .Values.addons_repo_revision }}'
+      path: bootstrap/addons/karpenter
+      helm:
+        releaseName: karpenter-resources
+        ignoreMissingValueFiles: true
+      valuesObject:
+        clusterName: {{ .Values.karpenter.clusterName }}
+        truemarkNodeClassDefaults: {{- toYaml .Values.karpenter.truemarkNodeClassDefaults | nindent 10 }}
+        truemarkNodePoolDefaults: {{- toYaml .Values.karpenter.truemarkNodePoolDefaults | nindent 10 }}
   destination:
     namespace: '{{ .Values.karpenter.namespace }}'
     name: '{{ .Values.clusterName }}'
