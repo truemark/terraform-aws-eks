@@ -12,7 +12,7 @@ metadata:
 spec:
   project: {{ .Values.argocdProject | default "default" }}
   sources:
-    - repoURL: oci://public.ecr.aws/karpenter
+    - repoURL: public.ecr.aws/karpenter
       targetRevision: {{ .Values.karpenter.chartVersion }}
       chart: karpenter-crd
       helm:
@@ -54,7 +54,7 @@ spec:
     - repoURL: '{{ .Values.addons_repo_url }}'
       targetRevision: '{{ .Values.addons_repo_revision }}'
       ref: values
-    - repoURL: oci://public.ecr.aws/karpenter
+    - repoURL: public.ecr.aws/karpenter
       targetRevision: {{ .Values.karpenter.chartVersion }}
       chart: karpenter
       helm:
