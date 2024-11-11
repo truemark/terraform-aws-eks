@@ -78,6 +78,7 @@ istio:
     namespace: istio-system
     values: {}
   ingress_enabled: true
+  proxyProtocolSelectorLabel: ingress-external
   ingress:
     external:
       enabled: true
