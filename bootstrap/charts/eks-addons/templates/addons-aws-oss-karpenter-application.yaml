@@ -58,6 +58,7 @@ spec:
       targetRevision: {{ .Values.karpenter.chartVersion }}
       chart: karpenter
       helm:
+        skipCrds: true
         releaseName: karpenter
         ignoreMissingValueFiles: true
         valueFiles:
