@@ -82,12 +82,12 @@ spec:
         releaseName: karpenter-resources
         ignoreMissingValueFiles: true
         values: |
-          clusterName: {{ .Values.karpenter.clusterName }}
-          nodeIamRoleName: {{ .Values.karpenter.nodeIamRoleName }}
+          clusterName: {{ .Values.clusterName }}
+          nodeIamRoleName: {{ .Values.nodeIamRoleName }}
           truemarkNodeClassDefaults:
-            {{- toYaml .Values.karpenter.truemarkNodeClassDefaults | nindent 12 }}
+            {{- toYaml .Values.truemarkNodeClassDefaults | nindent 12 }}
           truemarkNodePoolDefaults:
-            {{- toYaml .Values.karpenter.truemarkNodePoolDefaults | nindent 12 }}
+            {{- toYaml .Values.truemarkNodePoolDefaults | nindent 12 }}
   destination:
     namespace: '{{ .Values.karpenter.namespace }}'
     name: '{{ .Values.clusterName }}'

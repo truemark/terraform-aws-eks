@@ -1,16 +1,15 @@
-karpenter:
-  truemarkNodeClassDefaults:
-    amiFamily: Bottlerocket
-    amiSelectorTerms:
-    - alias: bottlerocket@latest
-    blockDeviceMappings:
-    - deviceName: /dev/xvda
-      ebs:
-        encrypted: true
-        volumeSize: 30Gi
-        volumeType: gp3
-    - deviceName: /dev/xvdb
-      ebs:
-        encrypted: true
-        volumeSize: 100Gi
-        volumeType: gp3
+truemarkNodeClassDefaults:
+  amiFamily: Bottlerocket
+  amiSelectorTerms:
+  - alias: bottlerocket@latest
+  blockDeviceMappings:
+  - deviceName: /dev/xvda
+    ebs:
+      encrypted: true
+      volumeSize: 30Gi
+      volumeType: gp3
+  - deviceName: /dev/xvdb
+    ebs:
+      encrypted: true
+      volumeSize: 100Gi
+      volumeType: gp3
