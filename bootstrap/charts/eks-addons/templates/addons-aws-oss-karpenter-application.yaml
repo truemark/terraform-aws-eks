@@ -81,7 +81,7 @@ spec:
       helm:
         releaseName: karpenter-resources
         ignoreMissingValueFiles: true
-      valuesObject:
+      values: |
         clusterName: {{ .Values.karpenter.clusterName }}
         truemarkNodeClassDefaults: {{- toYaml .Values.karpenter.truemarkNodeClassDefaults | nindent 10 }}
         truemarkNodePoolDefaults: {{- toYaml .Values.karpenter.truemarkNodePoolDefaults | nindent 10 }}
