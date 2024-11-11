@@ -83,6 +83,7 @@ spec:
         ignoreMissingValueFiles: true
         values: |
           clusterName: {{ .Values.karpenter.clusterName }}
+          nodeIamRoleName: {{ .Values.karpenter.nodeIamRoleName }}
           truemarkNodeClassDefaults:
             {{- toYaml .Values.karpenter.truemarkNodeClassDefaults | nindent 12 }}
           truemarkNodePoolDefaults:
