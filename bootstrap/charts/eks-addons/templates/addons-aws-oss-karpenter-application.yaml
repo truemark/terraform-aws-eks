@@ -81,10 +81,10 @@ spec:
       helm:
         releaseName: karpenter-resources
         ignoreMissingValueFiles: true
-      values: |
-        clusterName: {{ .Values.karpenter.clusterName }}
-        truemarkNodeClassDefaults: {{- toYaml .Values.karpenter.truemarkNodeClassDefaults | nindent 10 }}
-        truemarkNodePoolDefaults: {{- toYaml .Values.karpenter.truemarkNodePoolDefaults | nindent 10 }}
+        values: |
+          clusterName: {{ .Values.karpenter.clusterName }}
+          truemarkNodeClassDefaults: {{- toYaml .Values.karpenter.truemarkNodeClassDefaults | nindent 10 }}
+          truemarkNodePoolDefaults: {{- toYaml .Values.karpenter.truemarkNodePoolDefaults | nindent 10 }}
   destination:
     namespace: '{{ .Values.karpenter.namespace }}'
     name: '{{ .Values.clusterName }}'
