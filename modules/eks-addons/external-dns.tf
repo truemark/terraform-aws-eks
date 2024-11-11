@@ -66,35 +66,16 @@ module "external_dns" {
   chart            = try(var.external_dns.chart, "external-dns")
   chart_version    = try(var.external_dns.chart_version, "1.14.3")
   repository       = try(var.external_dns.repository, "https://kubernetes-sigs.github.io/external-dns/")
-  values           = try(var.external_dns.values, ["provider: aws"])
+  values = concat(
+    try(var.external_dns.values, ["provider: aws"]),
+    var.external_dns.use_system_critical_nodegroup ? [
+      jsonencode({
+        tolerations  = var.critical_addons_node_tolerations
+        nodeSelector = var.critical_addons_node_selector
+      })
+    ] : []
+  )
 
-  timeout                    = try(var.external_dns.timeout, null)
-  repository_key_file        = try(var.external_dns.repository_key_file, null)
-  repository_cert_file       = try(var.external_dns.repository_cert_file, null)
-  repository_ca_file         = try(var.external_dns.repository_ca_file, null)
-  repository_username        = try(var.external_dns.repository_username, null)
-  repository_password        = try(var.external_dns.repository_password, null)
-  devel                      = try(var.external_dns.devel, null)
-  verify                     = try(var.external_dns.verify, null)
-  keyring                    = try(var.external_dns.keyring, null)
-  disable_webhooks           = try(var.external_dns.disable_webhooks, null)
-  reuse_values               = try(var.external_dns.reuse_values, null)
-  reset_values               = try(var.external_dns.reset_values, null)
-  force_update               = try(var.external_dns.force_update, null)
-  recreate_pods              = try(var.external_dns.recreate_pods, null)
-  cleanup_on_fail            = try(var.external_dns.cleanup_on_fail, null)
-  max_history                = try(var.external_dns.max_history, null)
-  atomic                     = try(var.external_dns.atomic, null)
-  skip_crds                  = try(var.external_dns.skip_crds, null)
-  render_subchart_notes      = try(var.external_dns.render_subchart_notes, null)
-  disable_openapi_validation = try(var.external_dns.disable_openapi_validation, null)
-  wait                       = try(var.external_dns.wait, false)
-  wait_for_jobs              = try(var.external_dns.wait_for_jobs, null)
-  dependency_update          = try(var.external_dns.dependency_update, null)
-  replace                    = try(var.external_dns.replace, null)
-  lint                       = try(var.external_dns.lint, null)
-
-  postrender = try(var.external_dns.postrender, [])
   set = concat([
     {
       name  = "serviceAccount.name"
@@ -102,23 +83,17 @@ module "external_dns" {
     }],
     try(var.external_dns.set, [])
   )
-  set_sensitive = try(var.external_dns.set_sensitive, [])
 
   # IAM role for service account (IRSA)
-  set_irsa_names                = ["serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"]
-  create_role                   = try(var.external_dns.create_role, true) && length(var.external_dns_route53_zone_arns) > 0
-  role_name                     = try(var.external_dns.role_name, "external-dns")
-  role_name_use_prefix          = try(var.external_dns.role_name_use_prefix, true)
-  role_path                     = try(var.external_dns.role_path, "/")
-  role_permissions_boundary_arn = lookup(var.external_dns, "role_permissions_boundary_arn", null)
-  role_description              = try(var.external_dns.role_description, "IRSA for external-dns operator")
-  role_policies                 = lookup(var.external_dns, "role_policies", {})
+  set_irsa_names       = ["serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"]
+  create_role          = try(var.external_dns.create_role, true) && length(var.external_dns_route53_zone_arns) > 0
+  role_name            = try(var.external_dns.role_name, "external-dns")
+  role_name_use_prefix = try(var.external_dns.role_name_use_prefix, true)
+  role_path            = try(var.external_dns.role_path, "/")
+  role_description     = try(var.external_dns.role_description, "IRSA for external-dns operator")
+  role_policies        = lookup(var.external_dns, "role_policies", {})
 
   source_policy_documents = data.aws_iam_policy_document.external_dns[*].json
-  policy_statements       = lookup(var.external_dns, "policy_statements", [])
-  policy_name             = try(var.external_dns.policy_name, null)
-  policy_name_use_prefix  = try(var.external_dns.policy_name_use_prefix, true)
-  policy_path             = try(var.external_dns.policy_path, null)
   policy_description      = try(var.external_dns.policy_description, "IAM Policy for external-dns operator")
 
   oidc_providers = {

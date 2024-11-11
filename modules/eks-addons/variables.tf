@@ -42,6 +42,16 @@ variable "enable_eks_fargate" {
   default     = false
 }
 
+variable "critical_addons_node_selector" {
+  description = "Config for node selector for workloads"
+  type        = map(any)
+}
+
+variable "critical_addons_node_tolerations" {
+  description = "Config for node tolerations for workloads"
+  type        = list(any)
+}
+
 variable "aws_partition" {}
 variable "aws_region" {}
 variable "aws_account_id" {}

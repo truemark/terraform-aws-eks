@@ -98,7 +98,7 @@ variable "critical_addons_node_selector" {
 
 variable "critical_addons_node_tolerations" {
   description = "Config for node tolerations for workloads"
-  type        = list(any)
+  type        = list(map(string))
   default = [{
     key      = "CriticalAddonsOnly"
     operator = "Equal"
@@ -454,6 +454,44 @@ variable "prometheus_node_selector" {
   }
 }
 
+variable "truemark_arm_node_selector" {
+  description = "K8S node selector for arm nodes"
+  type        = map(any)
+  default = {
+    "karpenter.sh/nodepool" = "truemark-arm64"
+  }
+}
+
+variable "truemark_arm_node_tolerations" {
+  description = "K8S node tolerations for arm nodes"
+  type        = list(any)
+  default = [{
+    key      = "karpenter.sh/nodepool"
+    operator = "Equal"
+    effect   = "NoSchedule"
+    value    = "truemark-arm64"
+  }]
+}
+
+variable "truemark_amd_node_selector" {
+  description = "K8S node selector for amd nodes"
+  type        = map(any)
+  default = {
+    "karpenter.sh/nodepool" = "truemark-amd64"
+  }
+}
+
+variable "truemark_amd_node_tolerations" {
+  description = "K8S node tolerations for amd nodes"
+  type        = list(any)
+  default = [{
+    key      = "karpenter.sh/nodepool"
+    operator = "Equal"
+    effect   = "NoSchedule"
+    value    = "truemark-amd64"
+  }]
+}
+
 variable "prometheus_server_request_memory" {
   type        = string
   description = "Requested memory for prometheus instance"
@@ -708,11 +746,11 @@ variable "enable_karpenter_crd_webhook" {
 
 
 ####
-variable "addons_enable_cert_manager" {
-  default = false
-}
 
-variable "cert_manager_helm_config" {
-}
 
+variable "cert_manager_helm_config" {}
 variable "external_dns_helm_config" {}
+variable "karpenter_helm_config" {}
+variable "external_secrets_helm_config" {}
+variable "metrics_server_helm_config" {}
+variable "keda_helm_config" {}

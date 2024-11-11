@@ -73,9 +73,15 @@ locals {
   gitops_workload_revision = var.gitops_workload_revision
 
   eks_addons = {
-    enable_argocd       = try(var.addons.enable_argocd, false)
-    enable_cert_manager = try(var.addons.enable_cert_manager, false)
-    enable_external_dns = try(var.addons.enable_external_dns, false)
+    enable_argocd        = try(var.addons.enable_argocd, false)
+    enable_cert_manager  = try(var.addons.enable_cert_manager, false)
+    enable_external_dns  = try(var.addons.enable_external_dns, false)
+    enable_istio         = try(var.addons.enable_istio, false)
+    enable_istio_ingress = try(var.addons.enable_istio_ingress, false)
+    enable_karpenter     = try(var.addons.enable_karpenter, false)
+    enable_external_secrets = try(var.addons.enable_external_secrets, false)
+    enable_metrics_server = try(var.addons.enable_metrics_server, false)
+    enable_keda = try(var.addons.enable_keda, false)
   }
 
   addons_metadata = merge(
@@ -113,7 +119,7 @@ locals {
       path            = "bootstrap/charts/eks-addons"
       values = {
         certManager = {
-          enabled      = local.eks_addons.enable_cert_manager,
+          enabled      =  local.eks_addons.enable_cert_manager,
           iamRoleArn   = module.eks_addons.gitops_metadata.cert_manager_iam_role_arn,
           values       = try(yamldecode(join("\n", var.cert_manager_helm_config.values)), {}),
           chartVersion = try(var.cert_manager_helm_config.chart_version, [])
@@ -123,7 +129,41 @@ locals {
           iamRoleArn   = module.eks_addons.gitops_metadata.external_dns_iam_role_arn,
           values       = try(yamldecode(join("\n", var.external_dns_helm_config.values)), {}),
           chartVersion = try(var.external_dns_helm_config.chart_version, [])
-
+        }
+        istio = {
+          base = {
+            enabled = local.eks_addons.enable_istio
+          }
+        }
+        karpenter = {
+          enabled = local.eks_addons.enable_karpenter
+          iamRoleArn = module.eks_addons.gitops_metadata.karpenter_iam_role_arn
+          values = try(yamldecode(join("\n", var.karpenter_helm_config.values)), {})
+          chartVersion = try(var.karpenter_helm_config.chart_version, [])
+          enableCrdWebhookConfig = try(var.karpenter_helm_config.enable_karpenter_crd_webhook, false)
+          truemarkNodeClassDefaults = try(var.karpenter_helm_config.truemark_nodeclass_default, {})
+          truemarkNodePoolDefaults = try(var.karpenter_helm_config.truemark_node_pool_default, {})
+          clusterName      = module.eks.cluster_name
+          clusterEndpoint  = module.eks.cluster_endpoint
+          interruptionQueue = module.eks_addons.gitops_metadata.karpenter_interruption_queue
+          nodeIamRoleName = module.eks_addons.gitops_metadata.karpenter_node_iam_role_arn
+        }
+        externalSecrets = {
+          enabled = local.eks_addons.enable_external_secrets,
+          iamRoleArn = module.eks_addons.gitops_metadata.external_secrets_iam_role_arn,
+          values = try(yamldecode(join("\n", var.external_secrets_helm_config.values)), {}),
+          chartVersion = try(var.external_secrets_helm_config.chart_version, [])
+        }
+        metricsServer = {
+          enabled = local.eks_addons.enable_metrics_server,
+          values = try(yamldecode(join("\n", var.metrics_server_helm_config.values)), {}),
+          chartVersion = try(var.metrics_server_helm_config.chart_version, [])
+        }
+        keda = {
+          enabled = local.eks_addons.enable_keda,
+          iamRoleArn = module.eks_addons.gitops_metadata.keda_iam_role_arn,
+          values = try(yamldecode(join("\n", var.keda_helm_config.values)), {}),
+          chartVersion = try(var.keda_helm_config.chart_version, [])
         }
       }
     }
@@ -172,6 +212,8 @@ module "eks_addons" {
   cluster_name      = module.eks.cluster_name
   cluster_endpoint  = module.eks.cluster_endpoint
   cluster_version   = var.cluster_version
+  critical_addons_node_selector = var.critical_addons_node_selector
+  critical_addons_node_tolerations = var.critical_addons_node_tolerations
 
 
   # Using GitOps Bridge
@@ -182,9 +224,25 @@ module "eks_addons" {
   cert_manager        = var.cert_manager_helm_config
 
   # External DNS
-  enable_external_dns = local.eks_addons.enable_external_dns
-  external_dns        = var.external_dns_helm_config
+  enable_external_dns            = local.eks_addons.enable_external_dns
+  external_dns                   = var.external_dns_helm_config
   external_dns_route53_zone_arns = try(var.external_dns_helm_config.route53_zone_arns, [])
 
+  # Karpenter
+  enable_karpenter = local.eks_addons.enable_karpenter
+  karpenter        = var.karpenter_helm_config
+
+  # External Secrets
+  enable_external_secrets = local.eks_addons.enable_external_secrets
+  external_secrets = var.external_secrets_helm_config
+
+  # Metrics Server
+  enable_metrics_server = local.eks_addons.enable_metrics_server
+  metrics_server        = var.metrics_server_helm_config
+
+  # Keda
+  enable_keda = local.eks_addons.enable_keda
+  keda = var.keda_helm_config
   #   tags = local.tags
 }
+

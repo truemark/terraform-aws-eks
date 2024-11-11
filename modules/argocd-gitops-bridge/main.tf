@@ -164,5 +164,5 @@ resource "helm_release" "eks_addons" {
     ))
   ]
 
-  depends_on = [resource.kubernetes_secret_v1.cluster]
+  depends_on = [resource.kubernetes_secret_v1.cluster, helm_release.argocd]
 }
