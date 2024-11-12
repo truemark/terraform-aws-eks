@@ -451,37 +451,6 @@ module "ingress_istio" {
   istio_internal_gateway_lb_proxy_protocol              = var.istio_internal_gateway_lb_proxy_protocol
 }
 
-module "external_snapshotter" {
-  depends_on = [
-    aws_eks_access_entry.access_entries,
-    aws_eks_access_policy_association.access_policy_associations
-  ]
-  count               = var.enable_snapshotter ? 1 : 0
-  source              = "./modules/external_snapshotter"
-  snapshotter_version = "v8.1.0"
-  node_selector       = var.critical_addons_node_selector
-  node_tolerations    = var.critical_addons_node_tolerations
-}
-
-module "snapscheduler" {
-  depends_on = [
-    module.karpenter,
-    aws_eks_access_entry.access_entries,
-    aws_eks_access_policy_association.access_policy_associations,
-  ]
-  count         = var.enable_snapscheduler && var.enable_karpenter ? 1 : 0
-  source        = "./modules/snapscheduler"
-  chart_version = "3.4.0"
-  node_tolerations = [
-    {
-      key      = "karpenter.sh/nodepool"
-      value    = "truemark-amd64"
-      operator = "Equal"
-      effect   = "NoSchedule"
-    }
-  ]
-}
-
 module "cert_manager" {
   count = var.enable_cert_manager ? 1 : 0
 
