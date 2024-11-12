@@ -30,6 +30,12 @@ output "gitops_metadata" {
       } : "keda_${k}" => v if var.enable_keda
     },
     { for k, v in {
+      iam_role_arn    = module.aws_load_balancer_controller.iam_role_arn
+      namespace       = local.aws_load_balancer_controller_namespace
+      service_account_name = local.aws_load_balancer_controller_service_account_name
+      } : "aws_load_balancer_controller_${k}" => v if var.enable_aws_load_balancer_controller
+    },
+    { for k, v in {
       iam_role_arn       = module.karpenter[0].iam_role_arn
       node_iam_role_arn  = module.karpenter[0].node_iam_role_name
       interruption_queue = module.karpenter[0].queue_name

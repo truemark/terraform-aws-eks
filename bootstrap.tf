@@ -73,15 +73,16 @@ locals {
   gitops_workload_revision = var.gitops_workload_revision
 
   eks_addons = {
-    enable_argocd           = try(var.addons.enable_argocd, false)
-    enable_cert_manager     = try(var.addons.enable_cert_manager, false)
-    enable_external_dns     = try(var.addons.enable_external_dns, false)
-    enable_istio            = try(var.addons.enable_istio, false)
-    enable_istio_ingress    = try(var.addons.enable_istio_ingress, false)
-    enable_karpenter        = try(var.addons.enable_karpenter, false)
-    enable_external_secrets = try(var.addons.enable_external_secrets, false)
-    enable_metrics_server   = try(var.addons.enable_metrics_server, false)
-    enable_keda             = try(var.addons.enable_keda, false)
+    enable_argocd                       = try(var.addons.enable_argocd, false)
+    enable_cert_manager                 = try(var.addons.enable_cert_manager, false)
+    enable_external_dns                 = try(var.addons.enable_external_dns, false)
+    enable_istio                        = try(var.addons.enable_istio, false)
+    enable_istio_ingress                = try(var.addons.enable_istio_ingress, false)
+    enable_karpenter                    = try(var.addons.enable_karpenter, false)
+    enable_external_secrets             = try(var.addons.enable_external_secrets, false)
+    enable_metrics_server               = try(var.addons.enable_metrics_server, false)
+    enable_keda                         = try(var.addons.enable_keda, false)
+    enable_aws_load_balancer_controller = try(var.addons.enable_aws_load_balancer_controller, false)
   }
 
   addons_metadata = merge(
@@ -130,11 +131,6 @@ locals {
           values       = try(yamldecode(join("\n", var.external_dns_helm_config.values)), {}),
           chartVersion = try(var.external_dns_helm_config.chart_version, [])
         }
-        istio = {
-          base = {
-            enabled = local.eks_addons.enable_istio
-          }
-        }
         karpenter = {
           enabled                   = local.eks_addons.enable_karpenter
           iamRoleArn                = module.eks_addons.gitops_metadata.karpenter_iam_role_arn
@@ -164,6 +160,18 @@ locals {
           iamRoleArn   = module.eks_addons.gitops_metadata.keda_iam_role_arn,
           values       = try(yamldecode(join("\n", var.keda_helm_config.values)), {}),
           chartVersion = try(var.keda_helm_config.chart_version, [])
+        }
+        loadBalancerController = {
+          enabled      = local.eks_addons.enable_aws_load_balancer_controller,
+          iamRoleArn   = module.eks_addons.gitops_metadata.aws_load_balancer_controller_iam_role_arn,
+          values       = try(yamldecode(join("\n", var.aws_load_balancer_controller_helm_config.values)), {}),
+          clusterName  = module.eks.cluster_name
+          chartVersion = try(var.aws_load_balancer_controller_helm_config.chart_version, [])
+          vpcId        = var.vpc_id
+          serviceAccount = {
+            name = module.eks_addons.gitops_metadata.aws_load_balancer_controller_service_account_name
+          }
+          chartVersion = try(var.aws_load_balancer_controller_helm_config.chart_version, [])
         }
         istio = {
           chartVersion = try(var.istio_helm_config.chart_version, "1.23.3")
@@ -263,6 +271,10 @@ module "eks_addons" {
   # Keda
   enable_keda = local.eks_addons.enable_keda
   keda        = var.keda_helm_config
+
+  # Load Balancer Controller
+  enable_aws_load_balancer_controller = local.eks_addons.enable_aws_load_balancer_controller
+  aws_load_balancer_controller        = var.aws_load_balancer_controller_helm_config
   #   tags = local.tags
 }
 

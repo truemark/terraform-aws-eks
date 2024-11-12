@@ -755,3 +755,4 @@ variable "external_secrets_helm_config" {}
 variable "metrics_server_helm_config" {}
 variable "keda_helm_config" {}
 variable "istio_helm_config" {}
+variable "aws_load_balancer_controller_helm_config" { default = {} }

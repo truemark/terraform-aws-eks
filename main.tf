@@ -180,130 +180,67 @@ resource "aws_eks_access_policy_association" "access_policy_associations" {
   }
 }
 
-resource "aws_iam_policy" "aws_load_balancer_controller" {
-  name   = "${var.cluster_name}-AWSLoadBalancerControllerIAMPolicy"
-  policy = data.aws_iam_policy_document.aws_load_balancer_controller_full.json
 
-  tags = var.tags
-}
-
-resource "aws_iam_role" "aws_load_balancer_controller" {
-  name               = "${var.cluster_name}-AmazonEKSLoadBalancerControllerRole"
-  assume_role_policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-     "Effect": "Allow",
-     "Principal": {
-      "Federated": "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/${trimprefix(module.eks.cluster_oidc_issuer_url, "https://")}"
-     },
-     "Action": "sts:AssumeRoleWithWebIdentity",
-     "Condition": {
-       "StringEquals": {
-        "${local.oidc_provider}:aud": "sts.amazonaws.com",
-        "${local.oidc_provider}:sub": "system:serviceaccount:kube-system:aws-load-balancer-controller"
-       }
-     }
-    }
-  ]
-}
-EOF
-
-  tags = var.tags
-}
-
-resource "aws_iam_role_policy_attachment" "aws_load_balancer_controller" {
-  role       = aws_iam_role.aws_load_balancer_controller.name
-  policy_arn = aws_iam_policy.aws_load_balancer_controller.arn
-}
-
-//https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases
-resource "helm_release" "aws_load_balancer_controller" {
-  name       = "aws-load-balancer-controller"
-  repository = "https://aws.github.io/eks-charts"
-  chart      = "aws-load-balancer-controller"
-  namespace  = "kube-system"
-  version    = var.lbc_chart_version
-
-  values = [
-    <<-EOT
-    clusterName: ${module.eks.cluster_name}
-    serviceAccount:
-      name: aws-load-balancer-controller
-      create: true
-      annotations:
-        eks.amazonaws.com/role-arn: ${aws_iam_role.aws_load_balancer_controller.arn}
-    nodeSelector: ${jsonencode(var.critical_addons_node_selector)}
-    tolerations: ${jsonencode(var.critical_addons_node_tolerations)}
-    %{if var.lbc_image_tag != null}
-    image:
-      tag: ${var.lbc_image_tag}
-    %{endif}
-    EOT
-  ]
-}
-
-module "vpc_cni_irsa" {
-  source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
-
-  role_name             = "${var.cluster_name}-AmazonEKSVPCCNIRole"
-  attach_vpc_cni_policy = true
-  vpc_cni_enable_ipv4   = true
-
-  oidc_providers = {
-    main = {
-      provider_arn               = module.eks.oidc_provider_arn
-      namespace_service_accounts = ["kube-system:aws-node"]
-    }
-  }
-
-  tags = var.tags
-}
-
-resource "kubernetes_storage_class" "gp3_ext4_encrypted" {
-  metadata {
-    name = "gp3-ext4-encrypted"
-    annotations = {
-      "storageclass.kubernetes.io/is-default-class" = "true"
-    }
-  }
-  storage_provisioner = "ebs.csi.aws.com"
-  reclaim_policy      = "Delete"
-  parameters = {
-    fsType    = "ext4"
-    type      = "gp3"
-    encrypted = "true"
-  }
-  volume_binding_mode = "WaitForFirstConsumer"
-  depends_on = [
-    aws_eks_access_entry.access_entries,
-    aws_eks_access_policy_association.access_policy_associations
-  ]
-}
-
-resource "kubectl_manifest" "gp2" {
-  yaml_body = <<YAML
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  annotations:
-    kubectl.kubernetes.io/last-applied-configuration: |
-      {"apiVersion":"storage.k8s.io/v1","kind":"StorageClass","metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class":"false"},"name":"gp2"},"parameters":{"fsType":"ext4","type":"gp2"},"provisioner":"kubernetes.io/aws-ebs","volumeBindingMode":"WaitForFirstConsumer"}
-  creationTimestamp: "2022-10-11T15:05:47Z"
-  name: gp2
-parameters:
-  fsType: ext4
-  type: gp2
-provisioner: kubernetes.io/aws-ebs
-reclaimPolicy: Delete
-volumeBindingMode: WaitForFirstConsumer
-YAML
-  depends_on = [
-    aws_eks_access_entry.access_entries,
-    aws_eks_access_policy_association.access_policy_associations
-  ]
-}
+# module "vpc_cni_irsa" {
+#   source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+#
+#   role_name             = "${var.cluster_name}-AmazonEKSVPCCNIRole"
+#   attach_vpc_cni_policy = true
+#   vpc_cni_enable_ipv4   = true
+#
+#   oidc_providers = {
+#     main = {
+#       provider_arn               = module.eks.oidc_provider_arn
+#       namespace_service_accounts = ["kube-system:aws-node"]
+#     }
+#   }
+#
+#   tags = var.tags
+# }
+#
+# resource "kubernetes_storage_class" "gp3_ext4_encrypted" {
+#   metadata {
+#     name = "gp3-ext4-encrypted"
+#     annotations = {
+#       "storageclass.kubernetes.io/is-default-class" = "true"
+#     }
+#   }
+#   storage_provisioner = "ebs.csi.aws.com"
+#   reclaim_policy      = "Delete"
+#   parameters = {
+#     fsType    = "ext4"
+#     type      = "gp3"
+#     encrypted = "true"
+#   }
+#   volume_binding_mode = "WaitForFirstConsumer"
+#   depends_on = [
+#     aws_eks_access_entry.access_entries,
+#     aws_eks_access_policy_association.access_policy_associations
+#   ]
+# }
+#
+# resource "kubectl_manifest" "gp2" {
+#   yaml_body = <<YAML
+# apiVersion: storage.k8s.io/v1
+# kind: StorageClass
+# metadata:
+#   annotations:
+#     kubectl.kubernetes.io/last-applied-configuration: |
+#       {"apiVersion":"storage.k8s.io/v1","kind":"StorageClass","metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class":"false"},"name":"gp2"},"parameters":{"fsType":"ext4","type":"gp2"},"provisioner":"kubernetes.io/aws-ebs","volumeBindingMode":"WaitForFirstConsumer"}
+#   creationTimestamp: "2022-10-11T15:05:47Z"
+#   name: gp2
+# parameters:
+#   fsType: ext4
+#   type: gp2
+# provisioner: kubernetes.io/aws-ebs
+# reclaimPolicy: Delete
+# volumeBindingMode: WaitForFirstConsumer
+# YAML
+#   depends_on = [
+#     aws_eks_access_entry.access_entries,
+#     aws_eks_access_policy_association.access_policy_associations
+#   ]
+# }
 
 resource "aws_ssm_parameter" "cluster_id" {
   name           = "/truemark/eks/${var.cluster_name}/cluster_id"
