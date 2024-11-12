@@ -10,7 +10,7 @@ metadata:
 spec:
   project: {{ .Values.argocdProject | default "default" }}
   sources:
-    - repoURL: https://charts.jetstack.io
+    - repoURL: https://aws.github.io/eks-charts
       targetRevision: {{ .Values.loadBalancerController.chartVersion | default "1.10.0" }}
       chart: aws-load-balancer-controller
       helm:
