@@ -11,7 +11,7 @@ spec:
   project: {{ .Values.argocdProject | default "default" }}
   sources:
     - repoURL: https://charts.jetstack.io
-      targetRevision: {{ .Values.loadBalancerController.chartVersion }}
+      targetRevision: {{ .Values.loadBalancerController.chartVersion | default "1.10.0" }}
       chart: aws-load-balancer-controller
       helm:
         releaseName: aws-load-balancer-controller
