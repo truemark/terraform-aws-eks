@@ -18,6 +18,19 @@ certManager:
   namespace: cert-manager
   values: {}
 
+# AWS Load Balancer Controller
+loadBalancerController:
+  enabled: false
+  name: aws-load-balancer-controller
+  createNamespace: true
+  chartVersion: 1.10.0
+  iamRoleArn: ""
+  serviceAccount:
+    create: true
+    name: aws-load-balancer-controller-sa
+  namespace: kube-system
+  values: {}
+
 # Karpenter
 karpenter:
   enabled: false
