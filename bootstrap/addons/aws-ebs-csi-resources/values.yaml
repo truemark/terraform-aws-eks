@@ -22,3 +22,14 @@ gp3:
     reclaimPolicy: Delete
     volumeBindingMode: WaitForFirstConsumer
     allowVolumeExpansion: true
+gp3-ext4-encrypted:
+  enabled: true
+  parameters:
+    fsType: ext4
+    type: gp3
+    encrypted: "true"
+  spec:
+    provisioner: ebs.csi.aws.com
+    reclaimPolicy: Delete
+    volumeBindingMode: WaitForFirstConsumer
+    allowVolumeExpansion: true
