@@ -83,6 +83,7 @@ locals {
     enable_metrics_server               = try(var.addons.enable_metrics_server, false)
     enable_keda                         = try(var.addons.enable_keda, false)
     enable_aws_load_balancer_controller = try(var.addons.enable_aws_load_balancer_controller, false)
+    enable_aws_ebs_csi_resources        = try(var.addons.enable_aws_ebs_csi_resources, false)
   }
 
   addons_metadata = merge(
@@ -172,6 +173,9 @@ locals {
             name = module.eks_addons.gitops_metadata.aws_load_balancer_controller_service_account_name
           }
           chartVersion = try(var.aws_load_balancer_controller_helm_config.chart_version, [])
+        }
+        awsCsiEbsResources = {
+          enabled = local.eks_addons.enable_aws_ebs_csi_resources
         }
         istio = {
           chartVersion = try(var.istio_helm_config.chart_version, "1.23.3")
@@ -275,6 +279,9 @@ module "eks_addons" {
   # Load Balancer Controller
   enable_aws_load_balancer_controller = local.eks_addons.enable_aws_load_balancer_controller
   aws_load_balancer_controller        = var.aws_load_balancer_controller_helm_config
+
+  # AWS EBS CSI Resources
+  enable_aws_ebs_csi_resources = local.eks_addons.enable_aws_ebs_csi_resources
   #   tags = local.tags
 }
 

@@ -180,67 +180,22 @@ resource "aws_eks_access_policy_association" "access_policy_associations" {
   }
 }
 
+module "vpc_cni_irsa" {
+  source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
 
-# module "vpc_cni_irsa" {
-#   source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
-#
-#   role_name             = "${var.cluster_name}-AmazonEKSVPCCNIRole"
-#   attach_vpc_cni_policy = true
-#   vpc_cni_enable_ipv4   = true
-#
-#   oidc_providers = {
-#     main = {
-#       provider_arn               = module.eks.oidc_provider_arn
-#       namespace_service_accounts = ["kube-system:aws-node"]
-#     }
-#   }
-#
-#   tags = var.tags
-# }
-#
-# resource "kubernetes_storage_class" "gp3_ext4_encrypted" {
-#   metadata {
-#     name = "gp3-ext4-encrypted"
-#     annotations = {
-#       "storageclass.kubernetes.io/is-default-class" = "true"
-#     }
-#   }
-#   storage_provisioner = "ebs.csi.aws.com"
-#   reclaim_policy      = "Delete"
-#   parameters = {
-#     fsType    = "ext4"
-#     type      = "gp3"
-#     encrypted = "true"
-#   }
-#   volume_binding_mode = "WaitForFirstConsumer"
-#   depends_on = [
-#     aws_eks_access_entry.access_entries,
-#     aws_eks_access_policy_association.access_policy_associations
-#   ]
-# }
-#
-# resource "kubectl_manifest" "gp2" {
-#   yaml_body = <<YAML
-# apiVersion: storage.k8s.io/v1
-# kind: StorageClass
-# metadata:
-#   annotations:
-#     kubectl.kubernetes.io/last-applied-configuration: |
-#       {"apiVersion":"storage.k8s.io/v1","kind":"StorageClass","metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class":"false"},"name":"gp2"},"parameters":{"fsType":"ext4","type":"gp2"},"provisioner":"kubernetes.io/aws-ebs","volumeBindingMode":"WaitForFirstConsumer"}
-#   creationTimestamp: "2022-10-11T15:05:47Z"
-#   name: gp2
-# parameters:
-#   fsType: ext4
-#   type: gp2
-# provisioner: kubernetes.io/aws-ebs
-# reclaimPolicy: Delete
-# volumeBindingMode: WaitForFirstConsumer
-# YAML
-#   depends_on = [
-#     aws_eks_access_entry.access_entries,
-#     aws_eks_access_policy_association.access_policy_associations
-#   ]
-# }
+  role_name             = "${var.cluster_name}-AmazonEKSVPCCNIRole"
+  attach_vpc_cni_policy = true
+  vpc_cni_enable_ipv4   = true
+
+  oidc_providers = {
+    main = {
+      provider_arn               = module.eks.oidc_provider_arn
+      namespace_service_accounts = ["kube-system:aws-node"]
+    }
+  }
+
+  tags = var.tags
+}
 
 resource "aws_ssm_parameter" "cluster_id" {
   name           = "/truemark/eks/${var.cluster_name}/cluster_id"

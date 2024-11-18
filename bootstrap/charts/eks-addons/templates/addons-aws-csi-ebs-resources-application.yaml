@@ -11,11 +11,11 @@ spec:
   project: {{ .Values.argocdProject | default "default" }}
   sources:
     - repoURL: '{{ .Values.addons_repo_url }}'
-        targetRevision: '{{ .Values.addons_repo_revision }}'
-        path: bootstrap/addons/aws-csi-ebs-resources
-        helm:
-          releaseName: ebs-csi-resources
-          ignoreMissingValueFiles: true
+      targetRevision: '{{ .Values.addons_repo_revision }}'
+      path: bootstrap/addons/aws-csi-ebs-resources
+      helm:
+        releaseName: ebs-csi-resources
+        ignoreMissingValueFiles: true
   destination:
     namespace: '{{ .Values.awsCsiEbsResources.namespace }}'
     name: '{{ .Values.clusterName }}'
