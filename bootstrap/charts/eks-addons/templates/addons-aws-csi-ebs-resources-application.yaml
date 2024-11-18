@@ -12,7 +12,7 @@ spec:
   sources:
     - repoURL: '{{ .Values.addons_repo_url }}'
       targetRevision: '{{ .Values.addons_repo_revision }}'
-      path: bootstrap/addons/aws-csi-ebs-resources
+      path: bootstrap/addons/aws-ebs-csi-resources
       helm:
         releaseName: ebs-csi-resources
         ignoreMissingValueFiles: true
