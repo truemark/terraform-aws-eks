@@ -1,40 +1,85 @@
 ################################################################################
-# External Secrets
+# External Secrets Configuration
 ################################################################################
+
+## Variables
+
+# Enable or disable External Secrets operator add-on
 variable "enable_external_secrets" {
-  description = "Enable External Secrets operator add-on"
+  description = "Flag to enable or disable the External Secrets operator add-on."
   type        = bool
   default     = false
 }
 
+# Configuration for External Secrets Helm chart
 variable "external_secrets" {
-  description = "External Secrets add-on configuration values"
-  type        = any
-  default     = {}
+  description = <<-EOT
+    Configuration for the External Secrets operator add-on.
+    Supports customization of namespace, IAM roles, Helm chart values, and settings.
+  EOT
+  type = object({
+    name             = optional(string, "external-secrets")
+    description      = optional(string, "A Helm chart to deploy external-secrets")
+    namespace        = optional(string, "external-secrets")
+    create_namespace = optional(bool, true)
+    chart            = optional(string, "external-secrets")
+    chart_version    = optional(string, "0.9.13")
+    repository       = optional(string, "https://charts.external-secrets.io")
+    set = optional(list(object({
+      name  = string
+      value = string
+    })), [])
+    set_sensitive = optional(list(object({
+      name  = string
+      value = string
+    })), [])
+    create_role               = optional(bool, true)
+    role_name                 = optional(string, "external-secrets")
+    role_name_use_prefix      = optional(bool, true)
+    role_path                 = optional(string, "/")
+    role_description          = optional(string, "IRSA for external-secrets operator")
+    role_policies             = optional(map(any), {})
+    policy_name_use_prefix    = optional(bool, true)
+    policy_description        = optional(string, "IAM Policy for external-secrets operator")
+    source_policy_documents   = optional(list(string), [])
+    override_policy_documents = optional(list(string), [])
+    service_account_name      = optional(string, "external-secrets-sa")
+  })
+  default = {}
 }
 
+# List of SSM Parameter ARNs that External Secrets will manage
 variable "external_secrets_ssm_parameter_arns" {
-  description = "List of Systems Manager Parameter ARNs that contain secrets to mount using External Secrets"
+  description = "List of SSM Parameter ARNs that contain secrets to mount using External Secrets."
   type        = list(string)
   default     = ["arn:aws:ssm:*:*:parameter/*"]
 }
 
+# List of Secrets Manager ARNs that External Secrets will manage
 variable "external_secrets_secrets_manager_arns" {
-  description = "List of Secrets Manager ARNs that contain secrets to mount using External Secrets"
+  description = "List of Secrets Manager ARNs that contain secrets to mount using External Secrets."
   type        = list(string)
   default     = ["arn:aws:secretsmanager:*:*:secret:*"]
 }
 
+# List of KMS Key ARNs used by Secrets Manager for decrypting secrets
 variable "external_secrets_kms_key_arns" {
-  description = "List of KMS Key ARNs that are used by Secrets Manager that contain secrets to mount using External Secrets"
+  description = "List of KMS Key ARNs used by Secrets Manager for decrypting secrets managed by External Secrets."
   type        = list(string)
   default     = ["arn:aws:kms:*:*:key/*"]
 }
 
+## Locals
+
+# Local variables for namespace and service account
 locals {
   external_secrets_service_account = try(var.external_secrets.service_account_name, "external-secrets-sa")
   external_secrets_namespace       = try(var.external_secrets.namespace, "external-secrets")
 }
+
+################################################################################
+# IAM Policy for External Secrets
+################################################################################
 
 data "aws_iam_policy_document" "external_secrets" {
   count = var.enable_external_secrets ? 1 : 0
@@ -96,16 +141,21 @@ data "aws_iam_policy_document" "external_secrets" {
   }
 }
 
+################################################################################
+# Helm Release for External Secrets
+################################################################################
+
 module "external_secrets" {
   source  = "aws-ia/eks-blueprints-addon/aws"
   version = "1.1.1"
 
+  # Enable or disable the creation of this module
   create = var.enable_external_secrets
 
-  # Disable helm release
+  # Flag to disable the Helm release (useful when deploying via GitOps)
   create_release = var.create_kubernetes_resources
 
-  # https://github.com/external-secrets/external-secrets/blob/main/deploy/charts/external-secrets/Chart.yaml
+  # Helm chart configuration
   name             = try(var.external_secrets.name, "external-secrets")
   description      = try(var.external_secrets.description, "A Helm chart to deploy external-secrets")
   namespace        = local.external_secrets_namespace
@@ -114,6 +164,7 @@ module "external_secrets" {
   chart_version    = try(var.external_secrets.chart_version, "0.9.13")
   repository       = try(var.external_secrets.repository, "https://charts.external-secrets.io")
 
+  # Additional Helm settings
   set = concat([
     {
       name  = "serviceAccount.name"
@@ -136,17 +187,20 @@ module "external_secrets" {
   role_description     = try(var.external_secrets.role_description, "IRSA for external-secrets operator")
   role_policies        = lookup(var.external_secrets, "role_policies", {})
 
+  # IAM policy for the role
   source_policy_documents = data.aws_iam_policy_document.external_secrets[*].json
   policy_name_use_prefix  = try(var.external_secrets.policy_name_use_prefix, true)
   policy_description      = try(var.external_secrets.policy_description, "IAM Policy for external-secrets operator")
 
+  # OIDC provider configuration
   oidc_providers = {
     this = {
       provider_arn = var.oidc_provider_arn
-      # namespace is inherited from chart
+      # Namespace is inherited from chart
       service_account = local.external_secrets_service_account
     }
   }
 
+  # Tags for resources
   tags = var.tags
 }

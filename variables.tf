@@ -165,67 +165,43 @@ variable "eks_access_cross_account_iam_roles" {
 ###############################################
 # EKS Addons Configuration
 ###############################################
-
-# Configuration for the Cert-Manager Helm chart.
-# Used for managing TLS certificates within the Kubernetes cluster.
 variable "cert_manager_helm_config" {
-  description = "Configuration settings for the Cert-Manager Helm chart deployment."
-  type        = map(any)
+  description = "Configuration for the cert-manager add-on."
+  type        = any
   default     = {}
 }
-
-# Configuration for the External DNS Helm chart.
-# Used for dynamically managing DNS records from Kubernetes resources.
 variable "external_dns_helm_config" {
-  description = "Configuration settings for the External DNS Helm chart deployment."
-  type        = map(any)
+  description = "Configuration for the External DNS add-on."
+  type        = any
   default     = {}
 }
-
-# Configuration for the Karpenter Helm chart.
-# An open-source Kubernetes cluster autoscaler.
 variable "karpenter_helm_config" {
-  description = "Configuration settings for the Karpenter Helm chart deployment."
-  type        = map(any)
+  description = "Configuration for the Karpenter add-on."
+  type        = any
   default     = {}
 }
-
-# Configuration for the External Secrets Helm chart.
-# Used for integrating external secret stores (e.g., AWS Secrets Manager, HashiCorp Vault) with Kubernetes.
 variable "external_secrets_helm_config" {
-  description = "Configuration settings for the External Secrets Helm chart deployment."
-  type        = map(any)
+  description = "Configuration for the External Secrets add-on."
+  type        = any
   default     = {}
 }
-
-# Configuration for the Metrics Server Helm chart.
-# Used for aggregating resource usage data for Kubernetes components.
 variable "metrics_server_helm_config" {
-  description = "Configuration settings for the Metrics Server Helm chart deployment."
-  type        = map(any)
+  description = "Configuration for the Metrics Server add-on."
+  type        = any
   default     = {}
 }
-
-# Configuration for the KEDA Helm chart.
-# Kubernetes-based Event Driven Autoscaler (KEDA) for event-driven scaling.
 variable "keda_helm_config" {
-  description = "Configuration settings for the KEDA Helm chart deployment."
-  type        = map(any)
+  description = "Configuration for the Keda add-on."
+  type        = any
   default     = {}
 }
-
-# Configuration for the Istio Helm chart.
-# Used for deploying Istio, a service mesh for managing traffic between microservices.
 variable "istio_helm_config" {
-  description = "Configuration settings for the Istio Helm chart deployment."
-  type        = map(any)
+  description = "Configuration for the Istio add-on."
+  type        = any
   default     = {}
 }
-
-# Configuration for the AWS Load Balancer Controller Helm chart.
-# Used for managing Elastic Load Balancers for Kubernetes services.
 variable "aws_load_balancer_controller_helm_config" {
-  description = "Configuration settings for the AWS Load Balancer Controller Helm chart deployment."
-  type        = map(any)
+  description = "Configuration for the AWS Load Balancer Controller add-on."
+  type        = any
   default     = {}
 }

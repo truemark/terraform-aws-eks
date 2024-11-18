@@ -1,19 +1,85 @@
 ################################################################################
-# Karpenter
+# Karpenter Configuration
 ################################################################################
 
+## Variables
+
+# Enable or disable Karpenter add-on
 variable "enable_karpenter" {
-  description = "Enable Karpenter controller add-on"
+  description = "Flag to enable or disable the Karpenter controller add-on."
   type        = bool
   default     = false
 }
 
+# Configuration for Karpenter Helm chart
 variable "karpenter" {
-  description = "Karpenter add-on configuration values"
-  type        = any
-  default     = {}
+  description = <<-EOT
+    Configuration for the Karpenter add-on.
+    Supports customization of namespace, IAM roles, Helm chart values, CRD configurations,
+    and node pools for arm64 and amd64 architectures.
+  EOT
+  type = object({
+    name             = optional(string, "karpenter")
+    description      = optional(string, "A Helm chart to deploy Karpenter")
+    namespace        = optional(string, "karpenter")
+    create_namespace = optional(bool, true)
+    chart            = optional(string, "karpenter")
+    chart_version    = optional(string, "1.0.7")
+    repository       = optional(string, "oci://public.ecr.aws/karpenter")
+    values           = optional(list(string), [])
+    set = optional(list(object({
+      name  = string
+      value = string
+    })), [])
+    set_sensitive = optional(list(object({
+      name  = string
+      value = string
+    })), [])
+    skip_crds                         = optional(bool, true)
+    timeout                           = optional(string, null)
+    verify                            = optional(bool, null)
+    disable_webhooks                  = optional(bool, null)
+    enable_karpenter_crd_webhook      = optional(bool, false)
+    enable_pod_identity               = optional(bool, true)
+    create_pod_identity_association   = optional(bool, true)
+    enable_v1_permissions             = optional(bool, true)
+    enable_irsa                       = optional(bool, false)
+    node_iam_role_additional_policies = optional(map(string), {})
+    use_system_critical_nodegroup     = optional(bool, false)
+    truemark_nodeclass_default = optional(object({
+      ami_family = optional(string, "bottlerocket")
+      block_device_mappings = optional(list(object({
+        deviceName = string
+        ebs = object({
+          volumeSize = string
+          volumeType = string
+          encrypted  = bool
+        })
+      })), [])
+      subnetSelector        = optional(map(string), { network = "private" })
+      securityGroupSelector = optional(map(string), {})
+    }), {})
+    truemark_node_pool_default = optional(object({
+      arm64 = optional(object({
+        requirements         = optional(list(object({ key = string, operator = string, values = list(string) })), [])
+        consolidation_policy = optional(string, "WhenUnderutilized")
+        expire_after         = optional(string, "720h")
+        node_pool_weight     = optional(number, 10)
+      }), {})
+      amd64 = optional(object({
+        requirements         = optional(list(object({ key = string, operator = string, values = list(string) })), [])
+        consolidation_policy = optional(string, "WhenUnderutilized")
+        expire_after         = optional(string, "720h")
+        node_pool_weight     = optional(number, 10)
+      }), {})
+    }), {})
+  })
+  default = {}
 }
 
+## Locals
+
+# Dynamic values for namespace, service account, and webhook configurations
 locals {
   karpenter_service_account = try(var.karpenter.service_account_name, "karpenter")
   karpenter_namespace       = try(var.karpenter.namespace, "karpenter")
@@ -94,6 +160,8 @@ locals {
     }
   }
 }
+
+# Modules and Resources
 
 module "karpenter" {
   count   = var.enable_karpenter ? 1 : 0

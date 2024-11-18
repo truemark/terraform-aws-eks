@@ -17,7 +17,7 @@ variable "aws_load_balancer_controller" {
 
 locals {
   aws_load_balancer_controller_service_account_name = try(var.aws_load_balancer_controller.service_account_name, "aws-load-balancer-controller-sa")
-  aws_load_balancer_controller_namespace       = try(var.aws_load_balancer_controller.namespace, "kube-system")
+  aws_load_balancer_controller_namespace            = try(var.aws_load_balancer_controller.namespace, "kube-system")
 }
 
 # https://github.com/kubernetes-sigs/aws-load-balancer-controller/blob/main/docs/install/iam_policy.json
@@ -316,13 +316,13 @@ module "aws_load_balancer_controller" {
   )
 
   # IAM role for service account (IRSA)
-  create_role                   = try(var.aws_load_balancer_controller.create_role, true)
-  set_irsa_names                = ["serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"]
-  role_name                     = try(var.aws_load_balancer_controller.role_name, "alb-controller")
-  role_name_use_prefix          = try(var.aws_load_balancer_controller.role_name_use_prefix, true)
-  role_path                     = try(var.aws_load_balancer_controller.role_path, "/")
-  role_description              = try(var.aws_load_balancer_controller.role_description, "IRSA for aws-load-balancer-controller project")
-  role_policies                 = lookup(var.aws_load_balancer_controller, "role_policies", {})
+  create_role          = try(var.aws_load_balancer_controller.create_role, true)
+  set_irsa_names       = ["serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"]
+  role_name            = try(var.aws_load_balancer_controller.role_name, "alb-controller")
+  role_name_use_prefix = try(var.aws_load_balancer_controller.role_name_use_prefix, true)
+  role_path            = try(var.aws_load_balancer_controller.role_path, "/")
+  role_description     = try(var.aws_load_balancer_controller.role_description, "IRSA for aws-load-balancer-controller project")
+  role_policies        = lookup(var.aws_load_balancer_controller, "role_policies", {})
 
   source_policy_documents = data.aws_iam_policy_document.aws_load_balancer_controller[*].json
   policy_statements       = lookup(var.aws_load_balancer_controller, "policy_statements", [])

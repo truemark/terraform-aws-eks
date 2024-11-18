@@ -1,66 +1,16 @@
-###############################################
-# EKS Addons Configuration
-###############################################
-
-# Define Kubernetes addons to enable/disable.
 variable "addons" {
-  description = <<-EOT
-    A map to enable or disable various Kubernetes addons.
-    Example addons: AWS Load Balancer Controller, Metrics Server.
-  EOT
-  type = object({
-    enable_aws_load_balancer_controller = optional(bool, false)
-    enable_metrics_server               = optional(bool, false)
-    enable_argocd                       = optional(bool, false)
-    enable_cert_manager                 = optional(bool, false)
-    enable_external_dns                 = optional(bool, false)
-    enable_istio                        = optional(bool, false)
-    enable_istio_ingress                = optional(bool, false)
-    enable_karpenter                    = optional(bool, false)
-    enable_external_secrets             = optional(bool, false)
-    enable_keda                         = optional(bool, false)
-    enable_aws_ebs_csi_resources        = optional(bool, false)
-  })
+  description = "Kubernetes addons"
+  type        = any
+  default = {
+    enable_aws_load_balancer_controller = true
+    enable_metrics_server               = true
+  }
 }
 
-# Define GitOps-related repository configuration.
-variable "gitops_addons_org" {
-  description = "GitHub organization/user containing addons Git repository."
-  type        = string
-  default     = "https://github.com/aws-samples"
-}
+## Locals
 
-variable "gitops_addons_repo" {
-  description = "Git repository containing addons."
-  type        = string
-  default     = "eks-blueprints-add-ons"
-}
-
-variable "gitops_addons_revision" {
-  description = "Git repository branch, tag, or revision for addons."
-  type        = string
-  default     = "main"
-}
-
-variable "gitops_addons_basepath" {
-  description = "Base path within the Git repository for addons."
-  type        = string
-  default     = "argocd/"
-}
-
-variable "gitops_addons_path" {
-  description = "Specific path within the Git repository for addons."
-  type        = string
-  default     = "bootstrap/control-plane/addons"
-}
-
-###############################################
-# Local Variables
-###############################################
-
-# Dynamically resolve the state of enabled addons based on input.
 locals {
-  eks_addons = {
+  addons = {
     enable_argocd                       = try(var.addons.enable_argocd, false)
     enable_cert_manager                 = try(var.addons.enable_cert_manager, false)
     enable_external_dns                 = try(var.addons.enable_external_dns, false)
@@ -74,8 +24,19 @@ locals {
     enable_aws_ebs_csi_resources        = try(var.addons.enable_aws_ebs_csi_resources, false)
   }
 
-  # Metadata for addons configuration.
+  addons_default_versions = {
+    cert_manager                 = "v1.14.3"
+    external_dns                 = "1.15.0"
+    karpenter                    = "1.0.7"
+    external_secrets             = "0.7.0"
+    metrics_server               = "3.12.0"
+    keda                         = "2.16.0"
+    aws_load_balancer_controller = "1.10.0"
+    istio                        = "1.23.3"
+  }
+
   addons_metadata = merge(
+    #     module.addons.gitops_metadata,
     {
       aws_cluster_name = module.eks.cluster_name
       aws_region       = data.aws_region.current.name
@@ -84,12 +45,10 @@ locals {
     }
   )
 
-  # Tags for resources.
   tags = {
     Blueprint = var.cluster_name
   }
 
-  # ArgoCD application configurations.
   argocd_apps = {
     eks-addons = {
       project         = "default"
@@ -98,26 +57,80 @@ locals {
       path            = "bootstrap/charts/eks-addons"
       values = {
         certManager = {
-          enabled      = local.eks_addons.enable_cert_manager,
-          iamRoleArn   = module.eks_addons.gitops_metadata.cert_manager_iam_role_arn,
-          values       = try(yamldecode(join("\n", var.cert_manager_helm_config.values)), {}),
-          chartVersion = try(var.cert_manager_helm_config.chart_version, [])
+          enabled      = local.addons.enable_cert_manager
+          iamRoleArn   = try(module.addons.gitops_metadata.cert_manager_iam_role_arn, "")
+          values       = try(yamldecode(join("\n", var.cert_manager_helm_config.values)), {})
+          chartVersion = try(var.cert_manager_helm_config.chart_version, local.addons_default_versions.cert_manager)
         }
-        # Additional addon configurations here...
+        externalDNS = {
+          enabled      = local.addons.enable_external_dns
+          iamRoleArn   = try(module.addons.gitops_metadata.external_dns_iam_role_arn, "")
+          values       = try(yamldecode(join("\n", var.external_dns_helm_config.values)), {})
+          chartVersion = try(var.external_dns_helm_config.chart_version, local.addons_default_versions.external_dns)
+        }
+        karpenter = {
+          enabled                   = local.addons.enable_karpenter
+          iamRoleArn                = try(module.addons.gitops_metadata.karpenter_iam_role_arn, "")
+          values                    = try(yamldecode(join("\n", var.karpenter_helm_config.values)), {})
+          chartVersion              = try(var.karpenter_helm_config.chart_version, local.addons_default_versions.karpenter)
+          enableCrdWebhookConfig    = try(var.karpenter_helm_config.enable_karpenter_crd_webhook, false)
+          truemarkNodeClassDefaults = try(var.karpenter_helm_config.truemark_nodeclass_default, {})
+          truemarkNodePoolDefaults  = try(var.karpenter_helm_config.truemark_node_pool_default, {})
+          clusterName               = module.eks.cluster_name
+          clusterEndpoint           = module.eks.cluster_endpoint
+          interruptionQueue         = module.addons.gitops_metadata.karpenter_interruption_queue
+          nodeIamRoleName           = module.addons.gitops_metadata.karpenter_node_iam_role_arn
+        }
+        externalSecrets = {
+          enabled      = local.addons.enable_external_secrets
+          iamRoleArn   = try(module.addons.gitops_metadata.external_secrets_iam_role_arn, "")
+          values       = try(yamldecode(join("\n", var.external_secrets_helm_config.values)), {})
+          chartVersion = try(var.external_secrets_helm_config.chart_version, local.addons_default_versions.external_secrets)
+        }
+        metricsServer = {
+          enabled      = local.addons.enable_metrics_server
+          values       = try(yamldecode(join("\n", var.metrics_server_helm_config.values)), {})
+          chartVersion = try(var.metrics_server_helm_config.chart_version, local.addons_default_versions.metrics_server)
+        }
+        keda = {
+          enabled      = local.addons.enable_keda
+          iamRoleArn   = try(module.addons.gitops_metadata.keda_iam_role_arn, "")
+          values       = try(yamldecode(join("\n", var.keda_helm_config.values)), {})
+          chartVersion = try(var.keda_helm_config.chart_version, local.addons_default_versions.keda)
+        }
+        loadBalancerController = {
+          enabled      = local.addons.enable_aws_load_balancer_controller
+          iamRoleArn   = try(module.addons.gitops_metadata.aws_load_balancer_controller_iam_role_arn, "")
+          values       = try(yamldecode(join("\n", var.aws_load_balancer_controller_helm_config.values)), {})
+          clusterName  = module.eks.cluster_name
+          chartVersion = try(var.aws_load_balancer_controller_helm_config.chart_version, local.addons_default_versions.aws_load_balancer_controller)
+          vpcId        = var.vpc_id
+          serviceAccount = {
+            name = module.addons.gitops_metadata.aws_load_balancer_controller_service_account_name
+          }
+        }
+        awsCsiEbsResources = {
+          enabled = local.addons.enable_aws_ebs_csi_resources
+        }
+        istio = {
+          chartVersion = try(var.istio_helm_config.chart_version, local.addons_default_versions.istio)
+          values       = try(yamldecode(join("\n", var.istio_helm_config.values)), {})
+          base = {
+            enabled = local.addons.enable_istio
+          }
+          ingress_enabled = var.istio_helm_config.ingress_enabled
+          ingress         = var.istio_helm_config.ingress
+        }
       }
     }
   }
 }
 
-###############################################
-# Modules and GitOps Bridge
-###############################################
-
-# GitOps Bridge Bootstrap Configuration
+################################################################################
+# GitOps Bridge: Bootstrap
+################################################################################
 variable "enable_gitops_bridge_bootstrap" {
-  description = "Enable or disable the GitOps bridge bootstrap module."
-  type        = bool
-  default     = true
+  default = true
 }
 
 module "gitops_bridge_bootstrap" {
@@ -127,31 +140,27 @@ module "gitops_bridge_bootstrap" {
   cluster = {
     metadata = local.addons_metadata
   }
-
   argocd = {
     chart_version = "7.6.10"
     values = [
       <<-EOT
-      global:
-        nodeSelector:
-          ${jsonencode(var.critical_addons_node_selector)}
-        tolerations:
-          ${jsonencode(var.critical_addons_node_tolerations)}
-      EOT
+    global:
+      nodeSelector:
+        ${jsonencode(var.critical_addons_node_selector)}
+      tolerations:
+        ${jsonencode(var.critical_addons_node_tolerations)}
+    EOT
     ]
   }
-
   apps = local.argocd_apps
 }
 
-###############################################
-# EKS Addons Module
-###############################################
+################################################################################
+# EKS Blueprints Addons
+################################################################################
+module "addons" {
+  source = "./modules/addons"
 
-module "eks_addons" {
-  source = "./modules/eks-addons"
-
-  # AWS and cluster configurations
   oidc_provider_arn                = module.eks.oidc_provider_arn
   aws_region                       = data.aws_region.current.name
   aws_account_id                   = data.aws_caller_identity.current.account_id
@@ -159,33 +168,44 @@ module "eks_addons" {
   cluster_name                     = module.eks.cluster_name
   cluster_endpoint                 = module.eks.cluster_endpoint
   cluster_version                  = var.cluster_version
-
-  # Node selector and tolerations
   critical_addons_node_selector    = var.critical_addons_node_selector
   critical_addons_node_tolerations = var.critical_addons_node_tolerations
 
-  # Addons configurations
-  enable_cert_manager              = local.eks_addons.enable_cert_manager
-  cert_manager                     = var.cert_manager_helm_config
 
-  enable_external_dns              = local.eks_addons.enable_external_dns
-  external_dns                     = var.external_dns_helm_config
-  external_dns_route53_zone_arns   = try(var.external_dns_helm_config.route53_zone_arns, [])
+  # Using GitOps Bridge
+  create_kubernetes_resources = var.enable_gitops_bridge_bootstrap ? false : true
 
-  enable_karpenter                 = local.eks_addons.enable_karpenter
-  karpenter                        = var.karpenter_helm_config
+  # Cert Manager
+  enable_cert_manager = local.addons.enable_cert_manager
+  cert_manager        = var.cert_manager_helm_config
 
-  enable_external_secrets          = local.eks_addons.enable_external_secrets
-  external_secrets                 = var.external_secrets_helm_config
+  # External DNS
+  enable_external_dns            = local.addons.enable_external_dns
+  external_dns                   = var.external_dns_helm_config
+  external_dns_route53_zone_arns = try(var.external_dns_helm_config.route53_zone_arns, [])
 
-  enable_metrics_server            = local.eks_addons.enable_metrics_server
-  metrics_server                   = var.metrics_server_helm_config
+  # Karpenter
+  enable_karpenter = local.addons.enable_karpenter
+  karpenter        = var.karpenter_helm_config
 
-  enable_keda                      = local.eks_addons.enable_keda
-  keda                             = var.keda_helm_config
+  # External Secrets
+  enable_external_secrets = local.addons.enable_external_secrets
+  external_secrets        = var.external_secrets_helm_config
 
-  enable_aws_load_balancer_controller = local.eks_addons.enable_aws_load_balancer_controller
+  # Metrics Server
+  enable_metrics_server = local.addons.enable_metrics_server
+  metrics_server        = var.metrics_server_helm_config
+
+  # Keda
+  enable_keda = local.addons.enable_keda
+  keda        = var.keda_helm_config
+
+  # Load Balancer Controller
+  enable_aws_load_balancer_controller = local.addons.enable_aws_load_balancer_controller
   aws_load_balancer_controller        = var.aws_load_balancer_controller_helm_config
 
-  enable_aws_ebs_csi_resources = local.eks_addons.enable_aws_ebs_csi_resources
+  # AWS EBS CSI Resources
+  enable_aws_ebs_csi_resources = local.addons.enable_aws_ebs_csi_resources
+  #   tags = local.tags
 }
+

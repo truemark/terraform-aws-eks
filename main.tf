@@ -12,11 +12,6 @@ data "aws_eks_cluster_auth" "cluster" {
   name = module.eks.cluster_name
 }
 
-data "aws_ecrpublic_authorization_token" "token" {
-  count = var.enable_karpenter ? 1 : 0
-
-  provider = aws.us-east-1
-}
 locals {
   oidc_provider            = replace(module.eks.cluster_oidc_issuer_url, "https://", "")
   iamproxy-service-account = "${var.cluster_name}-iamproxy-service-account"
@@ -62,7 +57,6 @@ locals {
       "truemark-system" = local.default_critical_addon_nodegroup
     } : {}
   )
-  karpenter_crds = var.enable_karpenter ? ["karpenter.sh_nodepools.yaml", "karpenter.sh_nodeclaims.yaml", "karpenter.k8s.aws_ec2nodeclasses.yaml"] : []
 
 }
 
@@ -154,7 +148,7 @@ module "eks" {
     iam_role_attach_cni_policy = true
   }
 
-  node_security_group_tags = var.enable_karpenter ? { "karpenter.sh/discovery" = var.cluster_name } : {}
+  node_security_group_tags = var.addons.enable_karpenter ? { "karpenter.sh/discovery" = var.cluster_name } : {}
 }
 
 resource "aws_eks_access_entry" "access_entries" {
