@@ -22,7 +22,7 @@ gp3:
     reclaimPolicy: Delete
     volumeBindingMode: WaitForFirstConsumer
     allowVolumeExpansion: true
-gp3-ext4-encrypted:
+gp3_ext4_encrypted:
   enabled: true
   parameters:
     fsType: ext4
