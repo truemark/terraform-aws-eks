@@ -44,7 +44,7 @@ output "gitops_metadata" {
       } : "karpenter_${k}" => v if var.enable_karpenter
     },
     { for k, v in {
-      iam_role_arn            = module.velero[0].iam_role_arn
+      iam_role_arn            = module.velero.iam_role_arn
       namespace               = local.velero_namespace
       backup_s3_bucket_arn    = local.velero_backup_s3_bucket_arn
       backup_s3_bucket_name   = local.velero_backup_s3_bucket_name

@@ -29,17 +29,17 @@ spec:
               eks.amazonaws.com/role-arn: {{ .Values.velero.iamRoleArn }}
           configuration:
             backupStorageLocation:
-              name: aws-s3
-              provider: aws
-              bucket: {{ .Values.velero.bucket }}
-              prefix: {{ .Values.velero.prefix }}
-              config:
-                region: {{ .Values.velero.region }}
+              - name: aws-s3
+                provider: aws
+                bucket: {{ .Values.velero.bucket }}
+                prefix: {{ .Values.velero.prefix }}
+                config:
+                  region: {{ .Values.velero.region }}
             volumeSnapshotLocation:
-              name: aws-snapshot
-              provider: aws
-              config:
-                region: {{ .Values.velero.region }}
+              - name: aws-snapshot
+                provider: aws
+                config:
+                  region: {{ .Values.velero.region }}
           credentials:
             useSecret: false
           {{- if and (.Values.velero.values) (not (empty .Values.velero.values)) }}
