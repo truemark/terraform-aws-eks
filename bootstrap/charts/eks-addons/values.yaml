@@ -122,6 +122,12 @@ metricsServer:
   namespace: kube-system
   values: {}
 
+velero:
+  enabled: true
+  chartVersion: 8.0.0
+  namespace: velero
+  values: {}
+
 keda:
   enabled: true
   chartVersion: 2.16.0

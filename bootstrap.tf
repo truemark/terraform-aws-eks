@@ -22,6 +22,7 @@ locals {
     enable_keda                         = try(var.addons.enable_keda, false)
     enable_aws_load_balancer_controller = try(var.addons.enable_aws_load_balancer_controller, false)
     enable_aws_ebs_csi_resources        = try(var.addons.enable_aws_ebs_csi_resources, false)
+    enable_velero                       = try(var.addons.enable_velero, false)
   }
 
   addons_default_versions = {
@@ -121,6 +122,12 @@ locals {
           ingress_enabled = var.istio_helm_config.ingress_enabled
           ingress         = var.istio_helm_config.ingress
         }
+        velero = {
+          enabled      = local.addons.enable_velero
+          iamRoleArn   = try(module.addons.gitops_metadata.velero_iam_role_arn, "")
+          values       = try(yamldecode(join("\n", var.velero_helm_config.values)), {})
+          chartVersion = try(var.velero_helm_config.chart_version, "8.0.0")
+        }
       }
     }
   }
@@ -203,6 +210,10 @@ module "addons" {
   # Load Balancer Controller
   enable_aws_load_balancer_controller = local.addons.enable_aws_load_balancer_controller
   aws_load_balancer_controller        = var.aws_load_balancer_controller_helm_config
+
+  # Velero
+  enable_velero = local.addons.enable_velero
+  velero        = var.velero_helm_config
 
   # AWS EBS CSI Resources
   enable_aws_ebs_csi_resources = local.addons.enable_aws_ebs_csi_resources

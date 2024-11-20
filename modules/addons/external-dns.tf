@@ -26,7 +26,7 @@ variable "external_dns" {
     chart            = optional(string, "external-dns")
     chart_version    = optional(string, "1.14.3")
     repository       = optional(string, "https://kubernetes-sigs.github.io/external-dns/")
-    values           = optional(list(string)
+    values           = optional(list(string), [])
     set = optional(list(object({
       name  = string
       value = string

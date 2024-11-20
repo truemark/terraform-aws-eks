@@ -205,3 +205,9 @@ variable "aws_load_balancer_controller_helm_config" {
   type        = any
   default     = {}
 }
+
+variable "velero_helm_config" {
+  description = "Configuration for the Velero add-on."
+  type        = any
+  default     = {}
+}

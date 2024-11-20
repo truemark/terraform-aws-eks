@@ -1,0 +1,62 @@
+{{- if and (.Values.velero) (.Values.velero.enabled) }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: addons-velero
+  namespace: {{ .Values.argocdNamespace | default "argocd" }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocdProject | default "default" }}
+  sources:
+    - repoURL: '{{ .Values.addons_repo_url }}'
+      targetRevision: '{{ .Values.addons_repo_revision }}'
+      ref: values
+    - repoURL: https://vmware-tanzu.github.io/helm-charts/
+      targetRevision: {{ .Values.velero.chartVersion }}
+      chart: velero
+      helm:
+        releaseName: velero
+        ignoreMissingValueFiles: true
+        valueFiles:
+          - $values/{{ .Values.addons_repo_basepath }}addons/velero/values.yaml
+          - $values/{{ .Values.addons_repo_basepath }}addons/velero/values-{{ .Values.velero.chartVersion }}.yaml
+        values: |
+          serviceAccount:
+            name: {{ .Values.velero.serviceAccountName }}
+            annotations:
+              eks.amazonaws.com/role-arn: {{ .Values.velero.iamRoleArn }}
+          configuration:
+            backupStorageLocation:
+              name: aws-s3
+              provider: aws
+              bucket: {{ .Values.velero.bucket }}
+              prefix: {{ .Values.velero.prefix }}
+              config:
+                region: {{ .Values.velero.region }}
+            volumeSnapshotLocation:
+              name: aws-snapshot
+              provider: aws
+              config:
+                region: {{ .Values.velero.region }}
+          credentials:
+            useSecret: false
+          {{- if and (.Values.velero.values) (not (empty .Values.velero.values)) }}
+            {{- toYaml .Values.velero.values | nindent 10 }}
+          {{- end }}
+  destination:
+    namespace: '{{ .Values.velero.namespace }}'
+    name: '{{ .Values.clusterName }}'
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - "CreateNamespace=true"
+      - "Validate=false"
+      - "PrunePropagationPolicy=Foreground"
+      - "PruneLast=true"
+      - "RespectIgnoreDifferences=false"
+      - ServerSideApply=true  # Big CRDs.
+{{- end }}
