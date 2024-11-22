@@ -42,21 +42,21 @@ spec:
               effect: "NoSchedule"
           cainjector:
             nodeSelector:
-              CriticalAddonsOnly: true
+              CriticalAddonsOnly: 'true'
             tolerations:
               - key: "CriticalAddonsOnly"
                 operator: "Exists"
                 effect: "NoSchedule"
           webhook:
             nodeSelector:
-              CriticalAddonsOnly: true
+              CriticalAddonsOnly: 'true'
             tolerations:
               - key: "CriticalAddonsOnly"
                 operator: "Exists"
                 effect: "NoSchedule"
           startupapicheck:
             nodeSelector:
-              CriticalAddonsOnly: true
+              CriticalAddonsOnly: 'true'
             tolerations:
               - key: "CriticalAddonsOnly"
                 operator: "Exists"
