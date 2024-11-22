@@ -44,6 +44,12 @@ variable "cluster_version" {
   default     = "1.29"
 }
 
+variable "enable_cluster_creator_admin_permissions" {
+  description = "Enable cluster creator admin permissions"
+  type        = bool
+  default     = false
+}
+
 variable "create_cloudwatch_log_group" {
   description = "Create a CloudWatch log group for the EKS cluster"
   type        = bool

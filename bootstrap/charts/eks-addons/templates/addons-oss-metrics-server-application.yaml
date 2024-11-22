@@ -23,6 +23,12 @@ spec:
           - $values/{{ .Values.addons_repo_basepath }}addons/metrics-server/values.yaml
           - $values/{{ .Values.addons_repo_basepath }}addons/metrics-server/values-{{ .Values.metricsServer.chartVersion }}.yaml
         values: |
+          nodeSelector:
+            CriticalAddonsOnly: true
+          tolerations:
+            - key: "CriticalAddonsOnly"
+              operator: "Exists"
+              effect: "NoSchedule"
           {{- if and (.Values.metricsServer.values) (not (empty .Values.metricsServer.values)) }}
             {{- toYaml .Values.metricsServer.values | nindent 10 }}
           {{- end }}

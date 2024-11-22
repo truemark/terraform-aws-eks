@@ -102,8 +102,6 @@ module "ebs_csi_irsa_role" {
   tags = var.tags
 }
 
-variable "enable_cluster_creator_admin_permissions" {}
-
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 20"

@@ -34,6 +34,33 @@ spec:
             name: cert-manager
             annotations:
               eks.amazonaws.com/role-arn: {{ .Values.certManager.iamRoleArn }}
+          nodeSelector:
+            CriticalAddonsOnly: true
+          tolerations:
+            - key: "CriticalAddonsOnly"
+              operator: "Exists"
+              effect: "NoSchedule"
+          cainjector:
+            nodeSelector:
+              CriticalAddonsOnly: true
+            tolerations:
+              - key: "CriticalAddonsOnly"
+                operator: "Exists"
+                effect: "NoSchedule"
+          webhook:
+            nodeSelector:
+              CriticalAddonsOnly: true
+            tolerations:
+              - key: "CriticalAddonsOnly"
+                operator: "Exists"
+                effect: "NoSchedule"
+          startupapicheck:
+            nodeSelector:
+              CriticalAddonsOnly: true
+            tolerations:
+              - key: "CriticalAddonsOnly"
+                operator: "Exists"
+                effect: "NoSchedule"
           {{- if and (.Values.certManager.values) (not (empty .Values.certManager.values)) }}
             {{- toYaml .Values.certManager.values | nindent 10 }}
           {{- end }}

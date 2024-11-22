@@ -42,6 +42,12 @@ spec:
                   region: {{ .Values.velero.region }}
           credentials:
             useSecret: false
+          nodeSelector:
+            CriticalAddonsOnly: true
+          tolerations:
+            - key: "CriticalAddonsOnly"
+              operator: "Exists"
+              effect: "NoSchedule"
           {{- if and (.Values.velero.values) (not (empty .Values.velero.values)) }}
             {{- toYaml .Values.velero.values | nindent 10 }}
           {{- end }}

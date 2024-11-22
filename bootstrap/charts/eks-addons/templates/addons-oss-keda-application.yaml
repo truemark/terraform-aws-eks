@@ -27,6 +27,12 @@ spec:
             name: keda
             annotations:
               eks.amazonaws.com/role-arn: {{ .Values.keda.iamRoleArn }}
+          nodeSelector:
+            CriticalAddonsOnly: true
+          tolerations:
+            - key: "CriticalAddonsOnly"
+              operator: "Exists"
+              effect: "NoSchedule"
           {{- if and (.Values.keda.values) (not (empty .Values.keda.values)) }}
             {{- toYaml .Values.keda.values | nindent 10 }}
           {{- end }}

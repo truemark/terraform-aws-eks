@@ -27,6 +27,12 @@ spec:
             name: external-dns
             annotations:
               eks.amazonaws.com/role-arn: {{ .Values.externalDNS.iamRoleArn }}
+          nodeSelector:
+            CriticalAddonsOnly: true
+          tolerations:
+            - key: "CriticalAddonsOnly"
+              operator: "Exists"
+              effect: "NoSchedule"
           {{- if and (.Values.externalDNS.values) (not (empty .Values.externalDNS.values)) }}
             {{- toYaml .Values.externalDNS.values | nindent 10 }}
           {{- end }}
