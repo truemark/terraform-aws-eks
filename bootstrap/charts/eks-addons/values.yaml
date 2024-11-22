@@ -17,8 +17,6 @@ certManager:
     name: cert-manager
   namespace: cert-manager
   values: {}
-  useSystemCriticalNodegroup
-  useTruemarkArmNodes
 
 # AWS Load Balancer Controller
 loadBalancerController:
