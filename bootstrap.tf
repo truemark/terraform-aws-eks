@@ -126,6 +126,9 @@ locals {
           enabled      = local.addons.enable_velero
           iamRoleArn   = try(module.addons.gitops_metadata.velero_iam_role_arn, "")
           values       = try(yamldecode(join("\n", var.velero_helm_config.values)), {})
+          bucket       = module.addons.gitops_metadata.velero_backup_s3_bucket_name
+          prefix       = module.addons.gitops_metadata.velero_backup_s3_bucket_prefix
+          region       = data.aws_region.current.id
           chartVersion = try(var.velero_helm_config.chart_version, "8.0.0")
         }
       }
