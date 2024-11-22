@@ -43,7 +43,7 @@ spec:
           credentials:
             useSecret: false
           nodeSelector:
-            CriticalAddonsOnly: true
+            CriticalAddonsOnly: 'true'
           tolerations:
             - key: "CriticalAddonsOnly"
               operator: "Exists"

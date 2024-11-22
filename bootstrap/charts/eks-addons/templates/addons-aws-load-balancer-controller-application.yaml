@@ -24,7 +24,7 @@ spec:
             annotations:
               eks.amazonaws.com/role-arn: {{ .Values.loadBalancerController.iamRoleArn | default "" }}
           nodeSelector:
-            CriticalAddonsOnly: true
+            CriticalAddonsOnly: 'true'
           tolerations:
             - key: "CriticalAddonsOnly"
               operator: "Exists"

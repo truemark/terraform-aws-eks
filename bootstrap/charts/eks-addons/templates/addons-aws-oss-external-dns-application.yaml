@@ -28,7 +28,7 @@ spec:
             annotations:
               eks.amazonaws.com/role-arn: {{ .Values.externalDNS.iamRoleArn }}
           nodeSelector:
-            CriticalAddonsOnly: true
+            CriticalAddonsOnly: 'true'
           tolerations:
             - key: "CriticalAddonsOnly"
               operator: "Exists"
