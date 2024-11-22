@@ -122,19 +122,12 @@ spec:
                 "response_code_details": "%RESPONSE_CODE_DETAILS%"
               }
           nodeSelector:
-            {{- if .Values.istio.base.nodeSelector }}
-            {{- toYaml .Values.istio.base.nodeSelector | nindent 12 }}
-            {{- else }}
-            CriticalAddonsOnly: true
-            {{- end }}
+            karpenter.sh/nodepool: truemark-arm64
           tolerations:
-            {{- if .Values.istio.base.tolerations }}
-            {{- toYaml .Values.istio.base.tolerations | nindent 12 }}
-            {{- else }}
-            - key: "CriticalAddonsOnly"
-              operator: "Exists"
+            - key: "karpenter.sh/nodepool"
+              operator: "Equal"
+              value: "truemark-arm64"
               effect: "NoSchedule"
-            {{- end }}
   destination:
     namespace: '{{ .Values.istio.base.namespace }}'
     name: '{{ .Values.clusterName }}'
