@@ -177,7 +177,7 @@ spec:
       helm:
         releaseName: {{ $v.name }}
         ignoreMissingValueFiles: true
-        valuesObject:
+        values: |
           service:
             type: {{ $v.serviceType }}
             {{- if eq $v.serviceType "LoadBalancer" }}
