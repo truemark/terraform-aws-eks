@@ -104,13 +104,14 @@ istio:
       certificateArns: ""
       prefixLists: ""
       loadBalancerSouraceRanges: ""
+      subnets: ""
     internal:
       enabled: true
       name: istio-ingress-internal
       serviceAccount:
           create: true
       namespace: istio-ingress
-      serviceType: ClusterIP
+      serviceType: LoadBalancer
       loadBalancerScheme: internal
       certificateArns: ""
       prefixLists: ""
