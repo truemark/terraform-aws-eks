@@ -99,7 +99,7 @@ istio:
       serviceAccount:
         create: true
       namespace: istio-ingress
-      serviceType: ClusterIP
+      serviceType: LoadBalancer
       loadBalancerScheme: internet-facing
       certificateArns: ""
       prefixLists: ""

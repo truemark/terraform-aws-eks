@@ -182,24 +182,24 @@ spec:
             type: {{ $v.serviceType }}
             {{- if eq $v.serviceType "LoadBalancer" }}
             annotations:
-              service.beta.kubernetes.io/aws-load-balancer-name: {{ $v.name }}
+              service.beta.kubernetes.io/aws-load-balancer-name: "{{ $v.name }}"
               service.beta.kubernetes.io/aws-load-balancer-type: "external"
               service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
-              service.beta.kubernetes.io/aws-load-balancer-subnets: {{ $v.subnets }}
-              service.beta.kubernetes.io/aws-load-balancer-scheme: {{ $v.loadBalancerScheme }}
+              service.beta.kubernetes.io/aws-load-balancer-subnets: "{{ $v.subnets }}"
+              service.beta.kubernetes.io/aws-load-balancer-scheme: "{{ $v.loadBalancerScheme }}"
               service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"
               service.beta.kubernetes.io/aws-load-balancer-manage-backend-security-group-rules: "true"
               service.beta.kubernetes.io/aws-load-balancer-target-group-attributes: "preserve_client_ip.enabled=true"
               {{- if and $v.certificateArns (ne $v.certificateArns "") }}
-              service.beta.kubernetes.io/aws-load-balancer-ssl-cert: {{ $v.certificateArns }}
+              service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "{{ $v.certificateArns }}"
               service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "https"
               service.beta.kubernetes.io/aws-load-balancer-ssl-negotiation-policy: "ELBSecurityPolicy-TLS13-1-2-2021-06"
               {{- end }}
               {{- if and $v.prefixLists (ne $v.prefixLists "") }}
-              service.beta.kubernetes.io/aws-load-balancer-security-group-prefix-lists: {{ $v.prefixLists }}
+              service.beta.kubernetes.io/aws-load-balancer-security-group-prefix-lists: "{{ $v.prefixLists }}"
               {{- end }}
               {{- if and $v.loadBalancerSouraceRanges (ne $v.loadBalancerSouraceRanges "") }}
-              service.beta.kubernetes.io/load-balancer-source-ranges: {{ $v.loadBalancerSouraceRanges }}
+              service.beta.kubernetes.io/load-balancer-source-ranges: "{{ $v.loadBalancerSouraceRanges }}"
               {{- end }}
             {{- end }}
           nodeSelector:
