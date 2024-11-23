@@ -104,7 +104,6 @@ istio:
       certificateArns: ""
       prefixLists: ""
       loadBalancerSouraceRanges: ""
-      subnets: ""
     internal:
       enabled: true
       name: istio-ingress-internal
