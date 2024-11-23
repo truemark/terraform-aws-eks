@@ -185,7 +185,9 @@ spec:
               service.beta.kubernetes.io/aws-load-balancer-name: "{{ $v.name }}"
               service.beta.kubernetes.io/aws-load-balancer-type: "external"
               service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
-              service.beta.kubernetes.io/aws-load-balancer-subnets: "{{ $v.subnets }}"
+              {{- if $v.subnets }}
+              service.beta.kubernetes.io/aws-load-balancer-subnets: {{ $v.subnets }}
+              {{- end }}
               service.beta.kubernetes.io/aws-load-balancer-scheme: "{{ $v.loadBalancerScheme }}"
               service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"
               service.beta.kubernetes.io/aws-load-balancer-manage-backend-security-group-rules: "true"
