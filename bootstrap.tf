@@ -62,18 +62,12 @@ locals {
           iamRoleArn   = try(module.addons.gitops_metadata.cert_manager_iam_role_arn, "")
           values       = try(yamldecode(join("\n", var.cert_manager_helm_config.values)), {})
           chartVersion = try(var.cert_manager_helm_config.chart_version, local.addons_default_versions.cert_manager)
-          useSystemCriticalNodegroup = try(var.cert_manager_helm_config.use_system_critical_nodegroup, false)
-          useTruemarkArmNodes = try(var.cert_manager_helm_config.use_truemark_arm_nodes, false)
-          useTruemarkAmdNodes = try(var.cert_manager_helm_config.use_truemark_amd_nodes, false)
         }
         externalDNS = {
           enabled      = local.addons.enable_external_dns
           iamRoleArn   = try(module.addons.gitops_metadata.external_dns_iam_role_arn, "")
           values       = try(yamldecode(join("\n", var.external_dns_helm_config.values)), {})
           chartVersion = try(var.external_dns_helm_config.chart_version, local.addons_default_versions.external_dns)
-          useSystemCriticalNodegroup = try(var.external_dns_helm_config.use_system_critical_nodegroup, false)
-          useTruemarkArmNodes = try(var.external_dns_helm_config.use_truemark_arm_nodes, false)
-          useTruemarkAmdNodes = try(var.external_dns_helm_config.use_truemark_amd_nodes, false)
         }
         karpenter = {
           enabled                   = local.addons.enable_karpenter
@@ -87,35 +81,23 @@ locals {
           clusterEndpoint           = module.eks.cluster_endpoint
           interruptionQueue         = module.addons.gitops_metadata.karpenter_interruption_queue
           nodeIamRoleName           = module.addons.gitops_metadata.karpenter_node_iam_role_arn
-          useSystemCriticalNodegroup = try(var.karpenter_helm_config.use_system_critical_nodegroup, false)
-          useTruemarkArmNodes = try(var.karpenter_helm_config.use_truemark_arm_nodes, false)
-          useTruemarkAmdNodes = try(var.karpenter_helm_config.use_truemark_amd_nodes, false)
         }
         externalSecrets = {
           enabled      = local.addons.enable_external_secrets
           iamRoleArn   = try(module.addons.gitops_metadata.external_secrets_iam_role_arn, "")
           values       = try(yamldecode(join("\n", var.external_secrets_helm_config.values)), {})
           chartVersion = try(var.external_secrets_helm_config.chart_version, local.addons_default_versions.external_secrets)
-          useSystemCriticalNodegroup = try(var.external_secrets_helm_config.use_system_critical_nodegroup, false)
-          useTruemarkArmNodes = try(var.external_secrets_helm_config.use_truemark_arm_nodes, false)
-          useTruemarkAmdNodes = try(var.external_secrets_helm_config.use_truemark_amd_nodes, false)
         }
         metricsServer = {
           enabled      = local.addons.enable_metrics_server
           values       = try(yamldecode(join("\n", var.metrics_server_helm_config.values)), {})
           chartVersion = try(var.metrics_server_helm_config.chart_version, local.addons_default_versions.metrics_server)
-          useSystemCriticalNodegroup = try(var.metrics_server_helm_config.use_system_critical_nodegroup, false)
-          useTruemarkArmNodes = try(var.metrics_server_helm_config.use_truemark_arm_nodes, false)
-          useTruemarkAmdNodes = try(var.metrics_server_helm_config.use_truemark_amd_nodes, false)
         }
         keda = {
           enabled      = local.addons.enable_keda
           iamRoleArn   = try(module.addons.gitops_metadata.keda_iam_role_arn, "")
           values       = try(yamldecode(join("\n", var.keda_helm_config.values)), {})
           chartVersion = try(var.keda_helm_config.chart_version, local.addons_default_versions.keda)
-          useSystemCriticalNodegroup = try(var.keda_helm_config.use_system_critical_nodegroup, false)
-          useTruemarkArmNodes = try(var.keda_helm_config.use_truemark_arm_nodes, false)
-          useTruemarkAmdNodes = try(var.keda_helm_config.use_truemark_amd_nodes, false)
         }
         loadBalancerController = {
           enabled      = local.addons.enable_aws_load_balancer_controller
@@ -127,9 +109,6 @@ locals {
           serviceAccount = {
             name = module.addons.gitops_metadata.aws_load_balancer_controller_service_account_name
           }
-          useSystemCriticalNodegroup = try(var.aws_load_balancer_controller_helm_config.use_system_critical_nodegroup, false)
-          useTruemarkArmNodes = try(var.aws_load_balancer_controller_helm_config.use_truemark_arm_nodes, false)
-          useTruemarkAmdNodes = try(var.aws_load_balancer_controller_helm_config.use_truemark_amd_nodes, false)
         }
         awsCsiEbsResources = {
           enabled = local.addons.enable_aws_ebs_csi_resources
@@ -142,9 +121,6 @@ locals {
           }
           ingress_enabled = var.istio_helm_config.ingress_enabled
           ingress         = var.istio_helm_config.ingress
-          useSystemCriticalNodegroup = try(var.istio_helm_config.use_system_critical_nodegroup, false)
-          useTruemarkArmNodes = try(var.istio_helm_config.use_truemark_arm_nodes, false)
-          useTruemarkAmdNodes = try(var.istio_helm_config.use_truemark_amd_nodes, false)
         }
         velero = {
           enabled      = local.addons.enable_velero
@@ -154,9 +130,6 @@ locals {
           prefix       = module.addons.gitops_metadata.velero_backup_s3_bucket_prefix
           region       = data.aws_region.current.id
           chartVersion = try(var.velero_helm_config.chart_version, "8.0.0")
-          useSystemCriticalNodegroup = try(var.velero_helm_config.use_system_critical_nodegroup, false)
-          useTruemarkArmNodes = try(var.velero_helm_config.use_truemark_arm_nodes, false)
-          useTruemarkAmdNodes = try(var.velero_helm_config.use_truemark_amd_nodes, false)
         }
       }
     }

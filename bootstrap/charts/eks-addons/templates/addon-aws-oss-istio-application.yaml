@@ -218,7 +218,7 @@ spec:
               effect: "NoSchedule"
             {{- end }}
   destination:
-    namespace: '{{ $.Values.istio.base.namespace }}'
+    namespace: 'istio-ingress'
     name: '{{ $.Values.clusterName }}'
   syncPolicy:
     automated:
