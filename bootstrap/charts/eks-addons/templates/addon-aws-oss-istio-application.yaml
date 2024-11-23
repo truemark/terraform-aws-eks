@@ -178,6 +178,8 @@ spec:
         releaseName: {{ $v.name }}
         ignoreMissingValueFiles: true
         values: |
+          annotations:
+            "proxy.istio.io/config": '{"gatewayTopology" : { "proxyProtocol": {} }}'
           service:
             type: {{ $v.serviceType }}
             {{- if eq $v.serviceType "LoadBalancer" }}
