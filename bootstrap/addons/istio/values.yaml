@@ -1,5 +1,5 @@
 istio:
-  proxyProtocolSelectorLabel: gateway-external
+  proxyProtocolSelectorLabel: ingress-external
 gatewayResources:
   internal: true
   external: true
