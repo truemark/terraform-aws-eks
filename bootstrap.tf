@@ -159,6 +159,9 @@ module "gitops_bridge_bootstrap" {
         ${jsonencode(var.critical_addons_node_selector)}
       tolerations:
         ${jsonencode(var.critical_addons_node_tolerations)}
+    configs:
+      params:
+        server.insecure: true
     EOT
     ]
   }
