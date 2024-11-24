@@ -137,6 +137,8 @@ keda:
 truemarkObservability:
   kubePrometheusStack:
     enabled: true
+    defaultRules:
+      create: true
     chartVersion: 66.2.2
     namespace: observability
     alertmanager:
