@@ -133,3 +133,14 @@ keda:
   chartVersion: 2.16.0
   namespace: keda
   values : {}
+
+truemarkObservability:
+  kubePrometheusStack:
+    enabled: true
+    chartVersion: 66.2.2
+    namespace: observability
+    alertmanager:
+      enabled: true
+    prometheus:
+      enabled: true
+

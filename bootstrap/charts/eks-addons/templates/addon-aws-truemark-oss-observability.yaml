@@ -1,0 +1,111 @@
+{{- if .Values.truemarkObservability }}
+{{- if .Values.truemarkObservability.kubePrometheusStack.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: addons-kube-prometheus-stack-crds
+  namespace: {{ .Values.argocdNamespace | default "argocd" }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocdProject | default "default" }}
+  sources:
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      targetRevision: kube-prometheus-stack-{{ .Values.truemarkObservability.kubePrometheusStack.chartVersion }}
+      path: charts/kube-prometheus-stack/charts/crds
+      directory:
+        recurse: true
+  destination:
+    namespace: '{{ .Values.truemarkObservability.kubePrometheusStack.namespace | default "observability" }}'
+    name: '{{ .Values.clusterName }}'
+  syncPolicy:
+    automated:
+      allowEmpty: false
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - "CreateNamespace=true"
+      - "Validate=false"
+      - "PrunePropagationPolicy=Foreground"
+      - "PruneLast=true"
+      - "RespectIgnoreDifferences=false"
+      - ServerSideApply=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: addons-kube-prometheus-stack
+  namespace: {{ .Values.argocdNamespace | default "argocd" }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocdProject | default "default" }}
+  sources:
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      targetRevision: {{ .Values.truemarkObservability.kubePrometheusStack.chartVersion }}
+      chart: kube-prometheus-stack
+      helm:
+        releaseName: kube-prometheus-stack
+        ignoreMissingValueFiles: true
+        skipCrds: true
+        valuesObject:
+          cleanPrometheusOperatorObjectNames: true
+          defaultRules:
+            create: {{ .Values.truemarkObservability.kubePrometheusStack.defaultRules.create | default true }}
+          alertmanager:
+            enabled: {{ .Values.truemarkObservability.kubePrometheusStack.alertmanager.enabled | default true }}
+            alertmanagerSpec:
+              nodeSelector:
+                karpenter.sh/nodepool: "truemark-arm64"
+              tolerations:
+                - key: "karpenter.sh/nodepool"
+                  operator: "Equal"
+                  value: "truemark-arm64"
+                  effect: "NoSchedule"
+              storage:
+                volumeClaimTemplate:
+                  spec:
+                    storageClassName: {{ .Values.truemarkObservability.kubePrometheusStack.alertmanager.storageClassName | default "gp3" }}
+                    accessModes: ["ReadWriteOnce"]
+                    resources:
+                      requests:
+                        storage: {{ .Values.truemarkObservability.kubePrometheusStack.alertmanager.storageSize | default "10Gi" }}
+          prometheus:
+            enabled: {{ .Values.truemarkObservability.kubePrometheusStack.prometheus.enabled | default true }}
+            prometheusSpec:
+              nodeSelector:
+                karpenter.sh/nodepool: "truemark-arm64"
+              tolerations:
+                - key: "karpenter.sh/nodepool"
+                  operator: "Equal"
+                  value: "truemark-arm64"
+                  effect: "NoSchedule"
+              storageSpec:
+                volumeClaimTemplate:
+                  spec:
+                    storageClassName: {{ .Values.truemarkObservability.kubePrometheusStack.prometheus.storageClassName | default "gp3" }}
+                    accessModes: ["ReadWriteOnce"]
+                    resources:
+                      requests:
+                        storage: {{ .Values.truemarkObservability.kubePrometheusStack.prometheus.storageSize | default "100Gi" }}
+  destination:
+    namespace: '{{ .Values.truemarkObservability.kubePrometheusStack.namespace | default "observability" }}'
+    name: '{{ .Values.clusterName }}'
+  syncPolicy:
+    automated:
+      allowEmpty: false
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - "CreateNamespace=true"
+      - "Validate=false"
+      - "PrunePropagationPolicy=Foreground"
+      - "PruneLast=true"
+      - "RespectIgnoreDifferences=false"
+{{- end }}
+{{- end }}
