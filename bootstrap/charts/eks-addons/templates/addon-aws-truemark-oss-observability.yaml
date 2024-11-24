@@ -13,7 +13,7 @@ metadata:
 spec:
   project: {{ .Values.argocdProject | default "default" }}
   sources:
-    - repoURL: https://prometheus-community.github.io/helm-charts
+    - repoURL: https://github.com/prometheus-community/helm-charts/
       targetRevision: kube-prometheus-stack-{{ .Values.truemarkObservability.kubePrometheusStack.chartVersion }}
       path: charts/kube-prometheus-stack/charts/crds
       directory:
