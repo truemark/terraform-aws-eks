@@ -513,7 +513,8 @@ spec:
               [OUTPUT]
                   name       loki
                   match      *
-                  host       http://k8s-observabilility-loki-gateway
+                  host       k8s-observabilility-loki-gateway
+                  port       80
                   labels     job=fluentbit
                   label_keys $sub['stream']
             customParsers: |
