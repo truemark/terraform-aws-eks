@@ -155,7 +155,7 @@ metadata:
 spec:
   project: {{ .Values.argocdProject | default "default" }}
   sources:
-    - repoURL: oci://registry-1.docker.io/bitnamicharts
+    - repoURL: registry-1.docker.io/bitnamicharts
       targetRevision: {{ .Values.truemarkObservability.thanos.chartVersion }}
       chart: thanos
       helm:
