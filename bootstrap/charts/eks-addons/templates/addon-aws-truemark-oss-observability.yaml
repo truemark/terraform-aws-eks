@@ -194,6 +194,9 @@ spec:
                 operator: "Equal"
                 value: "truemark-arm64"
                 effect: "NoSchedule"
+            dnsDiscovery:
+              sidecarsService: {{ .Values.truemarkObservability.fullnameOverride }}-thanos-discovery
+              sidecarsNamespace: {{ .Values.truemarkObservability.thanos.namespace | default "observability" }}
             resources:
               {{- toYaml .Values.truemarkObservability.thanos.query.resources | nindent 14 }}
             serviceAccount:
