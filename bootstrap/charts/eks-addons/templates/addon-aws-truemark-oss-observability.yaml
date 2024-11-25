@@ -77,6 +77,7 @@ spec:
                       requests:
                         storage: {{ .Values.truemarkObservability.kubePrometheusStack.alertmanager.storageSize | default "10Gi" }}
           grafana:
+            adminPassword: {{ .Values.truemarkObservability.kubePrometheusStack.grafana.adminPassword }}
             nodeSelector:
               karpenter.sh/nodepool: "truemark-arm64"
             tolerations:
@@ -84,6 +85,12 @@ spec:
                 operator: "Equal"
                 value: "truemark-arm64"
                 effect: "NoSchedule"
+            additionalDataSources:
+              - name: thanos
+                type: prometheus
+                uid: thanos
+                url: http://{{ .Values.truemarkObservability.fullnameOverride }}-thanos-query:10901
+                access: proxy
           kube-state-metrics:
             nodeSelector:
               karpenter.sh/nodepool: "truemark-arm64"
