@@ -466,9 +466,9 @@ metadata:
 spec:
   project: {{ .Values.argocdProject | default "default" }}
   sources:
-    - repoURL: https://grafana.github.io/helm-charts
+    - repoURL: https://fluent.github.io/helm-charts
       targetRevision: {{ .Values.truemarkObservability.fluentbit.chartVersion }}
-      chart: loki
+      chart: fluent-bit
       helm:
         releaseName: fluentbit
         ignoreMissingValueFiles: true
