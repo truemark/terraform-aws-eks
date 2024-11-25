@@ -319,4 +319,94 @@ spec:
       - "PruneLast=true"
       - "RespectIgnoreDifferences=false"
 {{- end }}
+{{- if .Values.truemarkObservability.loki.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: addons-loki
+  namespace: {{ .Values.argocdNamespace | default "argocd" }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocdProject | default "default" }}
+  sources:
+    - repoURL: https://grafana.github.io/helm-charts
+      targetRevision: {{ .Values.truemarkObservability.loki.chartVersion }}
+      chart: loki
+      helm:
+        releaseName: loki
+        ignoreMissingValueFiles: true
+        valuesObject:
+          fullnameOverride: {{ .Values.truemarkObservability.fullnameOverride }}-loki
+          deploymentMode: {{ .Values.truemarkObservability.loki.deploymentMode }}
+          lokiCanary:
+            tolerations:
+              - operator: Exists
+          loki:
+            compactor:
+              retention_enabled: true
+              delete_request_store: s3
+            storage:
+              bucketNames:
+                chunks: {{ .Values.truemarkObservability.loki.s3BucketName }}
+                ruler: {{ .Values.truemarkObservability.loki.s3BucketName }}
+                admin: {{ .Values.truemarkObservability.loki.s3BucketName }}
+              type: s3
+              s3:
+                s3: s3://{{ .Values.truemarkObservability.region }}/{{ .Values.truemarkObservability.loki.s3BucketName }}
+                region: {{ .Values.truemarkObservability.region }}
+          serviceAccount:
+            annotations:
+              eks.amazonaws.com/role-arn: {{ .Values.truemarkObservability.loki.iamRoleArn }}
+          gateway:
+            nodeSelector:
+              karpenter.sh/nodepool: "truemark-arm64"
+            tolerations:
+              - key: "karpenter.sh/nodepool"
+                operator: "Equal"
+                value: "truemark-arm64"
+                effect: "NoSchedule"
+          write:
+            nodeSelector:
+              karpenter.sh/nodepool: "truemark-arm64"
+            tolerations:
+              - key: "karpenter.sh/nodepool"
+                operator: "Equal"
+                value: "truemark-arm64"
+                effect: "NoSchedule"
+          read:
+            nodeSelector:
+              karpenter.sh/nodepool: "truemark-arm64"
+            tolerations:
+              - key: "karpenter.sh/nodepool"
+                operator: "Equal"
+                value: "truemark-arm64"
+                effect: "NoSchedule"
+          backend:
+            nodeSelector:
+              karpenter.sh/nodepool: "truemark-arm64"
+            tolerations:
+              - key: "karpenter.sh/nodepool"
+                operator: "Equal"
+                value: "truemark-arm64"
+                effect: "NoSchedule"
+
+  destination:
+    namespace: '{{ .Values.truemarkObservability.loki.namespace | default "observability" }}'
+    name: '{{ .Values.clusterName }}'
+  syncPolicy:
+    automated:
+      allowEmpty: false
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - "CreateNamespace=true"
+      - "Validate=false"
+      - "PrunePropagationPolicy=Foreground"
+      - "PruneLast=true"
+      - "RespectIgnoreDifferences=false"
+{{- end }}
 {{- end }}
