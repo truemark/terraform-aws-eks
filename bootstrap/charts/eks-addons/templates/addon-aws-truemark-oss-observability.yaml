@@ -109,11 +109,23 @@ spec:
                     value: "truemark-arm64"
                     effect: "NoSchedule"
           prometheus:
-            enabled: {{ .Values.truemarkObservability.kubePrometheusStack.prometheus.enabled | default true }}\
+            enabled: {{ .Values.truemarkObservability.kubePrometheusStack.prometheus.enabled | default true }}
+            serviceAccount:
+              annotations:
+                eks.amazonaws.com/role-arn: {{ .Values.truemarkObservability.kubePrometheusStack.prometheus.iamRoleArn }}
             thanosService:
               enabled: {{ if .Values.truemarkObservability.thanos.enabled }}true{{ else }}false{{ end }}
             prometheusSpec:
               disableCompaction: {{ if .Values.truemarkObservability.thanos.enabled }}true{{ else }}false{{ end }}
+              {{- if .Values.truemarkObservability.thanos.enabled }}
+              objectStorageConfig:
+                secret:
+                  type: S3
+                  config:
+                    bucket: {{ .Values.truemarkObservability.thanos.s3BucketName }}
+                    endpoint: s3.{{ .Values.truemarkObservability.region }}.amazonaws.com
+                    region: {{ .Values.truemarkObservability.region }}
+              {{- end }}
               nodeSelector:
                 karpenter.sh/nodepool: "truemark-arm64"
               tolerations:
