@@ -51,6 +51,15 @@ output "gitops_metadata" {
       backup_s3_bucket_prefix = local.velero_backup_s3_bucket_prefix
       service_account_name    = local.velero_service_account
       } : "velero_${k}" => v if var.enable_velero
+    },
+    { for k, v in {
+      thanos_iam_role_arn = var.truemark_observability.thanos.enabled ? module.thanos.iam_role_arn : ""
+      thanos_s3_bucket_name = var.truemark_observability.thanos.enabled ? module.thanos_s3_bucket.s3_bucket_id : ""
+      prometheus_iam_role_arn = var.truemark_observability.kube_prometheus_stack.enabled ? module.prometheus_iam_role[0].iam_role_arn : ""
+      grafana_admin_password = random_password.grafana_admin_password.result
+      loki_iam_role_arn = var.truemark_observability.loki.enabled ? module.loki_iam_role[0].iam_role_arn : ""
+      loki_s3_bucket_name = var.truemark_observability.loki.enabled ? module.loki_s3_bucket.s3_bucket_id : ""
+    } : "truemark_observability_${k}" => v if var.enable_truemark_observability
     }
   )
 }
