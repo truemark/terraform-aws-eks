@@ -243,7 +243,7 @@ spec:
                 eks.amazonaws.com/role-arn: {{ .Values.truemarkObservability.thanos.iamRoleArn }}
                 eks.amazonaws.com/sts-regional-endpoints: "true"
           ruler:
-            enabled: {{ .Values.truemarkObservability.thanos.ruler.enabled | default true }}
+            enabled: {{ .Values.truemarkObservability.thanos.ruler.enabled | default false }}
             nodeSelector:
               karpenter.sh/nodepool: "truemark-arm64"
             tolerations:
