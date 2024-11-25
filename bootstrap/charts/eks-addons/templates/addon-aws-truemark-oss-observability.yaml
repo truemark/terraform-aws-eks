@@ -518,8 +518,7 @@ spec:
                   match      *
                   host       k8s-observabilility-loki-gateway
                   port       80
-                  labels     job=fluentbit, namespace=$kubernetes['namespace_name']
-                  structured_metadata pod=$kubernetes['pod_name']
+                  labels     job=fluentbit, namespace=$kubernetes['namespace_name'], pod=$kubernetes['pod_name'], container_name=$kubernetes['container_name']
                   label_keys $sub['stream']
             customParsers: |
               [PARSER]
