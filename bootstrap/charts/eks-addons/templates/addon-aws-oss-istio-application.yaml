@@ -142,15 +142,6 @@ spec:
       - "PrunePropagationPolicy=Foreground"
       - "PruneLast=true"
       - "RespectIgnoreDifferences=false"
-  ignoreDifferences:
-    - group: admissionregistration.k8s.io
-      kind: MutatingWebhookConfiguration
-      jqPathExpressions:
-        - '.webhooks[]?.clientConfig.caBundle'
-    - group: admissionregistration.k8s.io
-      kind: ValidatingWebhookConfiguration
-      jqPathExpressions:
-        - '.webhooks[]?.failurePolicy'
 {{- end }}
 ---
 {{- if and (.Values.istio) (.Values.istio.ingress_enabled) }}
