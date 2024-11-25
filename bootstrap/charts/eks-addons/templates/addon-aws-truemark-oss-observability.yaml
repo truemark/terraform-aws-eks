@@ -346,6 +346,8 @@ spec:
             tolerations:
               - operator: Exists
           loki:
+            commonConfig:
+              replication_factor: 1
             memberlist:
               service:
                 publishNotReadyAddresses: false
