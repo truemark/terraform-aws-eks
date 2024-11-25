@@ -109,8 +109,11 @@ spec:
                     value: "truemark-arm64"
                     effect: "NoSchedule"
           prometheus:
-            enabled: {{ .Values.truemarkObservability.kubePrometheusStack.prometheus.enabled | default true }}
+            enabled: {{ .Values.truemarkObservability.kubePrometheusStack.prometheus.enabled | default true }}\
+            thanosService:
+              enabled: {{ if .Values.truemarkObservability.thanos.enabled }}true{{ else }}false{{ end }}
             prometheusSpec:
+              disableCompaction: {{ if .Values.truemarkObservability.thanos.enabled }}true{{ else }}false{{ end }}
               nodeSelector:
                 karpenter.sh/nodepool: "truemark-arm64"
               tolerations:
