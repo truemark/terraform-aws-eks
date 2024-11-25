@@ -474,6 +474,8 @@ spec:
         ignoreMissingValueFiles: true
         valuesObject:
           fullnameOverride: {{ .Values.truemarkObservability.fullnameOverride }}-fluentbit
+          tolerations:
+            - operator: Exists
           config:
             service: |
               [SERVICE]
