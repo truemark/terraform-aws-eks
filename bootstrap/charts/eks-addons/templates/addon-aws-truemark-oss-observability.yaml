@@ -257,6 +257,18 @@ spec:
               annotations:
                 eks.amazonaws.com/role-arn: {{ .Values.truemarkObservability.thanos.iamRoleArn }}
                 eks.amazonaws.com/sts-regional-endpoints: "true"
+          queryFrontend:
+            nodeSelector:
+              karpenter.sh/nodepool: "truemark-arm64"
+            tolerations:
+              - key: "karpenter.sh/nodepool"
+                operator: "Equal"
+                value: "truemark-arm64"
+                effect: "NoSchedule"
+            serviceAccount:
+              annotations:
+                eks.amazonaws.com/role-arn: {{ .Values.truemarkObservability.thanos.iamRoleArn }}
+                eks.amazonaws.com/sts-regional-endpoints: "true"
           metrics:
             enabled: true
             serviceMonitor:
