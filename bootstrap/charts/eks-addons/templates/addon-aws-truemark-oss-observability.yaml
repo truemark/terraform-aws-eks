@@ -91,6 +91,14 @@ spec:
                 uid: thanos
                 url: http://{{ .Values.truemarkObservability.fullnameOverride }}-thanos-query:9090
                 access: proxy
+              - name: loki
+                type: loki
+                uid: loki
+                url: http://{{ .Values.truemarkObservability.fullnameOverride }}-loki-gateway:80
+                access: proxy
+                jsonData:
+                  maxLines: 1000
+                  timeout: 60
           kube-state-metrics:
             nodeSelector:
               karpenter.sh/nodepool: "truemark-arm64"
