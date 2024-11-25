@@ -166,7 +166,12 @@ truemarkObservability:
           memory: 1Gi
     receive:
       enabled: false
-      resources: {}
+      resources:
+        requests:
+          cpu: 100m
+          memory: 200Mi
+        limits:
+          memory: 200Mi
     storegateway:
       enabled: true
       resources:
@@ -177,7 +182,12 @@ truemarkObservability:
           memory: 1Gi
     ruler:
       enabled: false
-      resources: {}
+      resources:
+        requests:
+          cpu: 100m
+          memory: 200Mi
+        limits:
+          memory: 200Mi
   kubePrometheusStack:
     enabled: true
     defaultRules:
