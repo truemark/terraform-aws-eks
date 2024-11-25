@@ -504,11 +504,6 @@ spec:
                   Tag kube.*
                   Mem_Buf_Limit 5MB
                   Skip_Long_Lines On
-              [INPUT]
-                  Name systemd
-                  Tag host.*
-                  Systemd_Filter _SYSTEMD_UNIT=kubelet.service
-                  Read_From_Tail On
             filters: |
               [FILTER]
                   Name kubernetes
@@ -523,9 +518,8 @@ spec:
                   match      *
                   host       k8s-observabilility-loki-gateway
                   port       80
-                  labels     job=fluentbit
-                  label_keys $sub['stream']
-                  auto_kubernetes_labels on
+                  labels     job=fluentbitm,container_name=$kubernetes['container_name']
+                  label_keys $sub['stream'],container_name
             customParsers: |
               [PARSER]
                   Name docker_no_time
