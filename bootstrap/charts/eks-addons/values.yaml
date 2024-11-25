@@ -203,3 +203,6 @@ truemarkObservability:
     enabled: true
     chartVersion: 6.21.0
     deploymentMode: SingleBinary
+  fluentbit:
+    enabled: true
+    chartVersion: 0.48.2
