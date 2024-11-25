@@ -50,11 +50,12 @@ spec:
       targetRevision: {{ .Values.truemarkObservability.kubePrometheusStack.chartVersion }}
       chart: kube-prometheus-stack
       helm:
-        releaseName: kube-prometheus-stack
+        releaseName: k8s-stack
         ignoreMissingValueFiles: true
         skipCrds: true
         valuesObject:
           cleanPrometheusOperatorObjectNames: true
+          fullnameOverride: "k8s-observabilility"
           defaultRules:
             create: {{ .Values.truemarkObservability.kubePrometheusStack.defaultRules.create | default true }}
           alertmanager:
@@ -178,6 +179,7 @@ spec:
         releaseName: thanos
         ignoreMissingValueFiles: true
         valuesObject:
+          fullnameOverride: "k8s-obseravability"
           objstoreConfig:
             type: s3
             config:
