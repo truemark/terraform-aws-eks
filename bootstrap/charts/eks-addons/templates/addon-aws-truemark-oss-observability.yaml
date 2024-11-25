@@ -518,8 +518,8 @@ spec:
                   match      *
                   host       k8s-observabilility-loki-gateway
                   port       80
-                  labels     job=fluentbitm,container_name=$kubernetes['container_name']
-                  label_keys $sub['stream'],container_name
+                  labels     job=fluentbit
+                  label_keys $sub['stream']
             customParsers: |
               [PARSER]
                   Name docker_no_time
