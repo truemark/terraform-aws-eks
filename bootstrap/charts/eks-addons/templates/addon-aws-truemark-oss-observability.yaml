@@ -177,7 +177,7 @@ spec:
                 value: "truemark-arm64"
                 effect: "NoSchedule"
             resources:
-              {{- toYaml .Values.truemarkObservability.thanos.query.resources | nindent 10 }}
+              {{- toYaml .Values.truemarkObservability.thanos.query.resources | nindent 14 }}
             serviceAccount:
               annotations:
                 eks.amazonaws.com/role-arn: {{ .Values.truemarkObservability.thanos.iamRoleArn }}
@@ -192,7 +192,7 @@ spec:
                 value: "truemark-arm64"
                 effect: "NoSchedule"
             resources:
-              {{- toYaml .Values.truemarkObservability.thanos.bucketweb.resources | nindent 10 }}
+              {{- toYaml .Values.truemarkObservability.thanos.bucketweb.resources | nindent 14 }}
             serviceAccount:
               annotations:
                 eks.amazonaws.com/role-arn: {{ .Values.truemarkObservability.thanos.iamRoleArn }}
@@ -207,7 +207,7 @@ spec:
                 value: "truemark-arm64"
                 effect: "NoSchedule"
             resources:
-              {{- toYaml .Values.truemarkObservability.thanos.compactor.resources | nindent 10 }}
+              {{- toYaml .Values.truemarkObservability.thanos.compactor.resources | nindent 14 }}
             serviceAccount:
               annotations:
                 eks.amazonaws.com/role-arn: {{ .Values.truemarkObservability.thanos.iamRoleArn }}
@@ -222,7 +222,7 @@ spec:
                 value: "truemark-arm64"
                 effect: "NoSchedule"
             resources:
-              {{- toYaml .Values.truemarkObservability.thanos.receive.resources | nindent 10 }}
+              {{- toYaml .Values.truemarkObservability.thanos.receive.resources | nindent 14 }}
             serviceAccount:
               annotations:
                 eks.amazonaws.com/role-arn: {{ .Values.truemarkObservability.thanos.iamRoleArn }}
@@ -237,7 +237,7 @@ spec:
                 value: "truemark-arm64"
                 effect: "NoSchedule"
             resources:
-              {{- toYaml .Values.truemarkObservability.thanos.storegateway.resources | nindent 10 }}
+              {{- toYaml .Values.truemarkObservability.thanos.storegateway.resources | nindent 14 }}
             serviceAccount:
               annotations:
                 eks.amazonaws.com/role-arn: {{ .Values.truemarkObservability.thanos.iamRoleArn }}
@@ -252,7 +252,7 @@ spec:
                 value: "truemark-arm64"
                 effect: "NoSchedule"
             resources:
-              {{- toYaml .Values.truemarkObservability.thanos.ruler.resources | nindent 10 }}
+              {{- toYaml .Values.truemarkObservability.thanos.ruler.resources | nindent 14 }}
             serviceAccount:
               annotations:
                 eks.amazonaws.com/role-arn: {{ .Values.truemarkObservability.thanos.iamRoleArn }}
