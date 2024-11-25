@@ -346,6 +346,9 @@ spec:
             tolerations:
               - operator: Exists
           loki:
+            memberlist:
+              service:
+                publishNotReadyAddresses: false
             schemaConfig:
               configs:
                 - from: 2018-04-15
