@@ -136,6 +136,7 @@ keda:
 
 truemarkObservability:
   region: ""
+  fullnameOverride: "k8s-observabilility"
   thanos:
     enabled: true
     chartVersion: 15.8.1

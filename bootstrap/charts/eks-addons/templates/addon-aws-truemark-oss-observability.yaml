@@ -55,7 +55,7 @@ spec:
         skipCrds: true
         valuesObject:
           cleanPrometheusOperatorObjectNames: true
-          fullnameOverride: "k8s-observabilility"
+          fullnameOverride: {{ .Values.truemarkObservability.fullnameOverride }}
           defaultRules:
             create: {{ .Values.truemarkObservability.kubePrometheusStack.defaultRules.create | default true }}
           alertmanager:
@@ -179,7 +179,7 @@ spec:
         releaseName: thanos
         ignoreMissingValueFiles: true
         valuesObject:
-          fullnameOverride: "k8s-obseravability"
+          fullnameOverride: {{ .Values.truemarkObservability.fullnameOverride }}
           objstoreConfig:
             type: s3
             config:
