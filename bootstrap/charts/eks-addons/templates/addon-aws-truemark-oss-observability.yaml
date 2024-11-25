@@ -517,6 +517,7 @@ spec:
                   port       80
                   labels     job=fluentbit
                   label_keys $sub['stream']
+                  auto_kubernetes_labels on
             customParsers: |
               [PARSER]
                   Name docker_no_time
