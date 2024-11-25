@@ -135,6 +135,49 @@ keda:
   values : {}
 
 truemarkObservability:
+  region: ""
+  thanos:
+    enabled: true
+    chartVersion: 15.8.1
+    namespace: observability
+    iamRoleArn: ""
+    query:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 1Gi
+        limits:
+          memory: 1Gi
+    bucketweb:
+      enabled: true
+      resources:
+        requests:
+          cpu: 100m
+          memory: 200Mi
+        limits:
+          memory: 200Mi
+    compactor:
+      enabled: true
+      resources:
+        requests:
+          cpu: 100m
+          memory: 1Gi
+        limits:
+          memory: 1Gi
+    receive:
+      enabled: false
+      resources: {}
+    storegateway:
+      enabled: true
+      resources:
+        requests:
+          cpu: 100m
+          memory: 1Gi
+        limits:
+          memory: 1Gi
+    ruler:
+      enabled: false
+      resources: {}
   kubePrometheusStack:
     enabled: true
     defaultRules:

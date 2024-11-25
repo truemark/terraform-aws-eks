@@ -141,4 +141,142 @@ spec:
       - "PruneLast=true"
       - "RespectIgnoreDifferences=false"
 {{- end }}
+{{- if .Values.truemarkObservability.thanos.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: addons-thanos
+  namespace: {{ .Values.argocdNamespace | default "argocd" }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocdProject | default "default" }}
+  sources:
+    - repoURL: oci://registry-1.docker.io/bitnamicharts
+      targetRevision: {{ .Values.truemarkObservability.thanos.chartVersion }}
+      chart: thanos
+      helm:
+        releaseName: thanos
+        ignoreMissingValueFiles: true
+        valuesObject:
+          objstoreConfig:
+            type: s3
+            config:
+              bucket: {{ .Values.truemarkObservability.thanos.s3BucketName }}
+              endpoint: s3.{{ .Values.truemarkObservability.region }}.amazonaws.com
+              region: {{ .Values.truemarkObservability.region }}
+          query:
+            nodeSelector:
+              karpenter.sh/nodepool: "truemark-arm64"
+            tolerations:
+              - key: "karpenter.sh/nodepool"
+                operator: "Equal"
+                value: "truemark-arm64"
+                effect: "NoSchedule"
+            resources:
+              {{- toYaml .Values.truemarkObservability.thanos.query.resources | nindent 10 }}
+            serviceAccount:
+              annotations:
+                eks.amazonaws.com/role-arn: {{ .Values.truemarkObservability.thanos.iamRoleArn }}
+                eks.amazonaws.com/sts-regional-endpoints: "true"
+          bucketweb:
+            enabled: {{ .Values.truemarkObservability.thanos.bucketweb.enabled | default true }}
+            nodeSelector:
+              karpenter.sh/nodepool: "truemark-arm64"
+            tolerations:
+              - key: "karpenter.sh/nodepool"
+                operator: "Equal"
+                value: "truemark-arm64"
+                effect: "NoSchedule"
+            resources:
+              {{- toYaml .Values.truemarkObservability.thanos.bucketweb.resources | nindent 10 }}
+            serviceAccount:
+              annotations:
+                eks.amazonaws.com/role-arn: {{ .Values.truemarkObservability.thanos.iamRoleArn }}
+                eks.amazonaws.com/sts-regional-endpoints: "true"
+          compactor:
+            enabled: {{ .Values.truemarkObservability.thanos.compactor.enabled | default true }}
+            nodeSelector:
+              karpenter.sh/nodepool: "truemark-arm64"
+            tolerations:
+              - key: "karpenter.sh/nodepool"
+                operator: "Equal"
+                value: "truemark-arm64"
+                effect: "NoSchedule"
+            resources:
+              {{- toYaml .Values.truemarkObservability.thanos.compactor.resources | nindent 10 }}
+            serviceAccount:
+              annotations:
+                eks.amazonaws.com/role-arn: {{ .Values.truemarkObservability.thanos.iamRoleArn }}
+                eks.amazonaws.com/sts-regional-endpoints: "true"
+          receive:
+            enabled: {{ .Values.truemarkObservability.thanos.receive.enabled | default true }}
+            nodeSelector:
+              karpenter.sh/nodepool: "truemark-arm64"
+            tolerations:
+              - key: "karpenter.sh/nodepool"
+                operator: "Equal"
+                value: "truemark-arm64"
+                effect: "NoSchedule"
+            resources:
+              {{- toYaml .Values.truemarkObservability.thanos.receive.resources | nindent 10 }}
+            serviceAccount:
+              annotations:
+                eks.amazonaws.com/role-arn: {{ .Values.truemarkObservability.thanos.iamRoleArn }}
+                eks.amazonaws.com/sts-regional-endpoints: "true"
+          storegateway:
+            enabled: {{ .Values.truemarkObservability.thanos.storegateway.enabled | default true }}
+            nodeSelector:
+              karpenter.sh/nodepool: "truemark-arm64"
+            tolerations:
+              - key: "karpenter.sh/nodepool"
+                operator: "Equal"
+                value: "truemark-arm64"
+                effect: "NoSchedule"
+            resources:
+              {{- toYaml .Values.truemarkObservability.thanos.storegateway.resources | nindent 10 }}
+            serviceAccount:
+              annotations:
+                eks.amazonaws.com/role-arn: {{ .Values.truemarkObservability.thanos.iamRoleArn }}
+                eks.amazonaws.com/sts-regional-endpoints: "true"
+          ruler:
+            enabled: {{ .Values.truemarkObservability.thanos.ruler.enabled | default true }}
+            nodeSelector:
+              karpenter.sh/nodepool: "truemark-arm64"
+            tolerations:
+              - key: "karpenter.sh/nodepool"
+                operator: "Equal"
+                value: "truemark-arm64"
+                effect: "NoSchedule"
+            resources:
+              {{- toYaml .Values.truemarkObservability.thanos.ruler.resources | nindent 10 }}
+            serviceAccount:
+              annotations:
+                eks.amazonaws.com/role-arn: {{ .Values.truemarkObservability.thanos.iamRoleArn }}
+                eks.amazonaws.com/sts-regional-endpoints: "true"
+          metrics:
+            enabled: true
+            serviceMonitor:
+              enabled: true
+          minio:
+            enabled: false
+
+  destination:
+    namespace: '{{ .Values.truemarkObservability.thanos.namespace | default "observability" }}'
+    name: '{{ .Values.clusterName }}'
+  syncPolicy:
+    automated:
+      allowEmpty: false
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - "CreateNamespace=true"
+      - "Validate=false"
+      - "PrunePropagationPolicy=Foreground"
+      - "PruneLast=true"
+      - "RespectIgnoreDifferences=false"
+{{- end }}
 {{- end }}
