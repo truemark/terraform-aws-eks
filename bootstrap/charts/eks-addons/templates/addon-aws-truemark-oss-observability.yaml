@@ -179,7 +179,7 @@ spec:
         releaseName: thanos
         ignoreMissingValueFiles: true
         valuesObject:
-          fullnameOverride: {{ .Values.truemarkObservability.fullnameOverride }}
+          fullnameOverride: {{ .Values.truemarkObservability.fullnameOverride }}-thanos
           objstoreConfig:
             type: s3
             config:
