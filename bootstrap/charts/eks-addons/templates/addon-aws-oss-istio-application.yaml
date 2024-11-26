@@ -87,6 +87,7 @@ spec:
               enabled: {{ .Values.istio.base.multiCluster.enabled }}
               clusterName: {{ .Values.istio.base.multiCluster.clusterName }}
             {{- end }}
+          {{- end }}
           meshConfig:
             defaultConfig:
               holdApplicationUntilProxyStarts: true
