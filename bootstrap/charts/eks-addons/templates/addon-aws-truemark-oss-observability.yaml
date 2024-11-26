@@ -78,6 +78,7 @@ spec:
                 receiver: 'sns'
                 group_by: [ '...' ]
               receivers:
+                - name: 'null'
                 - name: 'sns'
                   sns_configs:
                     - subject: '{{ .Values.truemarkObservability.kubePrometheusStack.alertmanager.alertsSnsSubject }}'
