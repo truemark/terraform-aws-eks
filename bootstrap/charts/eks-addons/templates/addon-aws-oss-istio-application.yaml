@@ -180,8 +180,6 @@ spec:
         releaseName: {{ $v.name }}
         ignoreMissingValueFiles: true
         values: |
-          annotations:
-            "proxy.istio.io/config": '{"gatewayTopology" : { "proxyProtocol": {} }}'
           service:
             type: {{ $v.serviceType }}
             {{- if eq $v.serviceType "LoadBalancer" }}
@@ -193,7 +191,9 @@ spec:
               service.beta.kubernetes.io/aws-load-balancer-subnets: {{ $v.subnets }}
               {{- end }}
               service.beta.kubernetes.io/aws-load-balancer-scheme: "{{ $v.loadBalancerScheme }}"
+              {{- if eq $k.name "external" }}
               service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"
+              {{- end }}
               service.beta.kubernetes.io/aws-load-balancer-manage-backend-security-group-rules: "true"
               service.beta.kubernetes.io/aws-load-balancer-target-group-attributes: "preserve_client_ip.enabled=true"
               {{- if and $v.certificateArns (ne $v.certificateArns "") }}
