@@ -62,6 +62,9 @@ spec:
             create: {{ .Values.truemarkObservability.kubePrometheusStack.defaultRules.create | default true }}
           alertmanager:
             enabled: {{ .Values.truemarkObservability.kubePrometheusStack.alertmanager.enabled | default true }}
+            serviceAccount:
+              annotations:
+                eks.amazonaws.com/role-arn: {{ .Values.truemarkObservability.kubePrometheusStack.prometheus.iamRoleArn }}
             config:
               global:
                 resolve_timeout: 5m
