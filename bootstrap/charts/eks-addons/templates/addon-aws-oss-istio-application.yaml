@@ -74,7 +74,7 @@ spec:
         releaseName: {{ .Values.istio.istiod.name }}
         ignoreMissingValueFiles: true
         valuesObject:
-          {{- if or (.Values.istio.base.meshId ) ( .Values.istio.base.network ) ( .Values.istio.base.multiCluster.enabled ) }}
+          {{- if or (.Values.istio.base.meshId ) ( .Values.istio.base.network ) ( .Values.istio.base.multiCluster ) }}
           global:
             {{- if .Values.istio.base.meshId }}
             meshID: {{ .Values.istio.base.meshId }}
