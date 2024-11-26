@@ -80,8 +80,8 @@ spec:
               receivers:
                 - name: 'sns'
                   sns_configs:
-                    - subject: 'test-alerts-topic'
-                      topic_arn: arn:aws:sns:us-west-2:659932761532:test-alerts-topic
+                    - subject: '{{ .Values.truemarkObservability.kubePrometheusStack.alertmanager.alertsSnsSubject }}'
+                      topic_arn: '{{ .Values.truemarkObservability.kubePrometheusStack.alertmanager.alertsTopicArn }}'
                       sigv4:
                         region: '{{ .Values.truemarkObservability.region }}'
               templates:
