@@ -191,7 +191,7 @@ spec:
               service.beta.kubernetes.io/aws-load-balancer-subnets: {{ $v.subnets }}
               {{- end }}
               service.beta.kubernetes.io/aws-load-balancer-scheme: "{{ $v.loadBalancerScheme }}"
-              {{- if eq $k.name "external" }}
+              {{- if eq $k "external" }}
               service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"
               {{- end }}
               service.beta.kubernetes.io/aws-load-balancer-manage-backend-security-group-rules: "true"
