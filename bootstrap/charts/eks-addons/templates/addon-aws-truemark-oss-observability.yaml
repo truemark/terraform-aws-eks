@@ -85,6 +85,8 @@ spec:
                       topic_arn: '{{ .Values.truemarkObservability.kubePrometheusStack.alertmanager.alertsTopicArn }}'
                       sigv4:
                         region: '{{ .Values.truemarkObservability.region }}'
+                      attributes:
+                        cluster_name: {{ .Values.clusterName }}
               templates:
                 - '/etc/alertmanager/config/*.tmpl'
             templateFiles:
