@@ -100,7 +100,7 @@ spec:
                       - alertname = "Watchdog"
               receivers:
                 - name: 'null'
-                - name: sns
+                - name: 'sns'
                   sns_configs:
                     - subject: 'test-alerts-topic'
                       sigv4:
