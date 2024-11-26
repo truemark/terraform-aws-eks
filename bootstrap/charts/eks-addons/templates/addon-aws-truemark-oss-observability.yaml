@@ -57,7 +57,7 @@ spec:
           cleanPrometheusOperatorObjectNames: true
           fullnameOverride: {{ .Values.truemarkObservability.fullnameOverride }}
           nodeExporter:
-            enabled: false
+            enabled: true
           defaultRules:
             create: {{ .Values.truemarkObservability.kubePrometheusStack.defaultRules.create | default true }}
           alertmanager:
