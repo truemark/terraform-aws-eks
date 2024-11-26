@@ -11,12 +11,7 @@ variable "enable_truemark_observability" {
   default     = false
 }
 
-variable "truemark_observability" {
-  default = {
-    thanos = {}
-    kube_prometheus_stack = {}
-  }
-}
+variable "truemark_observability" {}
 
 locals {
   thanos_name                    = "thanos"
@@ -53,7 +48,7 @@ module "thanos_s3_bucket" {
   object_ownership         = "BucketOwnerPreferred"
 
   versioning = {
-    status     = true
+    status     = false
     mfa_delete = false
   }
 
@@ -86,12 +81,42 @@ data "aws_iam_policy_document" "thanos_iam_role_policy" {
 }
 
 ################################################################################
-module "prometheus_thanos_bucket_access_policy" {
-  count = var.truemark_observability.kube_prometheus_stack.enabled && var.truemark_observability.thanos.enabled ? 1 : 0
+data "aws_iam_policy_document" "prometheus_iam_role_policy" {
+  statement {
+    actions = [
+      "s3:ListBucket",
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:DeleteObject",
+      "s3:GetObjectTagging",
+      "s3:PutObjectTagging"
+    ]
+
+    resources = [
+      module.thanos_s3_bucket.s3_bucket_arn,
+      "${module.thanos_s3_bucket.s3_bucket_arn}/*",
+    ]
+  }
+  statement {
+    actions = [
+      "sns:*"
+    ]
+    resources = [var.truemark_observability.alertmanager.alerts_topic_arn]
+  }
+  statement {
+    actions = [
+      "kms:GenerateDataKey",
+      "kms:Decrypt"
+    ]
+    resources = ["*"]
+  }
+}
+
+module "prometheus_iam_policy" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-policy"
   version = "5.48.0"
-  name = "prometheus-iam-policy"
-  policy = data.aws_iam_policy_document.thanos_iam_role_policy[0].json
+  name = "prometheus-iam-policy-test"
+  policy = data.aws_iam_policy_document.prometheus_iam_role_policy.json
 }
 
 module "prometheus_iam_role" {
@@ -102,11 +127,11 @@ module "prometheus_iam_role" {
   oidc_providers = {
     this = {
       provider_arn = var.oidc_provider_arn
-      namespace_service_accounts = ["observability:${local.prometheus_service_account}"]
+      namespace_service_accounts = ["observability:${local.prometheus_service_account}", "observability:k8s-observabilility-alertmanager"]
     }
   }
   role_policy_arns = merge(
-    var.truemark_observability.thanos.enabled ? { thano_bucket_access = module.prometheus_thanos_bucket_access_policy[0].arn } : {}
+    var.truemark_observability.thanos.enabled ? { prometheus = module.prometheus_iam_policy.arn } : {}
   )
 }
 
@@ -143,7 +168,7 @@ module "loki_s3_bucket" {
   object_ownership         = "BucketOwnerPreferred"
 
   versioning = {
-    status     = true
+    status     = false
     mfa_delete = false
   }
 

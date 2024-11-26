@@ -150,6 +150,10 @@ locals {
             prometheus = {
               iamRoleArn = module.addons.gitops_metadata.truemark_observability_prometheus_iam_role_arn
             }
+            alertmanager = {
+              alertsTopicArn = var.truemark_observability_helm_config.alertmanager.alerts_topic_arn
+              alertsSnsSubject = var.truemark_observability_helm_config.alertmanager.alerts_sns_subject
+            }
             grafana = {
               adminPassword = module.addons.gitops_metadata.truemark_observability_grafana_admin_password
             }
