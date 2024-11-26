@@ -50,7 +50,7 @@ spec:
       targetRevision: {{ .Values.truemarkObservability.kubePrometheusStack.chartVersion }}
       chart: kube-prometheus-stack
       helm:
-        releaseName: k8s-stack
+        releaseName: {{ .Values.truemarkObservability.fullnameOverride }}
         ignoreMissingValueFiles: true
         skipCrds: true
         valuesObject:
