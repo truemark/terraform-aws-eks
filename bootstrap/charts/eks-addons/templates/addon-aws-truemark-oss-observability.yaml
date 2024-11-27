@@ -65,28 +65,6 @@ spec:
             serviceAccount:
               annotations:
                 eks.amazonaws.com/role-arn: {{ .Values.truemarkObservability.kubePrometheusStack.prometheus.iamRoleArn }}
-            config:
-              global:
-                resolve_timeout: 5m
-              inhibit_rules:
-                - source_match:
-                    severity: 'critical'
-                  target_match:
-                    severity: 'warning'
-                  equal: [ 'alertname' ]
-              route:
-                receiver: 'sns'
-                group_by: [ '...' ]
-              receivers:
-                - name: 'null'
-                - name: 'sns'
-                  sns_configs:
-                    - subject: '{{ .Values.truemarkObservability.kubePrometheusStack.alertmanager.alertsSnsSubject }}'
-                      topic_arn: '{{ .Values.truemarkObservability.kubePrometheusStack.alertmanager.alertsTopicArn }}'
-                      sigv4:
-                        region: '{{ .Values.truemarkObservability.region }}'
-                      attributes:
-                        cluster_name: {{ .Values.clusterName }}
               templates:
                 - '/etc/alertmanager/config/*.tmpl'
             templateFiles:
