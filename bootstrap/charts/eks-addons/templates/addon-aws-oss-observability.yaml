@@ -135,12 +135,6 @@ spec:
             serviceAccount:
               annotations:
                 eks.amazonaws.com/role-arn: {{ .Values.observability.kubePrometheusStack.prometheus.iamRoleArn }}
-            ingress:
-              enabled: true
-              hosts:
-                - {{ .Values.observability.kubePrometheusStack.prometheus.externalUrl }}
-              paths:
-                - "/"
             thanosService:
               enabled: {{ if .Values.observability.thanos.enabled }}true{{ else }}false{{ end }}
             prometheusSpec:

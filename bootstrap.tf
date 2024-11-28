@@ -158,7 +158,7 @@ locals {
               alertsSnsSubject = var.observability_helm_config.alertmanager.alerts_sns_subject
             }
             grafana = {
-              adminPassword = module.addons.gitops_metadata.truemark_observability_grafana_admin_password
+              adminPassword = module.addons.gitops_metadata.observability_grafana_admin_password
             }
           }
         }
@@ -270,8 +270,8 @@ module "addons" {
   velero        = var.velero_helm_config
 
   # Truemark Observability
-  enable_truemark_observability = local.addons.enable_truemark_observability
-  truemark_observability        = var.truemark_observability_helm_config
+  enable_observability = local.addons.enable_observability
+  observability        = var.observability_helm_config
 
   # AWS EBS CSI Resources
   enable_aws_ebs_csi_resources = local.addons.enable_aws_ebs_csi_resources
