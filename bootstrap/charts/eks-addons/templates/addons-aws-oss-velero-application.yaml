@@ -29,15 +29,24 @@ spec:
             name: {{ .Values.velero.serviceAccountName }}
             annotations:
               eks.amazonaws.com/role-arn: {{ .Values.velero.iamRoleArn }}
+          initContainers:
+            - name: velero-plugin-for-aws
+              image: velero/velero-plugin-for-aws:v1.10.0
+              imagePullPolicy: IfNotPresent
+              volumeMounts:
+              - mountPath: /target
+                name: plugins
           configuration:
             backupStorageLocation:
-              - provider: aws
+              - name: aws-s3
+                provider: aws
                 bucket: {{ .Values.velero.bucket }}
                 prefix: {{ .Values.velero.prefix }}
                 config:
                   region: {{ .Values.velero.region }}
             volumeSnapshotLocation:
-              - provider: aws
+              - name: aws-snapshot
+                provider: aws
                 config:
                   region: {{ .Values.velero.region }}
           credentials:
