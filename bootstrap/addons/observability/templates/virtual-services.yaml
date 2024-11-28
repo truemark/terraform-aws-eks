@@ -8,7 +8,7 @@ spec:
   gateways:
     - istio-ingress/internal
   hosts:
-    - {{ .Values.externalUrl }}
+    - {{ .Values.prometheusExternalUrl }}
   http:
     - name: prometheus
       route:
@@ -16,4 +16,5 @@ spec:
             host: {{ .Values.namePrefix }}{{ if .Values.exposeThanos }}-thanos-query{{else}}prometheus{{ end }}
             port:
               number: 9090
+
 {{- end }}
