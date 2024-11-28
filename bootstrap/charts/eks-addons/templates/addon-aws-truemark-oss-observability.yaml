@@ -132,9 +132,19 @@ spec:
                     effect: "NoSchedule"
           prometheus:
             enabled: {{ .Values.truemarkObservability.kubePrometheusStack.prometheus.enabled | default true }}
+            ingress:
+              enabled: true
+              hosts:
+                - {{ .Values.truemarkObservability.kubePrometheusStack.prometheus.externalUrl }}
+              annotations:
+                kubernetes.io/ingress.class: "alb"
+                alb.ingress.kubernetes.io/scheme: "internal"
+                alb.ingress.kubernetes.io/target-type: "ip"
+                alb.ingress.kubernetes.io/backend-protocol: "HTTP"
             serviceAccount:
               annotations:
                 eks.amazonaws.com/role-arn: {{ .Values.truemarkObservability.kubePrometheusStack.prometheus.iamRoleArn }}
+
             thanosService:
               enabled: {{ if .Values.truemarkObservability.thanos.enabled }}true{{ else }}false{{ end }}
             prometheusSpec:
@@ -176,8 +186,9 @@ spec:
         ignoreMissingValueFiles: true
         valuesObject:
           namePrefix: {{ .Values.truemarkObservability.fullnameOverride }}
-          externalUrl: {{ .Values.truemarkObservability.kubePrometheusStack.prometheus.externalUrl }}
+          prometheusExternalUrl: {{ .Values.truemarkObservability.kubePrometheusStack.prometheus.externalUrl }}
           exposeThanos: {{ if .Values.truemarkObservability.thanos.enabled }}true{{ else }}false{{ end }}
+          exposeGrafana: {{ if .Values.truemarkObservability.kubePrometheusStack.grafana.enabled }}
           exposeWithIstio: {{ if and (.Values.istio.ingress_enabled) (.Values.istio.ingress.internal) }}true{{ else }}false{{ end }}
     {{- end }}
   destination:
