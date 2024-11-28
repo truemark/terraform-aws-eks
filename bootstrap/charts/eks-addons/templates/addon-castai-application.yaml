@@ -1,0 +1,54 @@
+{{- if .Values.castAi }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: addons-castai
+  namespace: {{ .Values.argocdNamespace | default "argocd" }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocdProject | default "default" }}
+  sources:
+    - repoURL: https://castai.github.io/charts
+      targetRevision: {{ .Values.castAi.agent.chartVersion }}
+      chart: castai-agent
+      helm:
+        releaseName: castai-agent
+        valuesObject:
+          apiKey: {{ .Values.castAi.apiKey }}
+          provider: {{ .Values.castAi.provider | default "eks" }}
+    - repoURL: https://castai.github.io/charts
+      targetRevision: {{ .Values.castAi.clusterController.chartVersion }}
+      chart: castai-cluster-controller
+      helm:
+        releaseName: castai-cluster-controller
+        valuesObject:
+          apiKey: {{ .Values.castAi.apiKey }}
+          clusterID: {{ .Values.castAi.clusterId }}
+    - repoURL: https://castai.github.io/charts
+      targetRevision: {{ .Values.castAi.spotHandler.chartVersion }}
+      chart: castai-spot-handler
+      helm:
+        releaseName: castai-spot-handler
+        valuesObject:
+          apiKey: {{ .Values.castAi.apiKey }}
+          clusterID: {{ .Values.castAi.clusterId }}
+
+  destination:
+    namespace: '{{ .Values.castAi.namespace | default "castai" }}'
+    name: '{{ .Values.clusterName }}'
+  syncPolicy:
+    automated:
+      allowEmpty: false
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - "CreateNamespace=true"
+      - "Validate=false"
+      - "PrunePropagationPolicy=Foreground"
+      - "PruneLast=true"
+      - "RespectIgnoreDifferences=false"
+{{- end }}
