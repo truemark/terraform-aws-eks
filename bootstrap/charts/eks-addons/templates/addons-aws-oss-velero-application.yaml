@@ -24,11 +24,12 @@ spec:
         valueFiles:
           - $values/{{ .Values.addons_repo_basepath }}addons/velero/values.yaml
           - $values/{{ .Values.addons_repo_basepath }}addons/velero/values-{{ .Values.velero.chartVersion }}.yaml
-        values: |
+        valuesObject:
           serviceAccount:
-            name: {{ .Values.velero.serviceAccountName }}
-            annotations:
-              eks.amazonaws.com/role-arn: {{ .Values.velero.iamRoleArn }}
+            server:
+              name: {{ .Values.velero.serviceAccountName }}
+              annotations:
+                eks.amazonaws.com/role-arn: {{ .Values.velero.iamRoleArn }}
           initContainers:
             - name: velero-plugin-for-aws
               image: velero/velero-plugin-for-aws:v1.10.0
