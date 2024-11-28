@@ -43,6 +43,7 @@ spec:
                 provider: aws
                 bucket: {{ .Values.velero.bucket }}
                 prefix: {{ .Values.velero.prefix }}
+                default: true
                 config:
                   region: {{ .Values.velero.region }}
             volumeSnapshotLocation:
