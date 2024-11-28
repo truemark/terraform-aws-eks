@@ -170,9 +170,9 @@ spec:
     {{- if and (.Values.istio.ingress_enabled) (.Values.istio.ingress.internal) (.Values.observability.kubePrometheusStack.prometheus.externalUrl)}}
     - repoURL: '{{ .Values.addons_repo_url }}'
       targetRevision: '{{ .Values.addons_repo_revision }}'
-      path: bootstrap/addons/truemark-observability
+      path: bootstrap/addons/observability
       helm:
-        releaseName: truemark-observability-custom-resources
+        releaseName: observability-custom-resources
         ignoreMissingValueFiles: true
         valuesObject:
           namePrefix: {{ .Values.observability.fullnameOverride }}
