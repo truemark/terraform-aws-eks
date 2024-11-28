@@ -12,7 +12,7 @@ metadata:
 spec:
   project: {{ .Values.argocdProject | default "default" }}
   sources:
-    - repoURL: https://castai.github.io/charts
+    - repoURL: https://castai.github.io/helm-charts
       targetRevision: {{ .Values.castAi.agent.chartVersion }}
       chart: castai-agent
       helm:
@@ -20,7 +20,7 @@ spec:
         valuesObject:
           apiKey: {{ .Values.castAi.apiKey }}
           provider: {{ .Values.castAi.provider | default "eks" }}
-    - repoURL: https://castai.github.io/charts
+    - repoURL: https://castai.github.io/helm-charts
       targetRevision: {{ .Values.castAi.clusterController.chartVersion }}
       chart: castai-cluster-controller
       helm:
@@ -28,7 +28,7 @@ spec:
         valuesObject:
           apiKey: {{ .Values.castAi.apiKey }}
           clusterID: {{ .Values.castAi.clusterId }}
-    - repoURL: https://castai.github.io/charts
+    - repoURL: https://castai.github.io/helm-charts
       targetRevision: {{ .Values.castAi.spotHandler.chartVersion }}
       chart: castai-spot-handler
       helm:
