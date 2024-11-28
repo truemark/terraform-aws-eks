@@ -14,8 +14,8 @@ variable "truemark_observability" {
 }
 
 locals {
-  thanos_name                    = "thanos"
-  thanos_service_account         = try(var.truemark_observability.thanos.service_account_name, "k8s-observabilility-thanos-*")
+  thanos_name                = "thanos"
+  thanos_service_account     = try(var.truemark_observability.thanos.service_account_name, "k8s-observabilility-thanos-*")
   prometheus_service_account = try(var.truemark_observability.kubePrometheusStack.service_account_name, "k8s-observabilility-prometheus")
 }
 
@@ -55,18 +55,18 @@ data "aws_iam_policy_document" "prometheus_iam_role_policy" {
 module "prometheus_iam_policy" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-policy"
   version = "5.48.0"
-  name = "prometheus-iam-policy-test"
-  policy = data.aws_iam_policy_document.prometheus_iam_role_policy.json
+  name    = "prometheus-iam-policy-test"
+  policy  = data.aws_iam_policy_document.prometheus_iam_role_policy.json
 }
 
 module "prometheus_iam_role" {
-  count = var.truemark_observability.kube_prometheus_stack.enabled ? 1 : 0
-  source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
-  version = "5.48.0"
+  count     = var.truemark_observability.kube_prometheus_stack.enabled ? 1 : 0
+  source    = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+  version   = "5.48.0"
   role_name = "prometheus-iam-role"
   oidc_providers = {
     this = {
-      provider_arn = var.oidc_provider_arn
+      provider_arn               = var.oidc_provider_arn
       namespace_service_accounts = ["observability:${local.prometheus_service_account}", "observability:k8s-observabilility-alertmanager"]
     }
   }
@@ -157,38 +157,38 @@ module "thanos" {
   chart            = try(var.truemark_observability.thanos.chart, "thanos")
   chart_version    = try(var.truemark_observability.thanos.chart_version, "1.0.7")
   repository       = try(var.truemark_observability.thanos.repository, "oci://registry-1.docker.io/bitnamicharts")
-#   values = concat(try(var.truemark_observability.thanos.values, []), var.truemark_observability.thanos.use_system_critical_nodegroup ? [
-#     jsonencode({
-#       tolerations  = var.critical_addons_node_tolerations
-#       nodeSelector = var.critical_addons_node_selector
-#     })
-#     ] : []
-#   )
+  #   values = concat(try(var.truemark_observability.thanos.values, []), var.truemark_observability.thanos.use_system_critical_nodegroup ? [
+  #     jsonencode({
+  #       tolerations  = var.critical_addons_node_tolerations
+  #       nodeSelector = var.critical_addons_node_selector
+  #     })
+  #     ] : []
+  #   )
   skip_crds = try(var.truemark_observability.thanos.skip_crds, true)
 
   timeout          = try(var.truemark_observability.thanos.timeout, null)
   verify           = try(var.truemark_observability.thanos.verify, null)
   disable_webhooks = try(var.truemark_observability.thanos.disable_webhooks, null)
 
-  create_role          = try(var.truemark_observability.thanos.create_role, true)
-  set_irsa_names       = ["serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"]
-  role_name            = try(var.truemark_observability.thanos.role_name, "truemark-observability-thanos")
-  role_name_use_prefix = try(var.truemark_observability.thanos.role_name_use_prefix, true)
-  role_policies        = lookup(var.truemark_observability.thanos, "role_policies", {})
+  create_role                = try(var.truemark_observability.thanos.create_role, true)
+  set_irsa_names             = ["serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"]
+  role_name                  = try(var.truemark_observability.thanos.role_name, "truemark-observability-thanos")
+  role_name_use_prefix       = try(var.truemark_observability.thanos.role_name_use_prefix, true)
+  role_policies              = lookup(var.truemark_observability.thanos, "role_policies", {})
   assume_role_condition_test = "StringLike"
-  source_policy_documents = data.aws_iam_policy_document.thanos_iam_role_policy[*].json
-  policy_statements       = lookup(var.truemark_observability.thanos, "policy_statements", [])
-  policy_name             = try(var.truemark_observability.thanos.policy_name, null)
-  policy_name_use_prefix  = try(var.truemark_observability.thanos.policy_name_use_prefix, true)
-  policy_path             = try(var.truemark_observability.thanos.policy_path, null)
-  policy_description      = try(var.truemark_observability.thanos.policy_description, "IAM Policy for AWS Load Balancer Controller")
+  source_policy_documents    = data.aws_iam_policy_document.thanos_iam_role_policy[*].json
+  policy_statements          = lookup(var.truemark_observability.thanos, "policy_statements", [])
+  policy_name                = try(var.truemark_observability.thanos.policy_name, null)
+  policy_name_use_prefix     = try(var.truemark_observability.thanos.policy_name_use_prefix, true)
+  policy_path                = try(var.truemark_observability.thanos.policy_path, null)
+  policy_description         = try(var.truemark_observability.thanos.policy_description, "IAM Policy for AWS Load Balancer Controller")
 
   oidc_providers = {
     this = {
-      provider_arn = var.oidc_provider_arn
+      provider_arn    = var.oidc_provider_arn
       service_account = local.thanos_service_account
     }
   }
 
-  tags       = var.tags
+  tags = var.tags
 }

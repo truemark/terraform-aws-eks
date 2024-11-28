@@ -163,7 +163,7 @@ locals {
         castAi = {
           enabled   = local.addons.enable_cast_ai
           clusterId = var.cluster_name
-          apiKey = var.castai_helm_config.api_key
+          apiKey    = var.castai_helm_config.api_key
           agent = {
             chartVersion = try(var.castai_helm_config.agent.chart_version, local.addons_default_versions.cast_ai.agent)
             values       = try(yamldecode(join("\n", var.castai_helm_config.agent.values)), {})
