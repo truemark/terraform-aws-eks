@@ -209,3 +209,16 @@ truemarkObservability:
   fluentbit:
     enabled: false
     chartVersion: 0.48.2
+
+castAi:
+  enabled: false
+  namespace: castai
+  apiKey: ""
+  provider: ""
+  clusterId: ""
+  agent:
+    chartVersion: "0.86.0"
+  clusterController:
+    chartVersion: "0.74.4"
+  spotHandler:
+    chartVersion: "0.22.1"

@@ -24,6 +24,7 @@ locals {
     enable_aws_ebs_csi_resources        = try(var.addons.enable_aws_ebs_csi_resources, false)
     enable_velero                       = try(var.addons.enable_velero, false)
     enable_truemark_observability       = try(var.addons.enable_truemark_observability, false)
+    enable_cast_ai                      = try(var.addons.enable_cast_ai, false)
   }
 
   addons_default_versions = {
@@ -35,6 +36,11 @@ locals {
     keda                         = "2.16.0"
     aws_load_balancer_controller = "1.10.0"
     istio                        = "1.23.3"
+    cast_ai = {
+      agent              = "0.86.0"
+      cluster_controller = "0.74.4"
+      spot_handler       = "0.22.1"
+    }
   }
 
   addons_metadata = merge(
@@ -152,6 +158,22 @@ locals {
             grafana = {
               adminPassword = module.addons.gitops_metadata.truemark_observability_grafana_admin_password
             }
+          }
+        }
+        castAi = {
+          enabled   = local.addons.enable_cast_ai
+          clusterId = var.cluster_name
+          agent = {
+            chartVersion = try(var.castai_helm_config.agent.chart_version, local.addons_default_versions.cast_ai.agent)
+            values       = try(yamldecode(join("\n", var.castai_helm_config.agent.values)), {})
+          }
+          clusterController = {
+            chartVersion = try(var.castai_helm_config.cluster_controller.chart_version, local.addons_default_versions.cast_ai.cluster_controller)
+            values       = try(yamldecode(join("\n", var.castai_helm_config.cluster_controller.values)), {})
+          }
+          spotHandler = {
+            chartVersion = try(var.castai_helm_config.spot_handler.chart_version, local.addons_default_versions.cast_ai.spot_handler)
+            values       = try(yamldecode(join("\n", var.castai_helm_config.spot_handler.values)), {})
           }
         }
       }

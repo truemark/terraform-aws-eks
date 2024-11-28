@@ -223,3 +223,9 @@ variable "truemark_observability_helm_config" {
   type        = any
   default     = {}
 }
+
+variable "castai_helm_config" {
+  description = "Configuration for the Castai add-on."
+  type        = any
+  default     = {}
+}
