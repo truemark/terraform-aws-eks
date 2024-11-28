@@ -19,7 +19,14 @@ spec:
         releaseName: castai-agent
         valuesObject:
           apiKey: {{ .Values.castAi.apiKey }}
-          provider:
+          provider: {{ .Values.castAi.provider | default "eks" }}
+          nodeSelector:
+            karpenter.sh/nodepool: "truemark-arm64"
+          tolerations:
+            - key: "karpenter.sh/nodepool"
+              operator: "Equal"
+              value: "truemark-arm64"
+              effect: "NoSchedule"
     - repoURL: https://castai.github.io/helm-charts
       targetRevision: {{ .Values.castAi.clusterController.chartVersion }}
       chart: castai-cluster-controller
@@ -28,12 +35,26 @@ spec:
         valuesObject:
           apiKey: {{ .Values.castAi.apiKey }}
           clusterID: {{ .Values.castAi.clusterId }}
+          nodeSelector:
+            karpenter.sh/nodepool: "truemark-arm64"
+          tolerations:
+            - key: "karpenter.sh/nodepool"
+              operator: "Equal"
+              value: "truemark-arm64"
+              effect: "NoSchedule"
     - repoURL: https://castai.github.io/helm-charts
       targetRevision: {{ .Values.castAi.spotHandler.chartVersion }}
       chart: castai-spot-handler
       helm:
         releaseName: castai-spot-handler
         valuesObject:
+          nodeSelector:
+            karpenter.sh/nodepool: "truemark-arm64"
+          tolerations:
+            - key: "karpenter.sh/nodepool"
+              operator: "Equal"
+              value: "truemark-arm64"
+              effect: "NoSchedule"
           castai:
             provider: {{ .Values.castAi.provider | default "eks" }}
             clusterID: {{ .Values.castAi.clusterId }}
