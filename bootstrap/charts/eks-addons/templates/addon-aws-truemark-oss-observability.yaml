@@ -138,6 +138,9 @@ spec:
             thanosService:
               enabled: {{ if .Values.truemarkObservability.thanos.enabled }}true{{ else }}false{{ end }}
             prometheusSpec:
+              {{- with .Values.truemarkObservability.kubePrometheusStack.prometheus.externalUrl }}
+              externalUrl: {{ . }}
+              {{- end }}
               disableCompaction: {{ if .Values.truemarkObservability.thanos.enabled }}true{{ else }}false{{ end }}
               {{- if .Values.truemarkObservability.thanos.enabled }}
               thanos:
@@ -164,6 +167,19 @@ spec:
                     resources:
                       requests:
                         storage: {{ .Values.truemarkObservability.kubePrometheusStack.prometheus.storageSize | default "100Gi" }}
+    {{- if and (.Values.istio.ingress_enabled) (.Values.istio.ingress.internal) (.Values.truemarkObservability.kubePrometheusStack.prometheus.externalUrl)}}
+    - repoURL: '{{ .Values.addons_repo_url }}'
+      targetRevision: '{{ .Values.addons_repo_revision }}'
+      path: bootstrap/addons/truemark-observability
+      helm:
+        releaseName: truemark-observability-custom-resources
+        ignoreMissingValueFiles: true
+        valuesObject:
+          namePrefix: {{ .Values.truemarkObservability.fullnameOverride }}
+          externalUrl: {{ .Values.truemarkObservability.kubePrometheusStack.prometheus.externalUrl }}
+          exposeThanos: {{ if .Values.truemarkObservability.thanos.enabled }}true{{ else }}false{{ end }}
+          exposeWithIstio: {{ if and (.Values.istio.ingress_enabled) (.Values.istio.ingress.internal) }}true{{ else }}false{{ end }}
+    {{- end }}
   destination:
     namespace: '{{ .Values.truemarkObservability.kubePrometheusStack.namespace | default "observability" }}'
     name: '{{ .Values.clusterName }}'

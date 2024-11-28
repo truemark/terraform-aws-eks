@@ -148,9 +148,9 @@ locals {
             iamRoleArn   = module.addons.gitops_metadata.truemark_observability_thanos_iam_role_arn
           }
           kubePrometheusStack = {
-            prometheus = {
+            prometheus = merge({
               iamRoleArn = module.addons.gitops_metadata.truemark_observability_prometheus_iam_role_arn
-            }
+            }, var.truemark_observability_helm_config.kube_prometheus_stack.prometheus)
             alertmanager = {
               alertsTopicArn   = var.truemark_observability_helm_config.alertmanager.alerts_topic_arn
               alertsSnsSubject = var.truemark_observability_helm_config.alertmanager.alerts_sns_subject
