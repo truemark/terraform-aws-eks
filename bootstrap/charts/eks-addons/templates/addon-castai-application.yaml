@@ -34,8 +34,9 @@ spec:
       helm:
         releaseName: castai-spot-handler
         valuesObject:
-          provider: {{ .Values.castAi.provider | default "eks" }}
-          clusterID: {{ .Values.castAi.clusterId }}
+          castai:
+            provider: {{ .Values.castAi.provider | default "eks" }}
+            clusterID: {{ .Values.castAi.clusterId }}
 
   destination:
     namespace: '{{ .Values.castAi.namespace | default "castai" }}'
