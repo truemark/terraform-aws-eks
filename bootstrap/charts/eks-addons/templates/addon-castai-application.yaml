@@ -19,7 +19,7 @@ spec:
         releaseName: castai-agent
         valuesObject:
           apiKey: {{ .Values.castAi.apiKey }}
-          provider: {{ .Values.castAi.provider | default "eks" }}
+          provider:
     - repoURL: https://castai.github.io/helm-charts
       targetRevision: {{ .Values.castAi.clusterController.chartVersion }}
       chart: castai-cluster-controller
@@ -34,7 +34,7 @@ spec:
       helm:
         releaseName: castai-spot-handler
         valuesObject:
-          apiKey: {{ .Values.castAi.apiKey }}
+          provider: {{ .Values.castAi.provider | default "eks" }}
           clusterID: {{ .Values.castAi.clusterId }}
 
   destination:
