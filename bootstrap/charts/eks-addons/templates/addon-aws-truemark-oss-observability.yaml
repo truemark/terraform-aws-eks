@@ -1,4 +1,4 @@
-{{- if and (.Values.truemarkObservability) }}
+{{- if .Values.truemarkObservability }}
 {{- if .Values.truemarkObservability.kubePrometheusStack.enabled }}
 ---
 apiVersion: argoproj.io/v1alpha1
