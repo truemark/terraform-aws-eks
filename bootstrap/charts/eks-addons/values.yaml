@@ -134,7 +134,7 @@ keda:
   namespace: keda
   values : {}
 
-truemarkObservability:
+observability:
   region: ""
   fullnameOverride: "k8s-observabilility"
   thanos:

@@ -218,7 +218,7 @@ variable "velero_helm_config" {
   default     = {}
 }
 
-variable "truemark_observability_helm_config" {
+variable "observability_helm_config" {
   description = "Configuration for the Truemark Observability add-on."
   type        = any
   default     = {}

@@ -11,19 +11,18 @@ variable "addons" {
 
 locals {
   addons = {
-    enable_argocd                       = try(var.addons.enable_argocd, false)
-    enable_cert_manager                 = try(var.addons.enable_cert_manager, false)
-    enable_external_dns                 = try(var.addons.enable_external_dns, false)
-    enable_istio                        = try(var.addons.enable_istio, false)
-    enable_istio_ingress                = try(var.addons.enable_istio_ingress, false)
-    enable_karpenter                    = try(var.addons.enable_karpenter, false)
-    enable_external_secrets             = try(var.addons.enable_external_secrets, false)
-    enable_metrics_server               = try(var.addons.enable_metrics_server, false)
-    enable_keda                         = try(var.addons.enable_keda, false)
-    enable_aws_load_balancer_controller = try(var.addons.enable_aws_load_balancer_controller, false)
-    enable_aws_ebs_csi_resources        = try(var.addons.enable_aws_ebs_csi_resources, false)
-    enable_velero                       = try(var.addons.enable_velero, false)
-    enable_truemark_observability       = try(var.addons.enable_truemark_observability, false)
+    enable_cert_manager                 = try(var.addons.enable_cert_manager, true)
+    enable_external_dns                 = try(var.addons.enable_external_dns, true)
+    enable_istio                        = try(var.addons.enable_istio, true)
+    enable_istio_ingress                = try(var.addons.enable_istio_ingress, true)
+    enable_karpenter                    = try(var.addons.enable_karpenter, true)
+    enable_external_secrets             = try(var.addons.enable_external_secrets, true)
+    enable_metrics_server               = try(var.addons.enable_metrics_server, true)
+    enable_keda                         = try(var.addons.enable_keda, true)
+    enable_aws_load_balancer_controller = try(var.addons.enable_aws_load_balancer_controller, true)
+    enable_aws_ebs_csi_resources        = try(var.addons.enable_aws_ebs_csi_resources, true)
+    enable_velero                       = try(var.addons.enable_velero, true)
+    enable_observability                = try(var.addons.enable_truemark_observability, true)
     enable_cast_ai                      = try(var.addons.enable_cast_ai, false)
   }
 
@@ -130,33 +129,33 @@ locals {
           ingress         = var.istio_helm_config.ingress
         }
         velero = {
-          enabled      = local.addons.enable_velero
-          iamRoleArn   = try(module.addons.gitops_metadata.velero_iam_role_arn, "")
-          values       = try(yamldecode(join("\n", var.velero_helm_config.values)), {})
-          bucket       = module.addons.gitops_metadata.velero_backup_s3_bucket_name
-          prefix       = module.addons.gitops_metadata.velero_backup_s3_bucket_prefix
+          enabled            = local.addons.enable_velero
+          iamRoleArn         = try(module.addons.gitops_metadata.velero_iam_role_arn, "")
+          values             = try(yamldecode(join("\n", var.velero_helm_config.values)), {})
+          bucket             = module.addons.gitops_metadata.velero_backup_s3_bucket_name
+          prefix             = module.addons.gitops_metadata.velero_backup_s3_bucket_prefix
           serviceAccountName = module.addons.gitops_metadata.velero_service_account_name
-          region       = data.aws_region.current.id
-          chartVersion = try(var.velero_helm_config.chart_version, "8.0.0")
+          region             = data.aws_region.current.id
+          chartVersion       = try(var.velero_helm_config.chart_version, "8.0.0")
         }
-        truemarkObservability = {
-          enabled = local.addons.enable_truemark_observability
-          values  = try(yamldecode(join("\n", var.truemark_observability_helm_config.values)), {})
+        observability = {
+          enabled = local.addons.enable_observability
+          values  = try(yamldecode(join("\n", var.observability_helm_config.values)), {})
           region  = data.aws_region.current.id
           thanos = {
-            enabled      = var.truemark_observability_helm_config.thanos.enabled
-            s3BucketName = module.addons.gitops_metadata.truemark_observability_thanos_s3_bucket_name
-            iamRoleArn   = module.addons.gitops_metadata.truemark_observability_thanos_iam_role_arn
+            enabled      = var.observability_helm_config.thanos.enabled
+            s3BucketName = module.addons.gitops_metadata.observability_thanos_s3_bucket_name
+            iamRoleArn   = module.addons.gitops_metadata.observability_thanos_iam_role_arn
           }
           kubePrometheusStack = {
-            enabled = try(var.truemark_observability_helm_config.kube_prometheus_stack.enabled, true)
-            values = try(yamldecode(join("\n", var.truemark_observability_helm_config.kube_prometheus_stack.values)), {})
+            enabled = try(var.observability_helm_config.kube_prometheus_stack.enabled, true)
+            values  = try(yamldecode(join("\n", var.observability_helm_config.kube_prometheus_stack.values)), {})
             prometheus = merge({
-              iamRoleArn = module.addons.gitops_metadata.truemark_observability_prometheus_iam_role_arn
-            }, var.truemark_observability_helm_config.kube_prometheus_stack.prometheus)
+              iamRoleArn = module.addons.gitops_metadata.observability_prometheus_iam_role_arn
+            }, var.observability_helm_config.kube_prometheus_stack.prometheus)
             alertmanager = {
-              alertsTopicArn   = var.truemark_observability_helm_config.alertmanager.alerts_topic_arn
-              alertsSnsSubject = var.truemark_observability_helm_config.alertmanager.alerts_sns_subject
+              alertsTopicArn   = var.observability_helm_config.alertmanager.alerts_topic_arn
+              alertsSnsSubject = var.observability_helm_config.alertmanager.alerts_sns_subject
             }
             grafana = {
               adminPassword = module.addons.gitops_metadata.truemark_observability_grafana_admin_password

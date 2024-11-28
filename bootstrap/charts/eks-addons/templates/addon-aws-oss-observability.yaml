@@ -1,5 +1,5 @@
-{{- if .Values.truemarkObservability }}
-{{- if .Values.truemarkObservability.kubePrometheusStack.enabled }}
+{{- if .Values.observability }}
+{{- if .Values.observability.kubePrometheusStack.enabled }}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -14,12 +14,12 @@ spec:
   project: {{ .Values.argocdProject | default "default" }}
   sources:
     - repoURL: https://github.com/prometheus-community/helm-charts/
-      targetRevision: kube-prometheus-stack-{{ .Values.truemarkObservability.kubePrometheusStack.chartVersion }}
+      targetRevision: kube-prometheus-stack-{{ .Values.observability.kubePrometheusStack.chartVersion }}
       path: charts/kube-prometheus-stack/charts/crds
       directory:
         recurse: true
   destination:
-    namespace: '{{ .Values.truemarkObservability.kubePrometheusStack.namespace | default "observability" }}'
+    namespace: '{{ .Values.observability.kubePrometheusStack.namespace | default "observability" }}'
     name: '{{ .Values.clusterName }}'
   syncPolicy:
     automated:
@@ -47,24 +47,24 @@ spec:
   project: {{ .Values.argocdProject | default "default" }}
   sources:
     - repoURL: https://prometheus-community.github.io/helm-charts
-      targetRevision: {{ .Values.truemarkObservability.kubePrometheusStack.chartVersion }}
+      targetRevision: {{ .Values.observability.kubePrometheusStack.chartVersion }}
       chart: kube-prometheus-stack
       helm:
-        releaseName: {{ .Values.truemarkObservability.fullnameOverride }}
+        releaseName: {{ .Values.observability.fullnameOverride }}
         ignoreMissingValueFiles: true
         skipCrds: true
         valuesObject:
           cleanPrometheusOperatorObjectNames: true
-          fullnameOverride: {{ .Values.truemarkObservability.fullnameOverride }}
+          fullnameOverride: {{ .Values.observability.fullnameOverride }}
           nodeExporter:
             enabled: true
           defaultRules:
-            create: {{ .Values.truemarkObservability.kubePrometheusStack.defaultRules.create | default true }}
+            create: {{ .Values.observability.kubePrometheusStack.defaultRules.create | default true }}
           alertmanager:
-            enabled: {{ .Values.truemarkObservability.kubePrometheusStack.alertmanager.enabled | default true }}
+            enabled: {{ .Values.observability.kubePrometheusStack.alertmanager.enabled | default true }}
             serviceAccount:
               annotations:
-                eks.amazonaws.com/role-arn: {{ .Values.truemarkObservability.kubePrometheusStack.prometheus.iamRoleArn }}
+                eks.amazonaws.com/role-arn: {{ .Values.observability.kubePrometheusStack.prometheus.iamRoleArn }}
               templates:
                 - '/etc/alertmanager/config/*.tmpl'
             templateFiles:
@@ -82,14 +82,14 @@ spec:
               storage:
                 volumeClaimTemplate:
                   spec:
-                    storageClassName: {{ .Values.truemarkObservability.kubePrometheusStack.alertmanager.storageClassName | default "gp3" }}
+                    storageClassName: {{ .Values.observability.kubePrometheusStack.alertmanager.storageClassName | default "gp3" }}
                     accessModes: ["ReadWriteOnce"]
                     resources:
                       requests:
-                        storage: {{ .Values.truemarkObservability.kubePrometheusStack.alertmanager.storageSize | default "10Gi" }}
+                        storage: {{ .Values.observability.kubePrometheusStack.alertmanager.storageSize | default "10Gi" }}
           grafana:
-            enabled: {{ .Values.truemarkObservability.kubePrometheusStack.grafana.enabled | default true }}
-            adminPassword: {{ .Values.truemarkObservability.kubePrometheusStack.grafana.adminPassword }}
+            enabled: {{ .Values.observability.kubePrometheusStack.grafana.enabled | default true }}
+            adminPassword: {{ .Values.observability.kubePrometheusStack.grafana.adminPassword }}
             nodeSelector:
               karpenter.sh/nodepool: "truemark-arm64"
             tolerations:
@@ -98,11 +98,11 @@ spec:
                 value: "truemark-arm64"
                 effect: "NoSchedule"
             additionalDataSources:
-              {{- if .Values.truemarkObservability.thanos.enabled }}
+              {{- if .Values.observability.thanos.enabled }}
               - name: thanos
                 type: prometheus
                 uid: thanos
-                url: http://{{ .Values.truemarkObservability.fullnameOverride }}-thanos-query:9090
+                url: http://{{ .Values.observability.fullnameOverride }}-thanos-query:9090
                 access: proxy
               {{- end }}
           kube-state-metrics:
@@ -131,32 +131,32 @@ spec:
                     value: "truemark-arm64"
                     effect: "NoSchedule"
           prometheus:
-            enabled: {{ .Values.truemarkObservability.kubePrometheusStack.prometheus.enabled | default true }}
+            enabled: {{ .Values.observability.kubePrometheusStack.prometheus.enabled | default true }}
             serviceAccount:
               annotations:
-                eks.amazonaws.com/role-arn: {{ .Values.truemarkObservability.kubePrometheusStack.prometheus.iamRoleArn }}
+                eks.amazonaws.com/role-arn: {{ .Values.observability.kubePrometheusStack.prometheus.iamRoleArn }}
             ingress:
               enabled: true
               hosts:
-                - {{ .Values.truemarkObservability.kubePrometheusStack.prometheus.externalUrl }}
+                - {{ .Values.observability.kubePrometheusStack.prometheus.externalUrl }}
               paths:
                 - "/"
             thanosService:
-              enabled: {{ if .Values.truemarkObservability.thanos.enabled }}true{{ else }}false{{ end }}
+              enabled: {{ if .Values.observability.thanos.enabled }}true{{ else }}false{{ end }}
             prometheusSpec:
-              {{- with .Values.truemarkObservability.kubePrometheusStack.prometheus.externalUrl }}
+              {{- with .Values.observability.kubePrometheusStack.prometheus.externalUrl }}
               externalUrl: {{ . }}
               {{- end }}
-              disableCompaction: {{ if .Values.truemarkObservability.thanos.enabled }}true{{ else }}false{{ end }}
-              {{- if .Values.truemarkObservability.thanos.enabled }}
+              disableCompaction: {{ if .Values.observability.thanos.enabled }}true{{ else }}false{{ end }}
+              {{- if .Values.observability.thanos.enabled }}
               thanos:
                 objectStorageConfig:
                   secret:
                     type: S3
                     config:
-                      bucket: {{ .Values.truemarkObservability.thanos.s3BucketName }}
-                      endpoint: s3.{{ .Values.truemarkObservability.region }}.amazonaws.com
-                      region: {{ .Values.truemarkObservability.region }}
+                      bucket: {{ .Values.observability.thanos.s3BucketName }}
+                      endpoint: s3.{{ .Values.observability.region }}.amazonaws.com
+                      region: {{ .Values.observability.region }}
               {{- end }}
               nodeSelector:
                 karpenter.sh/nodepool: "truemark-arm64"
@@ -168,12 +168,12 @@ spec:
               storageSpec:
                 volumeClaimTemplate:
                   spec:
-                    storageClassName: {{ .Values.truemarkObservability.kubePrometheusStack.prometheus.storageClassName | default "gp3" }}
+                    storageClassName: {{ .Values.observability.kubePrometheusStack.prometheus.storageClassName | default "gp3" }}
                     accessModes: ["ReadWriteOnce"]
                     resources:
                       requests:
-                        storage: {{ .Values.truemarkObservability.kubePrometheusStack.prometheus.storageSize | default "100Gi" }}
-    {{- if and (.Values.istio.ingress_enabled) (.Values.istio.ingress.internal) (.Values.truemarkObservability.kubePrometheusStack.prometheus.externalUrl)}}
+                        storage: {{ .Values.observability.kubePrometheusStack.prometheus.storageSize | default "100Gi" }}
+    {{- if and (.Values.istio.ingress_enabled) (.Values.istio.ingress.internal) (.Values.observability.kubePrometheusStack.prometheus.externalUrl)}}
     - repoURL: '{{ .Values.addons_repo_url }}'
       targetRevision: '{{ .Values.addons_repo_revision }}'
       path: bootstrap/addons/truemark-observability
@@ -181,13 +181,13 @@ spec:
         releaseName: truemark-observability-custom-resources
         ignoreMissingValueFiles: true
         valuesObject:
-          namePrefix: {{ .Values.truemarkObservability.fullnameOverride }}
-          prometheusExternalUrl: {{ .Values.truemarkObservability.kubePrometheusStack.prometheus.externalUrl }}
-          exposeThanos: {{ if .Values.truemarkObservability.thanos.enabled }}true{{ else }}false{{ end }}
+          namePrefix: {{ .Values.observability.fullnameOverride }}
+          prometheusExternalUrl: {{ .Values.observability.kubePrometheusStack.prometheus.externalUrl }}
+          exposeThanos: {{ if .Values.observability.thanos.enabled }}true{{ else }}false{{ end }}
           exposeWithIstio: {{ if and (.Values.istio.ingress_enabled) (.Values.istio.ingress.internal) }}true{{ else }}false{{ end }}
     {{- end }}
   destination:
-    namespace: '{{ .Values.truemarkObservability.kubePrometheusStack.namespace | default "observability" }}'
+    namespace: '{{ .Values.observability.kubePrometheusStack.namespace | default "observability" }}'
     name: '{{ .Values.clusterName }}'
   syncPolicy:
     automated:
@@ -201,7 +201,7 @@ spec:
       - "PruneLast=true"
       - "RespectIgnoreDifferences=false"
 {{- end }}
-{{- if .Values.truemarkObservability.thanos.enabled }}
+{{- if .Values.observability.thanos.enabled }}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -216,19 +216,19 @@ spec:
   project: {{ .Values.argocdProject | default "default" }}
   sources:
     - repoURL: registry-1.docker.io/bitnamicharts
-      targetRevision: {{ .Values.truemarkObservability.thanos.chartVersion }}
+      targetRevision: {{ .Values.observability.thanos.chartVersion }}
       chart: thanos
       helm:
         releaseName: thanos
         ignoreMissingValueFiles: true
         valuesObject:
-          fullnameOverride: {{ .Values.truemarkObservability.fullnameOverride }}-thanos
+          fullnameOverride: {{ .Values.observability.fullnameOverride }}-thanos
           objstoreConfig:
             type: s3
             config:
-              bucket: {{ .Values.truemarkObservability.thanos.s3BucketName }}
-              endpoint: s3.{{ .Values.truemarkObservability.region }}.amazonaws.com
-              region: {{ .Values.truemarkObservability.region }}
+              bucket: {{ .Values.observability.thanos.s3BucketName }}
+              endpoint: s3.{{ .Values.observability.region }}.amazonaws.com
+              region: {{ .Values.observability.region }}
           query:
             nodeSelector:
               karpenter.sh/nodepool: "truemark-arm64"
@@ -238,16 +238,16 @@ spec:
                 value: "truemark-arm64"
                 effect: "NoSchedule"
             dnsDiscovery:
-              sidecarsService: {{ .Values.truemarkObservability.fullnameOverride }}-thanos-discovery
-              sidecarsNamespace: {{ .Values.truemarkObservability.thanos.namespace | default "observability" }}
+              sidecarsService: {{ .Values.observability.fullnameOverride }}-thanos-discovery
+              sidecarsNamespace: {{ .Values.observability.thanos.namespace | default "observability" }}
             resources:
-              {{- toYaml .Values.truemarkObservability.thanos.query.resources | nindent 14 }}
+              {{- toYaml .Values.observability.thanos.query.resources | nindent 14 }}
             serviceAccount:
               annotations:
-                eks.amazonaws.com/role-arn: {{ .Values.truemarkObservability.thanos.iamRoleArn }}
+                eks.amazonaws.com/role-arn: {{ .Values.observability.thanos.iamRoleArn }}
                 eks.amazonaws.com/sts-regional-endpoints: "true"
           bucketweb:
-            enabled: {{ .Values.truemarkObservability.thanos.bucketweb.enabled | default true }}
+            enabled: {{ .Values.observability.thanos.bucketweb.enabled | default true }}
             nodeSelector:
               karpenter.sh/nodepool: "truemark-arm64"
             tolerations:
@@ -256,13 +256,13 @@ spec:
                 value: "truemark-arm64"
                 effect: "NoSchedule"
             resources:
-              {{- toYaml .Values.truemarkObservability.thanos.bucketweb.resources | nindent 14 }}
+              {{- toYaml .Values.observability.thanos.bucketweb.resources | nindent 14 }}
             serviceAccount:
               annotations:
-                eks.amazonaws.com/role-arn: {{ .Values.truemarkObservability.thanos.iamRoleArn }}
+                eks.amazonaws.com/role-arn: {{ .Values.observability.thanos.iamRoleArn }}
                 eks.amazonaws.com/sts-regional-endpoints: "true"
           compactor:
-            enabled: {{ .Values.truemarkObservability.thanos.compactor.enabled | default true }}
+            enabled: {{ .Values.observability.thanos.compactor.enabled | default true }}
             nodeSelector:
               karpenter.sh/nodepool: "truemark-arm64"
             tolerations:
@@ -271,13 +271,13 @@ spec:
                 value: "truemark-arm64"
                 effect: "NoSchedule"
             resources:
-              {{- toYaml .Values.truemarkObservability.thanos.compactor.resources | nindent 14 }}
+              {{- toYaml .Values.observability.thanos.compactor.resources | nindent 14 }}
             serviceAccount:
               annotations:
-                eks.amazonaws.com/role-arn: {{ .Values.truemarkObservability.thanos.iamRoleArn }}
+                eks.amazonaws.com/role-arn: {{ .Values.observability.thanos.iamRoleArn }}
                 eks.amazonaws.com/sts-regional-endpoints: "true"
           receive:
-            enabled: {{ .Values.truemarkObservability.thanos.receive.enabled | default true }}
+            enabled: {{ .Values.observability.thanos.receive.enabled | default true }}
             nodeSelector:
               karpenter.sh/nodepool: "truemark-arm64"
             tolerations:
@@ -286,13 +286,13 @@ spec:
                 value: "truemark-arm64"
                 effect: "NoSchedule"
             resources:
-              {{- toYaml .Values.truemarkObservability.thanos.receive.resources | nindent 14 }}
+              {{- toYaml .Values.observability.thanos.receive.resources | nindent 14 }}
             serviceAccount:
               annotations:
-                eks.amazonaws.com/role-arn: {{ .Values.truemarkObservability.thanos.iamRoleArn }}
+                eks.amazonaws.com/role-arn: {{ .Values.observability.thanos.iamRoleArn }}
                 eks.amazonaws.com/sts-regional-endpoints: "true"
           storegateway:
-            enabled: {{ .Values.truemarkObservability.thanos.storegateway.enabled | default true }}
+            enabled: {{ .Values.observability.thanos.storegateway.enabled | default true }}
             nodeSelector:
               karpenter.sh/nodepool: "truemark-arm64"
             tolerations:
@@ -301,13 +301,13 @@ spec:
                 value: "truemark-arm64"
                 effect: "NoSchedule"
             resources:
-              {{- toYaml .Values.truemarkObservability.thanos.storegateway.resources | nindent 14 }}
+              {{- toYaml .Values.observability.thanos.storegateway.resources | nindent 14 }}
             serviceAccount:
               annotations:
-                eks.amazonaws.com/role-arn: {{ .Values.truemarkObservability.thanos.iamRoleArn }}
+                eks.amazonaws.com/role-arn: {{ .Values.observability.thanos.iamRoleArn }}
                 eks.amazonaws.com/sts-regional-endpoints: "true"
           ruler:
-            enabled: {{ .Values.truemarkObservability.thanos.ruler.enabled | default false }}
+            enabled: {{ .Values.observability.thanos.ruler.enabled | default false }}
             nodeSelector:
               karpenter.sh/nodepool: "truemark-arm64"
             tolerations:
@@ -316,10 +316,10 @@ spec:
                 value: "truemark-arm64"
                 effect: "NoSchedule"
             resources:
-              {{- toYaml .Values.truemarkObservability.thanos.ruler.resources | nindent 14 }}
+              {{- toYaml .Values.observability.thanos.ruler.resources | nindent 14 }}
             serviceAccount:
               annotations:
-                eks.amazonaws.com/role-arn: {{ .Values.truemarkObservability.thanos.iamRoleArn }}
+                eks.amazonaws.com/role-arn: {{ .Values.observability.thanos.iamRoleArn }}
                 eks.amazonaws.com/sts-regional-endpoints: "true"
           queryFrontend:
             nodeSelector:
@@ -331,7 +331,7 @@ spec:
                 effect: "NoSchedule"
             serviceAccount:
               annotations:
-                eks.amazonaws.com/role-arn: {{ .Values.truemarkObservability.thanos.iamRoleArn }}
+                eks.amazonaws.com/role-arn: {{ .Values.observability.thanos.iamRoleArn }}
                 eks.amazonaws.com/sts-regional-endpoints: "true"
           metrics:
             enabled: true
@@ -341,7 +341,7 @@ spec:
             enabled: false
 
   destination:
-    namespace: '{{ .Values.truemarkObservability.thanos.namespace | default "observability" }}'
+    namespace: '{{ .Values.observability.thanos.namespace | default "observability" }}'
     name: '{{ .Values.clusterName }}'
   syncPolicy:
     automated:
@@ -355,7 +355,7 @@ spec:
       - "PruneLast=true"
       - "RespectIgnoreDifferences=false"
 {{- end }}
-{{- if .Values.truemarkObservability.fluentbit.enabled }}
+{{- if .Values.observability.fluentbit.enabled }}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -370,13 +370,13 @@ spec:
   project: {{ .Values.argocdProject | default "default" }}
   sources:
     - repoURL: https://fluent.github.io/helm-charts
-      targetRevision: {{ .Values.truemarkObservability.fluentbit.chartVersion }}
+      targetRevision: {{ .Values.observability.fluentbit.chartVersion }}
       chart: fluent-bit
       helm:
         releaseName: fluentbit
         ignoreMissingValueFiles: true
         valuesObject:
-          fullnameOverride: {{ .Values.truemarkObservability.fullnameOverride }}-fluentbit
+          fullnameOverride: {{ .Values.observability.fullnameOverride }}-fluentbit
           tolerations:
             - operator: Exists
           config:
@@ -426,7 +426,7 @@ spec:
                   Time_Format %Y-%m-%dT%H:%M:%S.%L
 
   destination:
-    namespace: '{{ .Values.truemarkObservability.loki.namespace | default "observability" }}'
+    namespace: '{{ .Values.observability.loki.namespace | default "observability" }}'
     name: '{{ .Values.clusterName }}'
   syncPolicy:
     automated:
