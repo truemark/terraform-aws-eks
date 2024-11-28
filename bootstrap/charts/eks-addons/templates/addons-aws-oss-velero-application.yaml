@@ -31,15 +31,13 @@ spec:
               eks.amazonaws.com/role-arn: {{ .Values.velero.iamRoleArn }}
           configuration:
             backupStorageLocation:
-              - name: aws-s3
-                provider: aws
+              - provider: aws
                 bucket: {{ .Values.velero.bucket }}
                 prefix: {{ .Values.velero.prefix }}
                 config:
                   region: {{ .Values.velero.region }}
             volumeSnapshotLocation:
-              - name: aws-snapshot
-                provider: aws
+              - provider: aws
                 config:
                   region: {{ .Values.velero.region }}
           credentials:
