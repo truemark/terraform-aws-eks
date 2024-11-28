@@ -23,7 +23,7 @@ locals {
     enable_aws_load_balancer_controller = try(var.addons.enable_aws_load_balancer_controller, false)
     enable_aws_ebs_csi_resources        = try(var.addons.enable_aws_ebs_csi_resources, false)
     enable_velero                       = try(var.addons.enable_velero, false)
-    enable_truemark_observability              = try(var.addons.enable_truemark_observability, false)
+    enable_truemark_observability       = try(var.addons.enable_truemark_observability, false)
   }
 
   addons_default_versions = {
@@ -133,25 +133,20 @@ locals {
           chartVersion = try(var.velero_helm_config.chart_version, "8.0.0")
         }
         truemarkObservability = {
-          enabled      = local.addons.enable_truemark_observability
-          values       = try(yamldecode(join("\n", var.truemark_observability_helm_config.values)), {})
-          region = data.aws_region.current.id
+          enabled = local.addons.enable_truemark_observability
+          values  = try(yamldecode(join("\n", var.truemark_observability_helm_config.values)), {})
+          region  = data.aws_region.current.id
           thanos = {
-            enabled = var.truemark_observability_helm_config.thanos.enabled
+            enabled      = var.truemark_observability_helm_config.thanos.enabled
             s3BucketName = module.addons.gitops_metadata.truemark_observability_thanos_s3_bucket_name
-            iamRoleArn = module.addons.gitops_metadata.truemark_observability_thanos_iam_role_arn
-          }
-          loki = {
-            enabled = var.truemark_observability_helm_config.loki.enabled
-            s3BucketName = module.addons.gitops_metadata.truemark_observability_loki_s3_bucket_name
-            iamRoleArn = module.addons.gitops_metadata.truemark_observability_loki_iam_role_arn
+            iamRoleArn   = module.addons.gitops_metadata.truemark_observability_thanos_iam_role_arn
           }
           kubePrometheusStack = {
             prometheus = {
               iamRoleArn = module.addons.gitops_metadata.truemark_observability_prometheus_iam_role_arn
             }
             alertmanager = {
-              alertsTopicArn = var.truemark_observability_helm_config.alertmanager.alerts_topic_arn
+              alertsTopicArn   = var.truemark_observability_helm_config.alertmanager.alerts_topic_arn
               alertsSnsSubject = var.truemark_observability_helm_config.alertmanager.alerts_sns_subject
             }
             grafana = {

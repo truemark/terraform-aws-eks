@@ -1,4 +1,4 @@
-{{- if .Values.truemarkObservability }}
+{{- if and (.Values.truemarkObservability) }}
 {{- if .Values.truemarkObservability.kubePrometheusStack.enabled }}
 ---
 apiVersion: argoproj.io/v1alpha1
@@ -88,6 +88,7 @@ spec:
                       requests:
                         storage: {{ .Values.truemarkObservability.kubePrometheusStack.alertmanager.storageSize | default "10Gi" }}
           grafana:
+            enabled: {{ .Values.truemarkObservability.kubePrometheusStack.grafana.enabled | default true }}
             adminPassword: {{ .Values.truemarkObservability.kubePrometheusStack.grafana.adminPassword }}
             nodeSelector:
               karpenter.sh/nodepool: "truemark-arm64"
@@ -97,19 +98,13 @@ spec:
                 value: "truemark-arm64"
                 effect: "NoSchedule"
             additionalDataSources:
+              {{- if .Values.truemarkObservability.thanos.enabled }}
               - name: thanos
                 type: prometheus
                 uid: thanos
                 url: http://{{ .Values.truemarkObservability.fullnameOverride }}-thanos-query:9090
                 access: proxy
-              - name: loki
-                type: loki
-                uid: loki
-                url: http://{{ .Values.truemarkObservability.fullnameOverride }}-loki-gateway:80
-                access: proxy
-                jsonData:
-                  maxLines: 1000
-                  timeout: 60
+              {{- end }}
           kube-state-metrics:
             nodeSelector:
               karpenter.sh/nodepool: "truemark-arm64"

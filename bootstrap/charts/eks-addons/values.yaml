@@ -190,19 +190,22 @@ truemarkObservability:
         limits:
           memory: 200Mi
   kubePrometheusStack:
-    enabled: true
+    enabled: false
     defaultRules:
       create: true
     chartVersion: 66.2.2
     namespace: observability
+    grafana:
+      enabled: false
+      adminPassword: ""
     alertmanager:
       enabled: true
+      storageSize: 10Gi
+      storageClassName: "gp3"
     prometheus:
       enabled: true
-  loki:
-    enabled: true
-    chartVersion: 6.21.0
-    deploymentMode: SingleBinary
+      storageSize: 10Gi
+      storageClassName: "gp3"
   fluentbit:
-    enabled: true
+    enabled: false
     chartVersion: 0.48.2
