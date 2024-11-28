@@ -360,7 +360,7 @@ spec:
         ignoreMissingValueFiles: true
         valuesObject:
           fullnameOverride: {{ .Values.truemarkObservability.fullnameOverride }}-loki
-          deploymentMode: {{ .Values.truemarkObservability.loki.deploymentMode }}
+          deploymentMode: {{ .Values.truemarkObservability.loki.deploymentMode }} # single | scalable | micro
           lokiCanary:
             tolerations:
               - operator: Exists
@@ -507,6 +507,7 @@ spec:
                   HTTP_Listen 0.0.0.0
                   HTTP_Port 2020
                   Health_Check On
+            # /var/log/conmtainer* | 1 hr
             inputs: |
               [INPUT]
                   Name tail
@@ -530,6 +531,8 @@ spec:
                   host       k8s-observabilility-loki-gateway
                   port       80
                   labels     namespace=$kubernetes['namespace_name'], pod=$kubernetes['pod_name'], container_name=$kubernetes['container_name']
+
+              # Opensearch --> mas/data --> 3/n nodes --> curator (7 data/ snapshots)
             customParsers: |
               [PARSER]
                   Name docker_no_time
@@ -554,3 +557,5 @@ spec:
       - "RespectIgnoreDifferences=false"
 {{- end }}
 {{- end }}
+
+# Temo

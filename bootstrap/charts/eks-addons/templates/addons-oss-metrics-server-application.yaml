@@ -5,6 +5,8 @@ kind: Application
 metadata:
   name: addons-metrics-server
   namespace: {{ .Values.argocdNamespace | default "argocd" }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
