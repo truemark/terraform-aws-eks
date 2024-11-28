@@ -135,6 +135,7 @@ locals {
           values       = try(yamldecode(join("\n", var.velero_helm_config.values)), {})
           bucket       = module.addons.gitops_metadata.velero_backup_s3_bucket_name
           prefix       = module.addons.gitops_metadata.velero_backup_s3_bucket_prefix
+          serviceAccountName = module.addons.gitops_metadata.velero_service_account_name
           region       = data.aws_region.current.id
           chartVersion = try(var.velero_helm_config.chart_version, "8.0.0")
         }
@@ -148,6 +149,8 @@ locals {
             iamRoleArn   = module.addons.gitops_metadata.truemark_observability_thanos_iam_role_arn
           }
           kubePrometheusStack = {
+            enabled = try(var.truemark_observability_helm_config.kube_prometheus_stack.enabled, true)
+            values = try(yamldecode(join("\n", var.truemark_observability_helm_config.kube_prometheus_stack.values)), {})
             prometheus = merge({
               iamRoleArn = module.addons.gitops_metadata.truemark_observability_prometheus_iam_role_arn
             }, var.truemark_observability_helm_config.kube_prometheus_stack.prometheus)

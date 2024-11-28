@@ -134,6 +134,9 @@ module "eks" {
       most_recent              = true
       service_account_role_arn = module.ebs_csi_irsa_role.iam_role_arn
     }
+    snapshot-controller = {
+      most_recent = true
+    }
   }
 
   vpc_id     = var.vpc_id
