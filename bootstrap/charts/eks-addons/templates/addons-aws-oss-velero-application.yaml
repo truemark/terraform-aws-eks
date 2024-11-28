@@ -38,6 +38,7 @@ spec:
               - mountPath: /target
                 name: plugins
           configuration:
+            features: "EnableCSI"
             backupStorageLocation:
               - name: aws-s3
                 provider: aws
