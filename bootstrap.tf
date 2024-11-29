@@ -154,8 +154,8 @@ locals {
               iamRoleArn = module.addons.gitops_metadata.observability_prometheus_iam_role_arn
             }, var.observability_helm_config.kube_prometheus_stack.prometheus)
             alertmanager = {
-              alertsTopicArn   = var.observability_helm_config.alertmanager.alerts_topic_arn
-              alertsSnsSubject = var.observability_helm_config.alertmanager.alerts_sns_subject
+              alertsTopicArn   = var.observability_helm_config.kube_prometheus_stack.alertmanager.alerts_topic_arn
+              alertsSnsSubject = var.observability_helm_config.kube_prometheus_stack.alertmanager.alerts_sns_subject
             }
             grafana = {
               adminPassword = module.addons.gitops_metadata.observability_grafana_admin_password

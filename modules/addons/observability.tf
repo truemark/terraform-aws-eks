@@ -39,7 +39,7 @@ data "aws_iam_policy_document" "prometheus_iam_role_policy" {
     actions = [
       "sns:*"
     ]
-    resources = [var.observability.alertmanager.alerts_topic_arn]
+    resources = [var.observability.kube_prometheus_stack.alertmanager.alerts_topic_arn]
   }
   statement {
     actions = [
