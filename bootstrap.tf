@@ -62,7 +62,7 @@ locals {
       repo_url        = "https://github.com/truemark/terraform-aws-eks"
       target_revision = "feat/argocd"
       path            = "bootstrap/charts/eks-addons"
-      values = {
+      values = merge({
         certManager = {
           enabled      = local.addons.enable_cert_manager
           iamRoleArn   = try(module.addons.gitops_metadata.cert_manager_iam_role_arn, "")
@@ -138,7 +138,25 @@ locals {
           region             = data.aws_region.current.id
           chartVersion       = try(var.velero_helm_config.chart_version, "8.0.0")
         }
-        observability = {
+        castAi = {
+          enabled   = local.addons.enable_cast_ai
+          clusterId = var.cluster_name
+          apiKey    = var.castai_helm_config.api_key
+          agent = {
+            chartVersion = try(var.castai_helm_config.agent.chart_version, local.addons_default_versions.cast_ai.agent)
+            values       = try(yamldecode(join("\n", var.castai_helm_config.agent.values)), {})
+          }
+          clusterController = {
+            chartVersion = try(var.castai_helm_config.cluster_controller.chart_version, local.addons_default_versions.cast_ai.cluster_controller)
+            values       = try(yamldecode(join("\n", var.castai_helm_config.cluster_controller.values)), {})
+          }
+          spotHandler = {
+            chartVersion = try(var.castai_helm_config.spot_handler.chart_version, local.addons_default_versions.cast_ai.spot_handler)
+            values       = try(yamldecode(join("\n", var.castai_helm_config.spot_handler.values)), {})
+          }
+        }
+        },
+        local.addons.enable_observability ? { observability = {
           enabled = local.addons.enable_observability
           values  = try(yamldecode(join("\n", var.observability_helm_config.values)), {})
           region  = data.aws_region.current.id
@@ -161,25 +179,8 @@ locals {
               adminPassword = module.addons.gitops_metadata.observability_grafana_admin_password
             }
           }
-        }
-        castAi = {
-          enabled   = local.addons.enable_cast_ai
-          clusterId = var.cluster_name
-          apiKey    = var.castai_helm_config.api_key
-          agent = {
-            chartVersion = try(var.castai_helm_config.agent.chart_version, local.addons_default_versions.cast_ai.agent)
-            values       = try(yamldecode(join("\n", var.castai_helm_config.agent.values)), {})
-          }
-          clusterController = {
-            chartVersion = try(var.castai_helm_config.cluster_controller.chart_version, local.addons_default_versions.cast_ai.cluster_controller)
-            values       = try(yamldecode(join("\n", var.castai_helm_config.cluster_controller.values)), {})
-          }
-          spotHandler = {
-            chartVersion = try(var.castai_helm_config.spot_handler.chart_version, local.addons_default_versions.cast_ai.spot_handler)
-            values       = try(yamldecode(join("\n", var.castai_helm_config.spot_handler.values)), {})
-          }
-        }
-      }
+        } } : {}
+      )
     }
   }
 }

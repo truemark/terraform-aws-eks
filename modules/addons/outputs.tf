@@ -53,9 +53,9 @@ output "gitops_metadata" {
       } : "velero_${k}" => v if var.enable_velero
     },
     { for k, v in {
-      thanos_iam_role_arn     = var.observability.thanos.enabled ? module.thanos.iam_role_arn : ""
-      thanos_s3_bucket_name   = var.observability.thanos.enabled ? module.thanos_s3_bucket.s3_bucket_id : ""
-      prometheus_iam_role_arn = var.observability.kube_prometheus_stack.enabled ? module.prometheus_iam_role[*].iam_role_arn : ""
+      thanos_iam_role_arn     = var.enable_observability && var.observability.thanos.enabled ? module.thanos.iam_role_arn : ""
+      thanos_s3_bucket_name   = var.enable_observability && var.observability.thanos.enabled ? module.thanos_s3_bucket.s3_bucket_id : ""
+      prometheus_iam_role_arn = var.enable_observability && var.observability.kube_prometheus_stack.enabled ? module.prometheus_iam_role[0].iam_role_arn : ""
       grafana_admin_password  = random_password.grafana_admin_password.result
       } : "observability_${k}" => v if var.enable_observability
     }
