@@ -20,27 +20,37 @@ locals {
 
 ################################################################################
 data "aws_iam_policy_document" "prometheus_iam_role_policy" {
-  statement {
-    actions = [
-      "s3:ListBucket",
-      "s3:GetObject",
-      "s3:PutObject",
-      "s3:DeleteObject",
-      "s3:GetObjectTagging",
-      "s3:PutObjectTagging"
-    ]
+  count     = var.enable_observability && var.observability.kube_prometheus_stack.enabled ? 1 : 0
 
-    resources = [
-      module.thanos_s3_bucket.s3_bucket_arn,
-      "${module.thanos_s3_bucket.s3_bucket_arn}/*",
-    ]
+  dynamic "statement" {
+    for_each = var.observability.thanos.enabled ? [1] : []
+    content {
+      actions = [
+        "s3:ListBucket",
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject",
+        "s3:GetObjectTagging",
+        "s3:PutObjectTagging"
+      ]
+
+      resources = [
+        module.thanos_s3_bucket.s3_bucket_arn,
+        "${module.thanos_s3_bucket.s3_bucket_arn}/*",
+      ]
+    }
   }
-  statement {
-    actions = [
-      "sns:*"
-    ]
-    resources = [var.observability.kube_prometheus_stack.alertmanager.alerts_topic_arn]
+
+  dynamic "statement" {
+    for_each = var.observability.kube_prometheus_stack.alertmanager.alerts_topic_arn != "" ? [1] : []
+    content {
+      actions = [
+        "sns:*"
+      ]
+      resources = [var.observability.kube_prometheus_stack.alertmanager.alerts_topic_arn]
+    }
   }
+
   statement {
     actions = [
       "kms:GenerateDataKey",
@@ -51,14 +61,15 @@ data "aws_iam_policy_document" "prometheus_iam_role_policy" {
 }
 
 module "prometheus_iam_policy" {
+  count     = var.enable_observability && var.observability.kube_prometheus_stack.enabled ? 1 : 0
   source  = "terraform-aws-modules/iam/aws//modules/iam-policy"
   version = "5.48.0"
   name    = "prometheus-iam-policy-test"
-  policy  = data.aws_iam_policy_document.prometheus_iam_role_policy.json
+  policy  = data.aws_iam_policy_document.prometheus_iam_role_policy[0].json
 }
 
 module "prometheus_iam_role" {
-  count     = var.observability.kube_prometheus_stack.enabled ? 1 : 0
+  count     = var.enable_observability && var.observability.kube_prometheus_stack.enabled ? 1 : 0
   source    = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
   version   = "5.48.0"
   role_name = "prometheus-iam-role"
@@ -69,7 +80,7 @@ module "prometheus_iam_role" {
     }
   }
   role_policy_arns = merge(
-    var.observability.thanos.enabled ? { prometheus = module.prometheus_iam_policy.arn } : {}
+    var.observability.thanos.enabled ? { prometheus = module.prometheus_iam_policy[0].arn } : {}
   )
 }
 
@@ -120,7 +131,7 @@ module "thanos_s3_bucket" {
 }
 
 data "aws_iam_policy_document" "thanos_iam_role_policy" {
-  count = var.observability.thanos.enabled ? 1 : 0
+  count = var.enable_observability && var.observability.thanos.enabled ? 1 : 0
   statement {
     actions = [
       "s3:ListBucket",
@@ -142,7 +153,7 @@ module "thanos" {
   source  = "aws-ia/eks-blueprints-addon/aws"
   version = "1.1.1"
 
-  create = var.observability.thanos.enabled
+  create = var.enable_observability && var.observability.thanos.enabled
 
   # Disable helm release
   create_release = var.create_kubernetes_resources

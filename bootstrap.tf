@@ -22,7 +22,7 @@ locals {
     enable_aws_load_balancer_controller = try(var.addons.enable_aws_load_balancer_controller, true)
     enable_aws_ebs_csi_resources        = try(var.addons.enable_aws_ebs_csi_resources, true)
     enable_velero                       = try(var.addons.enable_velero, true)
-    enable_observability                = try(var.addons.enable_truemark_observability, true)
+    enable_observability                = try(var.addons.enable_observability, true)
     enable_cast_ai                      = try(var.addons.enable_cast_ai, false)
   }
 
