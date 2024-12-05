@@ -116,6 +116,10 @@ module "eks" {
   node_security_group_additional_rules     = var.node_security_group_additional_rules
   cluster_additional_security_group_ids    = var.cluster_additional_security_group_ids
   enable_cluster_creator_admin_permissions = var.enable_cluster_creator_admin_permissions
+  cluster_compute_config = {
+    enabled = var.enable_eks_auto_mode
+    node_pools = ["general-purpose", "system"]
+  }
 
   #KMS
   kms_key_users  = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]

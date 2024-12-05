@@ -44,6 +44,12 @@ variable "cluster_version" {
   default     = "1.29"
 }
 
+variable "enable_eks_auto_mode" {
+  description = "Enable EKS auto mode"
+  type        = bool
+  default     = false
+}
+
 variable "enable_cluster_creator_admin_permissions" {
   description = "Enable cluster creator admin permissions"
   type        = bool
