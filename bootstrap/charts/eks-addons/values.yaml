@@ -1,0 +1,224 @@
+argocdNamespace: argocd
+argocdProject: default
+clusterName: in-cluster
+addons_repo_url: https://github.com/truemark/terraform-aws-eks
+addons_repo_revision: feat/argocd
+addons_repo_basepath: bootstrap
+
+# Cert Manager
+certManager:
+  enabled: false
+  name: cert-manager
+  createNamespace: true
+  chartVersion: v1.14.3
+  iamRoleArn: ""
+  serviceAccount:
+    create: true
+    name: cert-manager
+  namespace: cert-manager
+  values: {}
+
+# AWS Load Balancer Controller
+loadBalancerController:
+  enabled: false
+  name: aws-load-balancer-controller
+  createNamespace: true
+  chartVersion: 1.10.0
+  iamRoleArn: ""
+  serviceAccount:
+    create: true
+    name: aws-load-balancer-controller-sa
+  namespace: kube-system
+  values: {}
+
+# Karpenter
+karpenter:
+  enabled: false
+  name: karpenter
+  createNamespace: true
+  chartVersion: 1.0.7
+  iamRoleArn: ""
+  serviceAccount:
+    create: true
+    name: karpenter
+  namespace: karpenter
+  enableCrdWebhookConfig: false
+  values: {}
+
+# External DNS
+externalDNS:
+  enabled: false
+  name: external-dns
+  createNamespace: true
+  chartVersion: 1.15.0
+  iamRoleArn: ""
+  serviceAccount:
+    create: true
+    name: external-dns
+  namespace: external-dns
+  values: {}
+
+# External Secrets
+externalSecrets:
+  enabled: false
+  name: external-secrets
+  createNamespace: true
+  chartVersion: 0.7.0
+  iamRoleArn: ""
+  serviceAccount:
+    create: true
+    name: external-secrets
+  namespace: external-secrets
+  values: {}
+
+# ISTIO
+istio:
+  chartVersion: 1.23.3
+  createNamespace: true
+  enabled: true
+  base:
+    enabled: true
+    name: istio-base
+    serviceAccount:
+      create: true
+    namespace: istio-system
+    values: {}
+  istiod:
+    enabled: true
+    name: istio-discovery
+    serviceAccount:
+      create: true
+    namespace: istio-system
+    values: {}
+  ingress_enabled: true
+  proxyProtocolSelectorLabel: ingress-external
+  ingress:
+    external:
+      enabled: true
+      name: istio-ingress-external
+      serviceAccount:
+        create: true
+      namespace: istio-ingress
+      serviceType: LoadBalancer
+      loadBalancerScheme: internet-facing
+      certificateArns: ""
+      prefixLists: ""
+      loadBalancerSouraceRanges: ""
+    internal:
+      enabled: true
+      name: istio-ingress-internal
+      serviceAccount:
+          create: true
+      namespace: istio-ingress
+      serviceType: LoadBalancer
+      loadBalancerScheme: internal
+      certificateArns: ""
+      prefixLists: ""
+      loadBalancerSouraceRanges: ""
+
+metricsServer:
+  enabled: true
+  chartVersion: v3.12.0
+  namespace: kube-system
+  values: {}
+
+velero:
+  enabled: true
+  chartVersion: 8.0.0
+  namespace: velero
+  values: {}
+
+keda:
+  enabled: true
+  chartVersion: 2.16.0
+  namespace: keda
+  values : {}
+
+observability:
+  region: ""
+  fullnameOverride: "k8s-observabilility"
+  thanos:
+    enabled: true
+    chartVersion: 15.8.1
+    namespace: observability
+    iamRoleArn: ""
+    query:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 1Gi
+        limits:
+          memory: 1Gi
+    bucketweb:
+      enabled: true
+      resources:
+        requests:
+          cpu: 100m
+          memory: 200Mi
+        limits:
+          memory: 200Mi
+    compactor:
+      enabled: true
+      resources:
+        requests:
+          cpu: 100m
+          memory: 1Gi
+        limits:
+          memory: 1Gi
+    receive:
+      enabled: false
+      resources:
+        requests:
+          cpu: 100m
+          memory: 200Mi
+        limits:
+          memory: 200Mi
+    storegateway:
+      enabled: true
+      resources:
+        requests:
+          cpu: 100m
+          memory: 1Gi
+        limits:
+          memory: 1Gi
+    ruler:
+      enabled: false
+      resources:
+        requests:
+          cpu: 100m
+          memory: 200Mi
+        limits:
+          memory: 200Mi
+  kubePrometheusStack:
+    enabled: false
+    defaultRules:
+      create: true
+    chartVersion: 66.2.2
+    namespace: observability
+    grafana:
+      enabled: false
+      adminPassword: ""
+    alertmanager:
+      enabled: true
+      storageSize: 10Gi
+      storageClassName: "gp3"
+    prometheus:
+      enabled: true
+      storageSize: 10Gi
+      storageClassName: "gp3"
+  fluentbit:
+    enabled: false
+    chartVersion: 0.48.2
+
+castAi:
+  enabled: false
+  namespace: castai
+  apiKey: ""
+  provider: ""
+  clusterId: ""
+  agent:
+    chartVersion: "0.86.0"
+  clusterController:
+    chartVersion: "0.74.4"
+  spotHandler:
+    chartVersion: "0.22.1"

@@ -1,0 +1,55 @@
+{{- if and (.Values.keda) (.Values.keda.enabled) }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: addons-keda
+  namespace: {{ .Values.argocdNamespace | default "argocd" }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocdProject | default "default" }}
+  sources:
+    - repoURL: '{{ .Values.addons_repo_url }}'
+      targetRevision: '{{ .Values.addons_repo_revision }}'
+      ref: values
+    - repoURL: https://kedacore.github.io/charts
+      targetRevision: {{ .Values.keda.chartVersion }}
+      chart: keda
+      helm:
+        releaseName: keda
+        ignoreMissingValueFiles: true
+        valueFiles:
+          - $values/{{ .Values.addons_repo_basepath }}addons/.keda/values.yaml
+          - $values/{{ .Values.addons_repo_basepath }}addons/.keda/values-{{ .Values.keda.chartVersion }}.yaml
+        values: |
+          serviceAccount:
+            name: keda
+            annotations:
+              eks.amazonaws.com/role-arn: {{ .Values.keda.iamRoleArn }}
+          nodeSelector:
+            CriticalAddonsOnly: 'true'
+          tolerations:
+            - key: "CriticalAddonsOnly"
+              operator: "Exists"
+              effect: "NoSchedule"
+          {{- if and (.Values.keda.values) (not (empty .Values.keda.values)) }}
+            {{- toYaml .Values.keda.values | nindent 10 }}
+          {{- end }}
+  destination:
+    namespace: '{{ .Values.keda.namespace }}'
+    name: '{{ .Values.clusterName }}'
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - "CreateNamespace=true"
+      - "Validate=false"
+      - "PrunePropagationPolicy=Foreground"
+      - "PruneLast=true"
+      - "RespectIgnoreDifferences=false"
+      - ServerSideApply=true  # Big CRDs.
+{{- end }}

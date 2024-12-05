@@ -1,0 +1,242 @@
+{{- if and (.Values.istio) (.Values.istio.base.enabled) }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: addons-istio-base
+  namespace: {{ .Values.argocdNamespace | default "argocd" }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocdProject | default "default" }}
+  sources:
+    - repoURL: https://istio-release.storage.googleapis.com/charts
+      targetRevision: {{ .Values.istio.chartVersion }}
+      chart: base
+      helm:
+        releaseName: {{ .Values.istio.base.name }}
+        ignoreMissingValueFiles: true
+        values: |
+          defaultRevision: default
+  destination:
+    namespace: '{{ .Values.istio.base.namespace }}'
+    name: '{{ .Values.clusterName }}'
+  syncPolicy:
+    automated:
+      allowEmpty: false
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - "CreateNamespace=true"
+      - "Validate=false"
+      - "PrunePropagationPolicy=Foreground"
+      - "PruneLast=true"
+      - "RespectIgnoreDifferences=false"
+  ignoreDifferences:
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+      jqPathExpressions:
+        - '.webhooks[]?.clientConfig.caBundle'
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      jqPathExpressions:
+        - '.webhooks[]?.failurePolicy'
+{{- end }}
+---
+{{- if and (.Values.istio) (.Values.istio.istiod.enabled) }}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: addons-istio-discovery
+  namespace: {{ .Values.argocdNamespace | default "argocd" }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocdProject | default "default" }}
+  sources:
+    - repoURL: '{{ .Values.addons_repo_url }}'
+      targetRevision: '{{ .Values.addons_repo_revision }}'
+      ref: values
+    - repoURL: '{{ .Values.addons_repo_url }}'
+      targetRevision: '{{ .Values.addons_repo_revision }}'
+      path: bootstrap/addons/istio
+      helm:
+        releaseName: istio-settings
+        ignoreMissingValueFiles: true
+    - repoURL: https://istio-release.storage.googleapis.com/charts
+      targetRevision: {{ .Values.istio.chartVersion }}
+      chart: istiod
+      helm:
+        releaseName: {{ .Values.istio.istiod.name }}
+        ignoreMissingValueFiles: true
+        valuesObject:
+          {{- if or (.Values.istio.base.meshId ) ( .Values.istio.base.network ) ( .Values.istio.base.multiCluster ) }}
+          global:
+            {{- if .Values.istio.base.meshId }}
+            meshID: {{ .Values.istio.base.meshId }}
+            {{- end }}
+            {{- if .Values.istio.base.network }}
+            network: {{ .Values.istio.base.network }}
+            {{- end }}
+            {{- if .Values.istio.base.multiCluster }}
+            multiCluster:
+              enabled: {{ .Values.istio.base.multiCluster.enabled }}
+              clusterName: {{ .Values.istio.base.multiCluster.clusterName }}
+            {{- end }}
+          {{- end }}
+          meshConfig:
+            defaultConfig:
+              holdApplicationUntilProxyStarts: true
+              gatewayTopology:
+                numTrustedProxies: 1
+            enablePrometheusMerge: true
+            accessLogEncoding: JSON
+            accessLogFile: /dev/stdout
+            accessLogFormat: |
+              {
+                "protocol": "%PROTOCOL%",
+                "upstream_service_time": "%REQ(x-envoy-upstream-service-time)%",
+                "upstream_local_address": "%UPSTREAM_LOCAL_ADDRESS%",
+                "duration": "%DURATION%",
+                "upstream_transport_failure_reason": "%UPSTREAM_TRANSPORT_FAILURE_REASON%",
+                "route_name": "%ROUTE_NAME%",
+                "downstream_local_address": "%DOWNSTREAM_LOCAL_ADDRESS%",
+                "user_agent": "%REQ(USER-AGENT)%",
+                "response_code": "%RESPONSE_CODE%",
+                "response_flags": "%RESPONSE_FLAGS%",
+                "start_time": "%START_TIME%",
+                "method": "%REQ(:METHOD)%",
+                "request_id": "%REQ(X-REQUEST-ID)%",
+                "upstream_host": "%UPSTREAM_HOST%",
+                "x_forwarded_for": "%REQ(X-FORWARDED-FOR)%",
+                "client_ip": "%REQ(X-Envoy-External-Address)%",
+                "requested_server_name": "%REQUESTED_SERVER_NAME%",
+                "bytes_received": "%BYTES_RECEIVED%",
+                "bytes_sent": "%BYTES_SENT%",
+                "upstream_cluster": "%UPSTREAM_CLUSTER%",
+                "downstream_remote_address": "%DOWNSTREAM_REMOTE_ADDRESS%",
+                "authority": "%REQ(:AUTHORITY)%",
+                "path": "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%",
+                "response_code_details": "%RESPONSE_CODE_DETAILS%"
+              }
+          pilot:
+            nodeSelector:
+              karpenter.sh/nodepool: truemark-arm64
+            tolerations:
+              - key: "karpenter.sh/nodepool"
+                operator: "Equal"
+                value: "truemark-arm64"
+                effect: "NoSchedule"
+  destination:
+    namespace: '{{ .Values.istio.base.namespace }}'
+    name: '{{ .Values.clusterName }}'
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - "CreateNamespace=true"
+      - "Validate=false"
+      - "PrunePropagationPolicy=Foreground"
+      - "PruneLast=true"
+      - "RespectIgnoreDifferences=false"
+  ignoreDifferences:
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+      jqPathExpressions:
+        - '.webhooks[]?.clientConfig.caBundle'
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      jqPathExpressions:
+        - '.webhooks[]?.failurePolicy'
+{{- end }}
+---
+{{- if and (.Values.istio) (.Values.istio.ingress_enabled) }}
+{{- range $k, $v := .Values.istio.ingress }}
+{{- if $v.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: addons-istio-ingress-{{ $k }}
+  namespace: {{ $.Values.argocdNamespace | default "argocd" }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ $.Values.argocdProject | default "default" }}
+  sources:
+    - repoURL: '{{ $.Values.addons_repo_url }}'
+      targetRevision: '{{ $.Values.addons_repo_revision }}'
+      ref: values
+    - repoURL: https://istio-release.storage.googleapis.com/charts
+      targetRevision: {{ $.Values.istio.chartVersion }}
+      chart: gateway
+      helm:
+        releaseName: {{ $v.name }}
+        ignoreMissingValueFiles: true
+        values: |
+          service:
+            type: {{ $v.serviceType }}
+            {{- if eq $v.serviceType "LoadBalancer" }}
+            annotations:
+              service.beta.kubernetes.io/aws-load-balancer-name: "{{ $v.name }}"
+              service.beta.kubernetes.io/aws-load-balancer-type: "external"
+              service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
+              {{- if $v.subnets }}
+              service.beta.kubernetes.io/aws-load-balancer-subnets: {{ $v.subnets }}
+              {{- end }}
+              service.beta.kubernetes.io/aws-load-balancer-scheme: "{{ $v.loadBalancerScheme }}"
+              {{- if eq $k "external" }}
+              service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"
+              {{- end }}
+              service.beta.kubernetes.io/aws-load-balancer-manage-backend-security-group-rules: "true"
+              service.beta.kubernetes.io/aws-load-balancer-target-group-attributes: "preserve_client_ip.enabled=true"
+              {{- if and $v.certificateArns (ne $v.certificateArns "") }}
+              service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "{{ $v.certificateArns }}"
+              service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "https"
+              service.beta.kubernetes.io/aws-load-balancer-ssl-negotiation-policy: "ELBSecurityPolicy-TLS13-1-2-2021-06"
+              {{- end }}
+              {{- if and $v.prefixLists (ne $v.prefixLists "") }}
+              service.beta.kubernetes.io/aws-load-balancer-security-group-prefix-lists: "{{ $v.prefixLists }}"
+              {{- end }}
+              {{- if and $v.loadBalancerSouraceRanges (ne $v.loadBalancerSouraceRanges "") }}
+              service.beta.kubernetes.io/load-balancer-source-ranges: "{{ $v.loadBalancerSouraceRanges }}"
+              {{- end }}
+            {{- end }}
+          nodeSelector:
+            {{- if $v.nodeSelector }}
+            {{- toYaml $v.nodeSelector | nindent 12 }}
+            {{- else }}
+            karpenter.sh/nodepool: truemark-arm64
+            {{- end }}
+          tolerations:
+            {{- if $v.tolerations }}
+            {{- toYaml $v.tolerations | nindent 12 }}
+            {{- else }}
+            - key: "karpenter.sh/nodepool"
+              operator: "Equal"
+              value: "truemark-arm64"
+              effect: "NoSchedule"
+            {{- end }}
+  destination:
+    namespace: 'istio-ingress'
+    name: '{{ $.Values.clusterName }}'
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - "CreateNamespace=true"
+      - "Validate=false"
+      - "PrunePropagationPolicy=Foreground"
+      - "PruneLast=true"
+      - "RespectIgnoreDifferences=false"
+{{- end }}
+---
+{{- end }}
+{{- end }}

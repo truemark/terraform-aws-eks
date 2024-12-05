@@ -1,3 +1,16 @@
+data "aws_partition" "current" {}
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
+
+data "aws_eks_cluster_auth" "cluster" {
+  name = module.eks.cluster_name
+}
+
+data "aws_iam_roles" "eks_access_iam_roles" {
+  for_each   = toset(var.eks_access_account_iam_roles.*.role_name)
+  name_regex = each.key
+}
+
 data "aws_iam_policy_document" "aws_load_balancer_controller_full" {
   statement {
     effect    = "Allow"

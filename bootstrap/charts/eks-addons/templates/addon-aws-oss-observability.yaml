@@ -1,0 +1,439 @@
+{{- if .Values.observability }}
+{{- if .Values.observability.kubePrometheusStack.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: addons-kube-prometheus-stack-crds
+  namespace: {{ .Values.argocdNamespace | default "argocd" }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocdProject | default "default" }}
+  sources:
+    - repoURL: https://github.com/prometheus-community/helm-charts/
+      targetRevision: kube-prometheus-stack-{{ .Values.observability.kubePrometheusStack.chartVersion }}
+      path: charts/kube-prometheus-stack/charts/crds
+      directory:
+        recurse: true
+  destination:
+    namespace: '{{ .Values.observability.kubePrometheusStack.namespace | default "observability" }}'
+    name: '{{ .Values.clusterName }}'
+  syncPolicy:
+    automated:
+      allowEmpty: false
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - "CreateNamespace=true"
+      - "Validate=false"
+      - "PrunePropagationPolicy=Foreground"
+      - "PruneLast=true"
+      - "RespectIgnoreDifferences=false"
+      - ServerSideApply=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: addons-kube-prometheus-stack
+  namespace: {{ .Values.argocdNamespace | default "argocd" }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocdProject | default "default" }}
+  sources:
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      targetRevision: {{ .Values.observability.kubePrometheusStack.chartVersion }}
+      chart: kube-prometheus-stack
+      helm:
+        releaseName: {{ .Values.observability.fullnameOverride }}
+        ignoreMissingValueFiles: true
+        skipCrds: true
+        valuesObject:
+          cleanPrometheusOperatorObjectNames: true
+          fullnameOverride: {{ .Values.observability.fullnameOverride }}
+          nodeExporter:
+            enabled: true
+          defaultRules:
+            create: {{ .Values.observability.kubePrometheusStack.defaultRules.create | default true }}
+          alertmanager:
+            enabled: {{ .Values.observability.kubePrometheusStack.alertmanager.enabled | default true }}
+            serviceAccount:
+              annotations:
+                eks.amazonaws.com/role-arn: {{ .Values.observability.kubePrometheusStack.prometheus.iamRoleArn }}
+              templates:
+                - '/etc/alertmanager/config/*.tmpl'
+            templateFiles:
+              sns.tmpl: |
+                '{{`{{ define "sns.default.message" }}{"receiver":"{{ .Receiver }}","source":"prometheus","status":"{{ .Status }}","alerts":[{{ range $alertIndex, $alerts := .Alerts }}{{ if $alertIndex }},{{ end }}{"status":"{{ $alerts.Status }}",{{ if gt (len $alerts.Labels.SortedPairs) 0 }}"labels":{{ "{" }}{{ range $index, $label := $alerts.Labels.SortedPairs }}{{ if $index }},{{ end }}"{{ $label.Name }}":"{{ $label.Value }}"{{ end }}{{ "}" }},{{ end }}{{ if gt (len $alerts.Annotations.SortedPairs) 0 }}"annotations":{{ "{" }}{{ range $index, $annotations := $alerts.Annotations.SortedPairs }}{{ if $index }},{{ end }}"{{ $annotations.Name }}":"{{ $annotations.Value }}"{{ end }}{{ "}" }}{{ end }}}{{ end }}]}{{ end }}`}}'
+                '{{`{{ define "sns.default.subject" }}[{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}]{{ end }}`}}'
+            alertmanagerSpec:
+              nodeSelector:
+                karpenter.sh/nodepool: "truemark-arm64"
+              tolerations:
+                - key: "karpenter.sh/nodepool"
+                  operator: "Equal"
+                  value: "truemark-arm64"
+                  effect: "NoSchedule"
+              storage:
+                volumeClaimTemplate:
+                  spec:
+                    storageClassName: {{ .Values.observability.kubePrometheusStack.alertmanager.storageClassName | default "gp3" }}
+                    accessModes: ["ReadWriteOnce"]
+                    resources:
+                      requests:
+                        storage: {{ .Values.observability.kubePrometheusStack.alertmanager.storageSize | default "10Gi" }}
+          grafana:
+            enabled: {{ .Values.observability.kubePrometheusStack.grafana.enabled | default true }}
+            adminPassword: {{ .Values.observability.kubePrometheusStack.grafana.adminPassword }}
+            nodeSelector:
+              karpenter.sh/nodepool: "truemark-arm64"
+            tolerations:
+              - key: "karpenter.sh/nodepool"
+                operator: "Equal"
+                value: "truemark-arm64"
+                effect: "NoSchedule"
+            additionalDataSources:
+              {{- if .Values.observability.thanos.enabled }}
+              - name: thanos
+                type: prometheus
+                uid: thanos
+                url: http://{{ .Values.observability.fullnameOverride }}-thanos-query:9090
+                access: proxy
+              {{- end }}
+          kube-state-metrics:
+            nodeSelector:
+              karpenter.sh/nodepool: "truemark-arm64"
+            tolerations:
+              - key: "karpenter.sh/nodepool"
+                operator: "Equal"
+                value: "truemark-arm64"
+                effect: "NoSchedule"
+          prometheusOperator:
+            nodeSelector:
+              karpenter.sh/nodepool: "truemark-arm64"
+            tolerations:
+              - key: "karpenter.sh/nodepool"
+                operator: "Equal"
+                value: "truemark-arm64"
+                effect: "NoSchedule"
+            admissionWebhooks:
+              patch:
+                nodeSelector:
+                  karpenter.sh/nodepool: "truemark-arm64"
+                tolerations:
+                  - key: "karpenter.sh/nodepool"
+                    operator: "Equal"
+                    value: "truemark-arm64"
+                    effect: "NoSchedule"
+          prometheus:
+            enabled: {{ .Values.observability.kubePrometheusStack.prometheus.enabled | default true }}
+            serviceAccount:
+              annotations:
+                eks.amazonaws.com/role-arn: {{ .Values.observability.kubePrometheusStack.prometheus.iamRoleArn }}
+            thanosService:
+              enabled: {{ if .Values.observability.thanos.enabled }}true{{ else }}false{{ end }}
+            prometheusSpec:
+              {{- with .Values.observability.kubePrometheusStack.prometheus.externalUrl }}
+              externalUrl: {{ . }}
+              {{- end }}
+              disableCompaction: {{ if .Values.observability.thanos.enabled }}true{{ else }}false{{ end }}
+              {{- if .Values.observability.thanos.enabled }}
+              thanos:
+                objectStorageConfig:
+                  secret:
+                    type: S3
+                    config:
+                      bucket: {{ .Values.observability.thanos.s3BucketName }}
+                      endpoint: s3.{{ .Values.observability.region }}.amazonaws.com
+                      region: {{ .Values.observability.region }}
+              {{- end }}
+              nodeSelector:
+                karpenter.sh/nodepool: "truemark-arm64"
+              tolerations:
+                - key: "karpenter.sh/nodepool"
+                  operator: "Equal"
+                  value: "truemark-arm64"
+                  effect: "NoSchedule"
+              storageSpec:
+                volumeClaimTemplate:
+                  spec:
+                    storageClassName: {{ .Values.observability.kubePrometheusStack.prometheus.storageClassName | default "gp3" }}
+                    accessModes: ["ReadWriteOnce"]
+                    resources:
+                      requests:
+                        storage: {{ .Values.observability.kubePrometheusStack.prometheus.storageSize | default "100Gi" }}
+    {{- if and (.Values.istio.ingress_enabled) (.Values.istio.ingress.internal) (.Values.observability.kubePrometheusStack.prometheus.externalUrl)}}
+    - repoURL: '{{ .Values.addons_repo_url }}'
+      targetRevision: '{{ .Values.addons_repo_revision }}'
+      path: bootstrap/addons/observability
+      helm:
+        releaseName: observability-custom-resources
+        ignoreMissingValueFiles: true
+        valuesObject:
+          namePrefix: {{ .Values.observability.fullnameOverride }}
+          prometheusExternalUrl: {{ .Values.observability.kubePrometheusStack.prometheus.externalUrl }}
+          exposeThanos: {{ if .Values.observability.thanos.enabled }}true{{ else }}false{{ end }}
+          exposeWithIstio: {{ if and (.Values.istio.ingress_enabled) (.Values.istio.ingress.internal) }}true{{ else }}false{{ end }}
+    {{- end }}
+  destination:
+    namespace: '{{ .Values.observability.kubePrometheusStack.namespace | default "observability" }}'
+    name: '{{ .Values.clusterName }}'
+  syncPolicy:
+    automated:
+      allowEmpty: false
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - "CreateNamespace=true"
+      - "Validate=false"
+      - "PrunePropagationPolicy=Foreground"
+      - "PruneLast=true"
+      - "RespectIgnoreDifferences=false"
+{{- end }}
+{{- if .Values.observability.thanos.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: addons-thanos
+  namespace: {{ .Values.argocdNamespace | default "argocd" }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocdProject | default "default" }}
+  sources:
+    - repoURL: registry-1.docker.io/bitnamicharts
+      targetRevision: {{ .Values.observability.thanos.chartVersion }}
+      chart: thanos
+      helm:
+        releaseName: thanos
+        ignoreMissingValueFiles: true
+        valuesObject:
+          fullnameOverride: {{ .Values.observability.fullnameOverride }}-thanos
+          objstoreConfig:
+            type: s3
+            config:
+              bucket: {{ .Values.observability.thanos.s3BucketName }}
+              endpoint: s3.{{ .Values.observability.region }}.amazonaws.com
+              region: {{ .Values.observability.region }}
+          query:
+            nodeSelector:
+              karpenter.sh/nodepool: "truemark-arm64"
+            tolerations:
+              - key: "karpenter.sh/nodepool"
+                operator: "Equal"
+                value: "truemark-arm64"
+                effect: "NoSchedule"
+            dnsDiscovery:
+              sidecarsService: {{ .Values.observability.fullnameOverride }}-thanos-discovery
+              sidecarsNamespace: {{ .Values.observability.thanos.namespace | default "observability" }}
+            resources:
+              {{- toYaml .Values.observability.thanos.query.resources | nindent 14 }}
+            serviceAccount:
+              annotations:
+                eks.amazonaws.com/role-arn: {{ .Values.observability.thanos.iamRoleArn }}
+                eks.amazonaws.com/sts-regional-endpoints: "true"
+          bucketweb:
+            enabled: {{ .Values.observability.thanos.bucketweb.enabled | default true }}
+            nodeSelector:
+              karpenter.sh/nodepool: "truemark-arm64"
+            tolerations:
+              - key: "karpenter.sh/nodepool"
+                operator: "Equal"
+                value: "truemark-arm64"
+                effect: "NoSchedule"
+            resources:
+              {{- toYaml .Values.observability.thanos.bucketweb.resources | nindent 14 }}
+            serviceAccount:
+              annotations:
+                eks.amazonaws.com/role-arn: {{ .Values.observability.thanos.iamRoleArn }}
+                eks.amazonaws.com/sts-regional-endpoints: "true"
+          compactor:
+            enabled: {{ .Values.observability.thanos.compactor.enabled | default true }}
+            nodeSelector:
+              karpenter.sh/nodepool: "truemark-arm64"
+            tolerations:
+              - key: "karpenter.sh/nodepool"
+                operator: "Equal"
+                value: "truemark-arm64"
+                effect: "NoSchedule"
+            resources:
+              {{- toYaml .Values.observability.thanos.compactor.resources | nindent 14 }}
+            serviceAccount:
+              annotations:
+                eks.amazonaws.com/role-arn: {{ .Values.observability.thanos.iamRoleArn }}
+                eks.amazonaws.com/sts-regional-endpoints: "true"
+          receive:
+            enabled: {{ .Values.observability.thanos.receive.enabled | default true }}
+            nodeSelector:
+              karpenter.sh/nodepool: "truemark-arm64"
+            tolerations:
+              - key: "karpenter.sh/nodepool"
+                operator: "Equal"
+                value: "truemark-arm64"
+                effect: "NoSchedule"
+            resources:
+              {{- toYaml .Values.observability.thanos.receive.resources | nindent 14 }}
+            serviceAccount:
+              annotations:
+                eks.amazonaws.com/role-arn: {{ .Values.observability.thanos.iamRoleArn }}
+                eks.amazonaws.com/sts-regional-endpoints: "true"
+          storegateway:
+            enabled: {{ .Values.observability.thanos.storegateway.enabled | default true }}
+            nodeSelector:
+              karpenter.sh/nodepool: "truemark-arm64"
+            tolerations:
+              - key: "karpenter.sh/nodepool"
+                operator: "Equal"
+                value: "truemark-arm64"
+                effect: "NoSchedule"
+            resources:
+              {{- toYaml .Values.observability.thanos.storegateway.resources | nindent 14 }}
+            serviceAccount:
+              annotations:
+                eks.amazonaws.com/role-arn: {{ .Values.observability.thanos.iamRoleArn }}
+                eks.amazonaws.com/sts-regional-endpoints: "true"
+          ruler:
+            enabled: {{ .Values.observability.thanos.ruler.enabled | default false }}
+            nodeSelector:
+              karpenter.sh/nodepool: "truemark-arm64"
+            tolerations:
+              - key: "karpenter.sh/nodepool"
+                operator: "Equal"
+                value: "truemark-arm64"
+                effect: "NoSchedule"
+            resources:
+              {{- toYaml .Values.observability.thanos.ruler.resources | nindent 14 }}
+            serviceAccount:
+              annotations:
+                eks.amazonaws.com/role-arn: {{ .Values.observability.thanos.iamRoleArn }}
+                eks.amazonaws.com/sts-regional-endpoints: "true"
+          queryFrontend:
+            nodeSelector:
+              karpenter.sh/nodepool: "truemark-arm64"
+            tolerations:
+              - key: "karpenter.sh/nodepool"
+                operator: "Equal"
+                value: "truemark-arm64"
+                effect: "NoSchedule"
+            serviceAccount:
+              annotations:
+                eks.amazonaws.com/role-arn: {{ .Values.observability.thanos.iamRoleArn }}
+                eks.amazonaws.com/sts-regional-endpoints: "true"
+          metrics:
+            enabled: true
+            serviceMonitor:
+              enabled: true
+          minio:
+            enabled: false
+
+  destination:
+    namespace: '{{ .Values.observability.thanos.namespace | default "observability" }}'
+    name: '{{ .Values.clusterName }}'
+  syncPolicy:
+    automated:
+      allowEmpty: false
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - "CreateNamespace=true"
+      - "Validate=false"
+      - "PrunePropagationPolicy=Foreground"
+      - "PruneLast=true"
+      - "RespectIgnoreDifferences=false"
+{{- end }}
+{{- if .Values.observability.fluentbit.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: addons-fluentbit
+  namespace: {{ .Values.argocdNamespace | default "argocd" }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocdProject | default "default" }}
+  sources:
+    - repoURL: https://fluent.github.io/helm-charts
+      targetRevision: {{ .Values.observability.fluentbit.chartVersion }}
+      chart: fluent-bit
+      helm:
+        releaseName: fluentbit
+        ignoreMissingValueFiles: true
+        valuesObject:
+          fullnameOverride: {{ .Values.observability.fullnameOverride }}-fluentbit
+          tolerations:
+            - operator: Exists
+          config:
+            service: |
+              [SERVICE]
+                  Daemon Off
+                  Flush 1
+                  Log_Level info
+                  Parsers_File /fluent-bit/etc/parsers.conf
+                  Parsers_File /fluent-bit/etc/conf/custom_parsers.conf
+                  HTTP_Server On
+                  HTTP_Listen 0.0.0.0
+                  HTTP_Port 2020
+                  Health_Check On
+            # /var/log/conmtainer* | 1 hr
+            inputs: |
+              [INPUT]
+                  Name tail
+                  Path /var/log/containers/*.log
+                  multiline.parser docker, cri
+                  Tag kube.*
+                  Mem_Buf_Limit 5MB
+                  Skip_Long_Lines On
+            filters: |
+              [FILTER]
+                  Name kubernetes
+                  Match kube.*
+                  Merge_Log Off
+                  Keep_Log Off
+                  K8S-Logging.Parser On
+                  K8S-Logging.Exclude On
+            outputs: |
+              [OUTPUT]
+                  name       loki
+                  match      *
+                  host       k8s-observabilility-loki-gateway
+                  port       80
+                  labels     namespace=$kubernetes['namespace_name'], pod=$kubernetes['pod_name'], container_name=$kubernetes['container_name']
+
+              # Opensearch --> mas/data --> 3/n nodes --> curator (7 data/ snapshots)
+            customParsers: |
+              [PARSER]
+                  Name docker_no_time
+                  Format json
+                  Time_Keep Off
+                  Time_Key time
+                  Time_Format %Y-%m-%dT%H:%M:%S.%L
+
+  destination:
+    namespace: '{{ .Values.observability.loki.namespace | default "observability" }}'
+    name: '{{ .Values.clusterName }}'
+  syncPolicy:
+    automated:
+      allowEmpty: false
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - "CreateNamespace=true"
+      - "Validate=false"
+      - "PrunePropagationPolicy=Foreground"
+      - "PruneLast=true"
+      - "RespectIgnoreDifferences=false"
+{{- end }}
+{{- end }}
+
+# Temo

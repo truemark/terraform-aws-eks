@@ -1,0 +1,51 @@
+{{- if .Values.gatewayResources.external }}
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: external
+  namespace: istio-ingress
+spec:
+  selector:
+    app: istio-ingress-external
+  servers:
+    - hosts:
+        - "*"
+      port:
+        name: http
+        number: 80
+        protocol: HTTP
+      tls:
+        httpsRedirect: true
+    - hosts:
+        - "*"
+      port:
+        name: https
+        number: 443
+        protocol: HTTP
+{{- end }}
+{{- if .Values.gatewayResources.internal }}
+---
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: internal
+  namespace: istio-ingress
+spec:
+  selector:
+    app: istio-ingress-internal
+  servers:
+    - hosts:
+        - "*"
+      port:
+        name: http
+        number: 80
+        protocol: HTTP
+      tls:
+        httpsRedirect: true
+    - hosts:
+        - "*"
+      port:
+        name: https
+        number: 443
+        protocol: HTTP
+{{- end }}
