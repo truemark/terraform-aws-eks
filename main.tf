@@ -82,7 +82,7 @@ module "eks" {
   cluster_additional_security_group_ids    = var.cluster_additional_security_group_ids
   enable_cluster_creator_admin_permissions = var.enable_cluster_creator_admin_permissions
   cluster_compute_config = {
-    enabled = var.enable_eks_auto_mode
+    enabled    = var.enable_eks_auto_mode
     node_pools = ["general-purpose", "system"]
   }
 
