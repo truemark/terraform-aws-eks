@@ -1,0 +1,28 @@
+{{- range $k, $v := .Values.truemarkNodePoolDefaults }}
+---
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: truemark-{{ $k }}
+spec:
+  disruption:
+    budgets:
+      - nodes: 10%
+    consolidateAfter: 0s
+    consolidationPolicy: WhenEmptyOrUnderutilized
+  template:
+    metadata: {}
+    spec:
+      expireAfter: {{ $v.expireAfter }}
+      nodeClassRef:
+        group: karpenter.k8s.aws
+        kind: EC2NodeClass
+        name: truemark
+      requirements:
+        {{- toYaml $v.requirements | nindent 8 }}
+      taints:
+        - effect: NoSchedule
+          key: karpenter.sh/nodepool
+          value: truemark-{{ $k }}
+  weight: 10
+{{- end }}

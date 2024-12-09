@@ -1,0 +1,11 @@
+{{- if .Values.gp3_ext4_encrypted.enabled }}
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: gp3-ext4-encrypted
+  annotations:
+    {{- .Values.gp3_ext4_encrypted.annotations | toYaml | nindent 4 }}
+parameters:
+  {{- .Values.gp3_ext4_encrypted.parameters | toYaml | nindent 2 }}
+{{ .Values.gp3_ext4_encrypted.spec | toYaml }}
+{{- end }}
