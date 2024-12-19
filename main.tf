@@ -13,20 +13,10 @@ locals {
   )
   default_critical_addon_nodegroup = {
     instance_types = var.default_critical_addon_node_group_instance_types
-    ami_type       = "BOTTLEROCKET_ARM_64"
+    ami_type       = "AL2023_ARM_64_STANDARD"
     block_device_mappings = {
       xvda = {
         device_name = "/dev/xvda"
-        ebs = {
-          volume_size           = 30
-          volume_type           = "gp3"
-          encrypted             = true
-          delete_on_termination = true
-          kms_key_id            = var.default_critical_nodegroup_kms_key_id
-        }
-      }
-      xvdb = {
-        device_name = "/dev/xvdb"
         ebs = {
           volume_size           = 100
           volume_type           = "gp3"
