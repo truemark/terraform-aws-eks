@@ -60,7 +60,7 @@ locals {
     eks-addons = {
       project         = "default"
       repo_url        = "https://github.com/truemark/terraform-aws-eks"
-      target_revision = "main"
+      target_revision = "fix/eks-module-bugs"
       path            = "bootstrap/charts/eks-addons"
       values = merge({
         certManager = {
