@@ -65,7 +65,6 @@ spec:
           - $values/{{ .Values.addons_repo_basepath }}addons/karpenter/values.yaml
           - $values/{{ .Values.addons_repo_basepath }}addons/karpenter/values-{{ .Values.karpenter.chartVersion }}.yaml
         values: |
-          dnsPolicy: default
           settings:
             clusterName: {{ .Values.karpenter.clusterName }}
             clusterEndpoint: {{ .Values.karpenter.clusterEndpoint }}

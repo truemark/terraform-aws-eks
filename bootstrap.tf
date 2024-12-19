@@ -200,7 +200,7 @@ module "gitops_bridge_bootstrap" {
     metadata = local.addons_metadata
   }
   argocd = {
-    chart_version = "7.6.10"
+    chart_version = "7.7.10"
     values = [
       <<-EOT
     global:
