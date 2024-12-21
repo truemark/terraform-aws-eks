@@ -122,9 +122,9 @@ locals {
         istio = {
           chartVersion = try(var.istio_helm_config.chart_version, local.addons_default_versions.istio)
           values       = try(yamldecode(join("\n", var.istio_helm_config.values)), {})
-          base = {
+          base = merge({
             enabled = local.addons.enable_istio
-          }
+          }, try(var.istio_helm_config.base, {}))
           ingress_enabled = var.istio_helm_config.ingress_enabled
           ingress         = var.istio_helm_config.ingress
         }
