@@ -29,7 +29,7 @@ locals {
   addons_default_versions = {
     cert_manager                 = "v1.14.3"
     external_dns                 = "1.15.0"
-    karpenter                    = "1.1.1"
+    karpenter                    = "1.0.7"
     external_secrets             = "0.7.0"
     metrics_server               = "3.12.0"
     keda                         = "2.16.0"
