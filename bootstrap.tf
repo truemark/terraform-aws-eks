@@ -59,9 +59,9 @@ locals {
   argocd_apps = {
     eks-addons = {
       project         = "default"
-      repo_url        = "https://github.com/truemark/terraform-aws-eks"
-      target_revision = "fix/eks-module-bugs"
-      path            = "bootstrap/charts/eks-addons"
+      repo_url        = var.addons_repo_url
+      target_revision = var.addons_target_revision
+      path            = var.addons_repo_path
       values = merge({
         certManager = {
           enabled      = local.addons.enable_cert_manager
