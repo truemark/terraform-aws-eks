@@ -102,6 +102,9 @@ module "eks" {
     snapshot-controller = {
       most_recent = true
     }
+    coredns = {
+      most_recent = true
+    }
   }
 
   vpc_id     = var.vpc_id
