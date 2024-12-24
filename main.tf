@@ -105,6 +105,9 @@ module "eks" {
     coredns = {
       most_recent = true
     }
+    kube-proxy = {
+      most_recent = true
+    }
   }
 
   vpc_id     = var.vpc_id
