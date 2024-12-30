@@ -56,7 +56,7 @@ locals {
     Blueprint = var.cluster_name
   }
 
-  argocd_apps = {
+  argocd_apps = merge({
     eks-addons = {
       project         = "default"
       repo_url        = var.addons_repo_url
@@ -182,7 +182,7 @@ locals {
         } } : {}
       )
     }
-  }
+  }, try(var.workloads_argocd_apps, {}))
 }
 
 ################################################################################

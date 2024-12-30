@@ -189,6 +189,12 @@ variable "addons_repo_path" {
   default     = "bootstrap/charts/eks-addons"
 }
 
+variable "workloads_argocd_apps" {
+  description = "ArgoCD workload applications to deploy."
+  type        = any
+  default     = {}
+}
+
 variable "cert_manager_helm_config" {
   description = "Configuration for the cert-manager add-on."
   type        = any
