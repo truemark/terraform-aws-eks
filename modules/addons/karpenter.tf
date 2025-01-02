@@ -253,7 +253,7 @@ module "karpenter_helm" {
       },
       {
         name  = "settings.interruptionQueue"
-        value = module.karpenter[0].queue_name
+        value = try(module.karpenter[0].queue_name, null)
       },
       {
         name  = "serviceAccount.name"
@@ -261,7 +261,7 @@ module "karpenter_helm" {
       },
       {
         name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-        value = module.karpenter[0].iam_role_arn
+        value = try(module.karpenter[0].iam_role_arn, null)
       }
     ],
     try(var.karpenter.set, [])

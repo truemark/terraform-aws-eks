@@ -66,9 +66,35 @@ variable "vpc_cni_before_compute" {
 }
 
 
-###############################################
-# Node Group Configuration
-###############################################
+################################################################################
+# Compute Resources
+################################################################################
+variable "compute_mode" {
+  description = <<EOF
+Description:
+Specifies the compute provider to use for the EKS. Must be one of the following modes:
+
+- eks_auto_mode: Use EKS managed node groups.
+- karpenter: Use Karpenter for provisioning nodes.
+- cast_ai: Use CAST AI for optimizing cloud costs.
+EOF
+  type        = string
+  validation {
+    condition     = contains(["eks_auto_mode", "karpenter", "cast_ai"], var.compute_mode)
+    error_message = "Invalid compute mode. Must be one of: eks_auto_mode, karpenter, cast_ai."
+  }
+}
+
+variable "eks_auto_mode_pools" {
+  description = "Map of EKS managed node group definitions to create."
+  type        = list(string)
+  default     = ["system"]
+  validation {
+    condition     = alltrue([for pool in var.eks_auto_mode_pools : contains(["system", "general-purpose"], pool)])
+    error_message = "Can only be system and/or general-purpose"
+  }
+}
+
 variable "eks_managed_node_groups" {
   description = "Map of EKS managed node group definitions to create."
   type        = any
@@ -78,7 +104,7 @@ variable "eks_managed_node_groups" {
 variable "create_default_critical_addon_node_group" {
   description = "Create a default critical addon node group"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "default_critical_addon_node_group_instance_types" {

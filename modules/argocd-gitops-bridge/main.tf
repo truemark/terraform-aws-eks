@@ -151,11 +151,11 @@ resource "helm_release" "eks_addons" {
     yamlencode(merge(
       {
         source = {
-          repoUrl       = each.value.repo_url,
+          repoUrl        = each.value.repo_url,
           targetRevision = each.value.target_revision,
-          path          = each.value.path,
+          path           = each.value.path,
           helm = {
-            values = try(each.value.values, ""),
+            values     = try(each.value.values, ""),
             valueFiles = try(each.value.value_files, "")
           }
         }
