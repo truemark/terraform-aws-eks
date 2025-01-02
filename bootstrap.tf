@@ -5,24 +5,54 @@ variable "addons" {
     enable_aws_load_balancer_controller = true
     enable_metrics_server               = true
   }
+  validation {
+    condition = alltrue([
+      for key in keys(var.addons) : contains([
+        "enable_cert_manager",
+        "enable_external_dns",
+        "enable_istio",
+        "enable_istio_ingress",
+        "enable_external_secrets",
+        "enable_metrics_server",
+        "enable_keda",
+        "enable_aws_load_balancer_controller",
+        "enable_aws_ebs_csi_resources",
+        "enable_velero",
+        "enable_observability"
+      ], key)
+    ])
+    error_message = "Invalid key in var.addons"
+  }
+  validation {
+    condition = alltrue([
+      for key in keys(var.addons) : !contains([
+
+        "enable_cast_ai",
+        "enable_karpenter",
+        "enable_auto_mode"
+      ], key)
+    ])
+    error_message = "The enable_cast_ai, enable_karpenter params have been deprecated. Compute-related configuration should be set via compute_mode variable."
+  }
 }
 
 ## Locals
 locals {
   addons = {
-    enable_cert_manager                 = try(var.addons.enable_cert_manager, true)
-    enable_external_dns                 = try(var.addons.enable_external_dns, true)
-    enable_istio                        = try(var.addons.enable_istio, true)
-    enable_istio_ingress                = try(var.addons.enable_istio_ingress, true)
-    enable_karpenter                    = try(var.addons.enable_karpenter, true)
-    enable_external_secrets             = try(var.addons.enable_external_secrets, true)
-    enable_metrics_server               = try(var.addons.enable_metrics_server, true)
-    enable_keda                         = try(var.addons.enable_keda, true)
+    enable_cert_manager                 = try(var.addons.enable_cert_manager, false)
+    enable_external_dns                 = try(var.addons.enable_external_dns, false)
+    enable_istio                        = try(var.addons.enable_istio, false)
+    enable_istio_ingress                = try(var.addons.enable_istio_ingress, false)
+    enable_external_secrets             = try(var.addons.enable_external_secrets, false)
+    enable_metrics_server               = try(var.addons.enable_metrics_server, false)
+    enable_keda                         = try(var.addons.enable_keda, false)
     enable_aws_load_balancer_controller = try(var.addons.enable_aws_load_balancer_controller, true)
     enable_aws_ebs_csi_resources        = try(var.addons.enable_aws_ebs_csi_resources, true)
-    enable_velero                       = try(var.addons.enable_velero, true)
-    enable_observability                = try(var.addons.enable_observability, true)
-    enable_cast_ai                      = try(var.addons.enable_cast_ai, false)
+    enable_velero                       = try(var.addons.enable_velero, false)
+    enable_observability                = try(var.addons.enable_observability, false)
+    enable_cast_ai                      = var.compute_mode == "cast_ai" ? true : false
+    enable_karpenter                    = var.compute_mode == "karpenter" ? true : false
+    enable_auto_mode                    = var.compute_mode == "auto_mode" ? true : false
   }
 
   addons_default_versions = {
@@ -42,7 +72,7 @@ locals {
   }
 
   addons_metadata = merge(
-    #     module.addons.gitops_metadata,
+    # module.addons.gitops_metadata,
     {
       aws_cluster_name = module.eks.cluster_name
       aws_region       = data.aws_region.current.name
@@ -81,7 +111,7 @@ locals {
           chartVersion = try(var.external_secrets_helm_config.chart_version, local.addons_default_versions.external_secrets)
         }
         karpenter = {
-          enabled                   = local.addons.enable_karpenter
+          enabled                   = try(local.addons.enable_karpenter, false)
           iamRoleArn                = try(module.addons.gitops_metadata.karpenter_iam_role_arn, "")
           values                    = try(yamldecode(join("\n", var.karpenter_helm_config.values)), {})
           chartVersion              = try(var.karpenter_helm_config.chart_version, local.addons_default_versions.karpenter)
@@ -226,7 +256,7 @@ module "addons" {
   cluster_name                     = module.eks.cluster_name
   cluster_endpoint                 = module.eks.cluster_endpoint
   cluster_version                  = var.cluster_version
-  critical_addons_node_selector    = var.critical_addons_node_selector
+  critical_addons_node_selector    = var.compute_mode == "eks_auto_mode" ? {} : var.critical_addons_node_selector
   critical_addons_node_tolerations = var.critical_addons_node_tolerations
 
 

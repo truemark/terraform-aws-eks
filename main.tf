@@ -11,6 +11,9 @@ locals {
     { for role in data.aws_iam_roles.eks_access_iam_roles : role.name_regex => merge(local.eks_access_iam_roles_map[role.name_regex], { "arn" : tolist(role.arns)[0] }) },
     { for role in var.eks_access_cross_account_iam_roles : role.role_name => merge({ "role_name" = role.role_name, "access_scope" = role.access_scope, "policy_name" = role.policy_name, "arn" = role.prefix != null ? format("arn:aws:iam::%s:role/%s/%s", role.account, role.prefix, role.role_name) : format("arn:aws:iam::%s:role/%s", role.account, role.role_name) }) }
   )
+
+  # No need for critical addons nodegroup when using auto_mode
+  create_default_critical_addon_node_group = var.compute_mode == "eks_auto_mode" ? false : var.create_default_critical_addon_node_group
   default_critical_addon_nodegroup = {
     instance_types = var.default_critical_addon_node_group_instance_types
     ami_type       = "BOTTLEROCKET_ARM_64"
@@ -54,7 +57,7 @@ locals {
   }
   eks_managed_node_groups = merge(
     { for k, v in var.eks_managed_node_groups : "${var.cluster_name}-${k}" => v },
-    var.create_default_critical_addon_node_group ? {
+    local.create_default_critical_addon_node_group ? {
       "truemark-system" = local.default_critical_addon_nodegroup
     } : {}
   )
@@ -78,9 +81,9 @@ module "ebs_csi_irsa_role" {
 }
 
 module "eks" {
-  source  = "terraform-aws-modules/eks/aws"
-  version = "~> 20"
-
+  source                                   = "terraform-aws-modules/eks/aws"
+  version                                  = "20.31.6"
+  bootstrap_self_managed_addons            = false
   cluster_name                             = var.cluster_name
   cluster_version                          = var.cluster_version
   cluster_endpoint_private_access          = var.cluster_endpoint_private_access
@@ -95,7 +98,13 @@ module "eks" {
   #KMS
   kms_key_users  = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
   kms_key_owners = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-  #TODO: check if we can work with specific version pinning
+
+  cluster_compute_config = var.compute_mode == "eks_auto_mode" ? {
+    enabled    = true
+    node_pools = try(var.eks_auto_mode_pools, [])
+    # node_role_arn = var.compute_mode == "eks_auto_mode" && length(try(var.cluster_compute_config.node_pools, [])) > 0 ? try(var.cluster_compute_config.node_role_arn, aws_iam_role.eks_auto[0].arn, null) : null
+  } : null
+
   cluster_addons = {
     vpc-cni = {
       most_recent              = true
@@ -136,7 +145,7 @@ module "eks" {
     }
   }
 
-  node_security_group_tags = var.addons.enable_karpenter ? { "karpenter.sh/discovery" = var.cluster_name } : {}
+  node_security_group_tags = local.addons.enable_karpenter ? { "karpenter.sh/discovery" = var.cluster_name } : {}
 }
 
 resource "aws_eks_access_entry" "access_entries" {
