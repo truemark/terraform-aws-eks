@@ -13,10 +13,20 @@ locals {
   )
   default_critical_addon_nodegroup = {
     instance_types = var.default_critical_addon_node_group_instance_types
-    ami_type       = "AL2023_ARM_64_STANDARD"
+    ami_type       = "BOTTLEROCKET_ARM_64"
     block_device_mappings = {
       xvda = {
         device_name = "/dev/xvda"
+        ebs = {
+          volume_size           = 30
+          volume_type           = "gp3"
+          encrypted             = true
+          delete_on_termination = true
+          kms_key_id            = var.default_critical_nodegroup_kms_key_id
+        }
+      }
+      xvdb = {
+        device_name = "/dev/xvdb"
         ebs = {
           volume_size           = 100
           volume_type           = "gp3"
@@ -102,6 +112,12 @@ module "eks" {
     snapshot-controller = {
       most_recent = true
     }
+    coredns = {
+      most_recent = true
+    }
+    kube-proxy = {
+      most_recent = true
+    }
   }
 
   vpc_id     = var.vpc_id
@@ -112,6 +128,9 @@ module "eks" {
 
   eks_managed_node_group_defaults = {
     iam_role_attach_cni_policy = true
+    iam_role_additional_policies = {
+      AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+    }
   }
 
   node_security_group_tags = var.addons.enable_karpenter ? { "karpenter.sh/discovery" = var.cluster_name } : {}

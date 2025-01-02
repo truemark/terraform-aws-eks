@@ -171,6 +171,30 @@ variable "eks_access_cross_account_iam_roles" {
 ###############################################
 # EKS Addons Configuration
 ###############################################
+variable "addons_repo_url" {
+  description = "URL of the EKS Addons Helm repository."
+  type        = string
+  default     = "https://github.com/truemark/terraform-aws-eks"
+}
+
+variable "addons_target_revision" {
+  description = "The target revision of the EKS Addons Helm repository."
+  type        = string
+  default     = "main"
+}
+
+variable "addons_repo_path" {
+  description = "Path to the EKS Addons Helm repository."
+  type        = string
+  default     = "bootstrap/charts/eks-addons"
+}
+
+variable "workloads_argocd_apps" {
+  description = "ArgoCD workload applications to deploy."
+  type        = any
+  default     = {}
+}
+
 variable "cert_manager_helm_config" {
   description = "Configuration for the cert-manager add-on."
   type        = any

@@ -56,12 +56,12 @@ locals {
     Blueprint = var.cluster_name
   }
 
-  argocd_apps = {
+  argocd_apps = merge({
     eks-addons = {
       project         = "default"
-      repo_url        = "https://github.com/truemark/terraform-aws-eks"
-      target_revision = "main"
-      path            = "bootstrap/charts/eks-addons"
+      repo_url        = var.addons_repo_url
+      target_revision = var.addons_target_revision
+      path            = var.addons_repo_path
       values = merge({
         certManager = {
           enabled      = local.addons.enable_cert_manager
@@ -122,9 +122,9 @@ locals {
         istio = {
           chartVersion = try(var.istio_helm_config.chart_version, local.addons_default_versions.istio)
           values       = try(yamldecode(join("\n", var.istio_helm_config.values)), {})
-          base = {
+          base = merge({
             enabled = local.addons.enable_istio
-          }
+          }, try(var.istio_helm_config.base, {}))
           ingress_enabled = var.istio_helm_config.ingress_enabled
           ingress         = var.istio_helm_config.ingress
         }
@@ -182,7 +182,7 @@ locals {
         } } : {}
       )
     }
-  }
+  }, try(var.workloads_argocd_apps, {}))
 }
 
 ################################################################################
@@ -200,7 +200,7 @@ module "gitops_bridge_bootstrap" {
     metadata = local.addons_metadata
   }
   argocd = {
-    chart_version = "7.6.10"
+    chart_version = "7.7.10"
     values = [
       <<-EOT
     global:
