@@ -47,6 +47,43 @@ variable "critical_addons_node_selector" {
   type        = map(any)
 }
 
+variable "critical_addons_node_affinity" {
+  description = "Config for node tolerations for workloads"
+  type        = map(any)
+  default = {
+    nodeAffinity = {
+      preferredDuringSchedulingIgnoredDuringExecution = {
+        nodeSelectorTerms = [
+          {
+            weight = 1,
+            preference = {
+              matchExpressions = [
+                {
+                  key      = "CriticalAddonsOnly"
+                  operator = "In"
+                  values   = ["true"]
+                }
+              ]
+            }
+          },
+          {
+            weight = 2,
+            preference = {
+              matchExpressions = [
+                {
+                  key      = "karpenter.sh/nodepool"
+                  operator = "In"
+                  values   = ["system", "truemark-system"]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+
 variable "critical_addons_node_tolerations" {
   description = "Config for node tolerations for workloads."
   type        = list(any)

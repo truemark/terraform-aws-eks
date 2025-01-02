@@ -124,7 +124,47 @@ variable "critical_addons_node_selector" {
   description = "Config for node selector for workloads"
   type        = map(any)
   default = {
-    CriticalAddonsOnly = "true"
+    "karpenter.sh/nodepool" = "truemark-amd64-spot"
+  }
+  # default = {
+  #   CriticalAddonsOnly = "true"
+  # }
+}
+
+variable "critical_addons_node_affinity" {
+  description = "Config for node tolerations for workloads"
+  type        = map(any)
+  default = {
+    nodeAffinity = {
+      preferredDuringSchedulingIgnoredDuringExecution = {
+        nodeSelectorTerms = [
+          {
+            weight = 1,
+            preference = {
+              matchExpressions = [
+                {
+                  key      = "CriticalAddonsOnly"
+                  operator = "In"
+                  values   = ["true"]
+                }
+              ]
+            }
+          },
+          {
+            weight = 2,
+            preference = {
+              matchExpressions = [
+                {
+                  key      = "karpenter.sh/nodepool"
+                  operator = "In"
+                  values   = ["system", "truemark-system"]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
   }
 }
 
