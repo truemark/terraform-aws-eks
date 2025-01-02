@@ -29,8 +29,24 @@ spec:
             name: external-dns
             annotations:
               eks.amazonaws.com/role-arn: {{ .Values.externalDNS.iamRoleArn }}
-          nodeSelector:
-            CriticalAddonsOnly: 'true'
+          affinity:
+            nodeAffinity:
+              preferredDuringSchedulingIgnoredDuringExecution:
+              - weight: 1
+                preference:
+                  matchExpressions:
+                  - key: CriticalAddonsOnly
+                    operator: In
+                    values:
+                    - true
+              - weight: 2
+                preference:
+                  matchExpressions:
+                  - key: "karpenter.sh/nodepool"
+                    operator: In
+                    values:
+                    - system
+                    - truemark-system
           tolerations:
             - key: "CriticalAddonsOnly"
               operator: "Exists"

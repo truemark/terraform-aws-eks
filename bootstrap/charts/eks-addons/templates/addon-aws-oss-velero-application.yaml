@@ -54,8 +54,24 @@ spec:
                   region: {{ .Values.velero.region }}
           credentials:
             useSecret: false
-          nodeSelector:
-            CriticalAddonsOnly: 'true'
+          affinity:
+            nodeAffinity:
+              preferredDuringSchedulingIgnoredDuringExecution:
+              - weight: 1
+                preference:
+                  matchExpressions:
+                  - key: CriticalAddonsOnly
+                    operator: In
+                    values:
+                    - true
+              - weight: 2
+                preference:
+                  matchExpressions:
+                  - key: "karpenter.sh/nodepool"
+                    operator: In
+                    values:
+                    - system
+                    - truemark-system
           tolerations:
             - key: "CriticalAddonsOnly"
               operator: "Exists"

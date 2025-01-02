@@ -234,8 +234,8 @@ module "gitops_bridge_bootstrap" {
     values = [
       <<-EOT
     global:
-      nodeSelector:
-        ${jsonencode(var.critical_addons_node_selector)}
+      affinity:
+        ${jsonencode(var.critical_addons_node_affinity)}
       tolerations:
         ${jsonencode(var.critical_addons_node_tolerations)}
     configs:
@@ -260,7 +260,7 @@ module "addons" {
   cluster_name                     = module.eks.cluster_name
   cluster_endpoint                 = module.eks.cluster_endpoint
   cluster_version                  = var.cluster_version
-  critical_addons_node_selector    = var.compute_mode == "eks_auto_mode" ? {} : var.critical_addons_node_selector
+  critical_addons_node_selector    = var.compute_mode == "eks_auto_mode" ? null : var.critical_addons_node_selector
   critical_addons_node_tolerations = var.critical_addons_node_tolerations
 
 
