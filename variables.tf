@@ -144,8 +144,8 @@ variable "critical_addons_node_affinity" {
               matchExpressions = [
                 {
                   key      = "CriticalAddonsOnly"
-                  operator = "In"
-                  values   = ["true"]
+                  operator = "Equals"
+                  values   = "\"true\""
                 }
               ]
             }
