@@ -54,6 +54,10 @@ module "keda" {
       {
         name  = "serviceAccount.name"
         value = local.keda_service_account
+      },
+      {
+        name  = "affinity"
+        value = var.critical_addons_node_affinity
       }
     ],
     try(var.keda.set, [])

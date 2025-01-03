@@ -62,7 +62,7 @@ locals {
   create_cert_manager_irsa     = var.enable_cert_manager && length(var.cert_manager_route53_hosted_zone_arns) > 0
   cert_manager_namespace       = try(var.cert_manager.namespace, "cert-manager")
   cert_manager_use_system_critical_nodegroup = var.cert_manager.use_system_critical_nodegroup ? jsonencode({
-    nodeSelector = var.critical_addons_node_selector
+    #nodeSelector = var.critical_addons_node_selector
     tolerations  = var.critical_addons_node_tolerations
   }) : null
   cert_manager_install_crd_value = tonumber(split(".", var.cert_manager.chart_version)[1]) >= 15 ? [
@@ -130,18 +130,22 @@ module "cert_manager" {
     var.cert_manager.use_system_critical_nodegroup ? [
       jsonencode({
         tolerations  = var.critical_addons_node_tolerations
-        nodeSelector = var.critical_addons_node_selector
+        #nodeSelector = var.critical_addons_node_selector
+        affinity     = var.critical_addons_node_affinity
         cainjector = {
           tolerations  = var.critical_addons_node_tolerations
-          nodeSelector = var.critical_addons_node_selector
+          #nodeSelector = var.critical_addons_node_selector
+          affinity     = var.critical_addons_node_affinity
         }
         webhook = {
           tolerations  = var.critical_addons_node_tolerations
-          nodeSelector = var.critical_addons_node_selector
+          #nodeSelector = var.critical_addons_node_selector
+          affinity     = var.critical_addons_node_affinity
         }
         startupapicheck = {
           tolerations  = var.critical_addons_node_tolerations
-          nodeSelector = var.critical_addons_node_selector
+          #nodeSelector = var.critical_addons_node_selector
+          affinity     = var.critical_addons_node_affinity
         }
       })
     ] : []

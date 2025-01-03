@@ -36,29 +36,93 @@ spec:
             name: cert-manager
             annotations:
               eks.amazonaws.com/role-arn: {{ .Values.certManager.iamRoleArn }}
-          nodeSelector:
-            CriticalAddonsOnly: 'true'
+          affinity:
+            nodeAffinity:
+              preferredDuringSchedulingIgnoredDuringExecution:
+              - weight: 1
+                preference:
+                  matchExpressions:
+                  - key: CriticalAddonsOnly
+                    operator: In
+                    values:
+                    - "true"
+              - weight: 2
+                preference:
+                  matchExpressions:
+                  - key: "karpenter.sh/nodepool"
+                    operator: In
+                    values:
+                    - "system"
+                    - "truemark-system"
           tolerations:
             - key: "CriticalAddonsOnly"
               operator: "Exists"
               effect: "NoSchedule"
           cainjector:
-            nodeSelector:
-              CriticalAddonsOnly: 'true'
+            affinity:
+              nodeAffinity:
+                preferredDuringSchedulingIgnoredDuringExecution:
+                - weight: 1
+                  preference:
+                    matchExpressions:
+                    - key: CriticalAddonsOnly
+                      operator: In
+                      values:
+                      - "true"
+                - weight: 2
+                  preference:
+                    matchExpressions:
+                    - key: "karpenter.sh/nodepool"
+                      operator: In
+                      values:
+                      - "system"
+                      - "truemark-system"
             tolerations:
               - key: "CriticalAddonsOnly"
                 operator: "Exists"
                 effect: "NoSchedule"
           webhook:
-            nodeSelector:
-              CriticalAddonsOnly: 'true'
+            affinity:
+              nodeAffinity:
+                preferredDuringSchedulingIgnoredDuringExecution:
+                - weight: 1
+                  preference:
+                    matchExpressions:
+                    - key: CriticalAddonsOnly
+                      operator: In
+                      values:
+                      - "true"
+                - weight: 2
+                  preference:
+                    matchExpressions:
+                    - key: "karpenter.sh/nodepool"
+                      operator: In
+                      values:
+                      - "system"
+                      - "truemark-system"
             tolerations:
               - key: "CriticalAddonsOnly"
                 operator: "Exists"
                 effect: "NoSchedule"
           startupapicheck:
-            nodeSelector:
-              CriticalAddonsOnly: 'true'
+            affinity:
+              nodeAffinity:
+                preferredDuringSchedulingIgnoredDuringExecution:
+                - weight: 1
+                  preference:
+                    matchExpressions:
+                    - key: "CriticalAddonsOnly"
+                      operator: In
+                      values:
+                      - "true"
+                - weight: 2
+                  preference:
+                    matchExpressions:
+                    - key: "karpenter.sh/nodepool"
+                      operator: In
+                      values:
+                      - "system"
+                      - "truemark-system"
             tolerations:
               - key: "CriticalAddonsOnly"
                 operator: "Exists"

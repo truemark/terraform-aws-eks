@@ -20,7 +20,7 @@ locals {
 
 ################################################################################
 data "aws_iam_policy_document" "prometheus_iam_role_policy" {
-  count     = var.enable_observability && var.observability.kube_prometheus_stack.enabled ? 1 : 0
+  count = var.enable_observability && var.observability.kube_prometheus_stack.enabled ? 1 : 0
 
   dynamic "statement" {
     for_each = var.observability.thanos.enabled ? [1] : []
@@ -61,7 +61,7 @@ data "aws_iam_policy_document" "prometheus_iam_role_policy" {
 }
 
 module "prometheus_iam_policy" {
-  count     = var.enable_observability && var.observability.kube_prometheus_stack.enabled ? 1 : 0
+  count   = var.enable_observability && var.observability.kube_prometheus_stack.enabled ? 1 : 0
   source  = "terraform-aws-modules/iam/aws//modules/iam-policy"
   version = "5.48.0"
   name    = "prometheus-iam-policy"
