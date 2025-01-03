@@ -34,15 +34,15 @@ spec:
                   - key: CriticalAddonsOnly
                     operator: In
                     values:
-                    - true
+                    - "true"
               - weight: 2
                 preference:
                   matchExpressions:
                   - key: "karpenter.sh/nodepool"
                     operator: In
                     values:
-                    - system
-                    - truemark-system
+                    - "system"
+                    - "truemark-system"
           tolerations:
             - key: "CriticalAddonsOnly"
               operator: "Exists"

@@ -97,3 +97,15 @@ output "fargate_profiles" {
   description = "Map of attribute maps for all EKS Fargate Profiles created"
   value       = module.eks.fargate_profiles
 }
+
+output "addons_metadata" {
+  value = local.addons_metadata
+}
+
+output "argocd_apps" {
+  value = local.argocd_apps
+}
+
+output "addons" {
+  value = local.addons
+}
