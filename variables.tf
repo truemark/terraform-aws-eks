@@ -173,9 +173,8 @@ variable "critical_addons_node_tolerations" {
   type        = list(map(string))
   default = [{
     key      = "CriticalAddonsOnly"
-    operator = "Equal"
+    operator = "Exists"
     effect   = "NoSchedule"
-    value    = "true"
   }]
 }
 

@@ -165,7 +165,7 @@ locals {
           chartVersion       = try(var.velero_helm_config.chart_version, "8.0.0")
         }
         castAi = {
-          enabled   = false #local.addons.enable_cast_ai
+          enabled   = local.addons.enable_cast_ai
           clusterId = var.cluster_name
           apiKey    = try(var.castai_helm_config.api_key, "cast-ai")
           agent = {
