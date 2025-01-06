@@ -64,3 +64,63 @@ variable "create_kubernetes_resources" {
   type        = bool
   default     = false
 }
+
+variable "enable_cert_manager" {
+  description = "Flag to enable or disable the cert-manager add-on."
+  type        = bool
+  default     = false
+}
+
+variable "enable_external_dns" {
+  description = "Flag to enable or disable the External DNS add-on."
+  type        = bool
+  default     = false
+}
+
+variable "enable_external_secrets" {
+  description = "Flag to enable or disable the External Secrets operator add-on."
+  type        = bool
+  default     = false
+}
+
+variable "enable_metrics_server" {
+  description = "Enable External Secrets operator add-on"
+  type        = bool
+  default     = false
+}
+
+variable "enable_aws_load_balancer_controller" {
+  description = "Enable AWS Load Balancer Controller add-on"
+  type        = bool
+  default     = false
+}
+
+variable "enable_karpenter" {
+  description = "Flag to enable or disable the Karpenter controller add-on."
+  type        = bool
+  default     = false
+}
+
+variable "enable_keda" {
+  description = "Enable Keda add-on"
+  type        = bool
+  default     = false
+}
+
+variable "enable_velero" {
+  description = "Enable Kubernetes Dashboard add-on"
+  type        = bool
+  default     = false
+}
+
+variable "enable_aws_ebs_csi_resources" {
+  description = "Flag to enable or disable the AWS EBS CSI resources add-on."
+  type        = bool
+  default     = false
+}
+
+variable "enable_observability" {
+  description = "Flag to enable or disable the observability.thanos controller add-on."
+  type        = bool
+  default     = false
+}
