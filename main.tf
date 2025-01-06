@@ -100,10 +100,8 @@ module "eks" {
   kms_key_owners = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
 
   cluster_compute_config = var.compute_mode == "eks_auto_mode" ? {
-    enabled    = true
-    node_pools = try(var.eks_auto_mode_pools, [])
-    # node_role_arn = var.compute_mode == "eks_auto_mode" && length(try(var.cluster_compute_config.node_pools, [])) > 0 ? try(var.cluster_compute_config.node_role_arn, aws_iam_role.eks_auto[0].arn, null) : null
-  } : null
+    enabled = true
+  } : {}
 
   cluster_addons = {
     vpc-cni = {

@@ -1,6 +1,18 @@
 variable "addons" {
   description = "Kubernetes addons"
-  type        = any
+  type = object({
+    enable_aws_load_balancer_controller = optional(bool, true)
+    enable_metrics_server               = optional(bool, true)
+    enable_cert_manager                 = optional(bool, false)
+    enable_external_dns                 = optional(bool, false)
+    enable_istio                        = optional(bool, false)
+    enable_istio_ingress                = optional(bool, false)
+    enable_external_secrets             = optional(bool, false)
+    enable_keda                         = optional(bool, false)
+    enable_aws_ebs_csi_resources        = optional(bool, false)
+    enable_velero                       = optional(bool, false)
+    enable_observability                = optional(bool, false)
+  })
   default = {
     enable_aws_load_balancer_controller = true
     enable_metrics_server               = true
@@ -52,7 +64,7 @@ locals {
     enable_observability                = try(var.addons.enable_observability, false)
     enable_cast_ai                      = var.compute_mode == "cast_ai" ? true : false
     enable_karpenter                    = var.compute_mode == "karpenter" ? true : false
-    enable_auto_mode                    = var.compute_mode == "auto_mode" ? true : false
+    enable_auto_mode                    = var.compute_mode == "eks_auto_mode" ? true : false
   }
 
   addons_default_versions = {
@@ -101,7 +113,7 @@ locals {
         externalDNS = {
           enabled      = local.addons.enable_external_dns
           iamRoleArn   = try(module.addons.gitops_metadata.external_dns_iam_role_arn, "")
-          values       = try(yamldecode(join("\n", var.external_dns_helm_config.values)), {})
+          values       = try(yamldetfacode(join("\n", var.external_dns_helm_config.values)), {})
           chartVersion = try(var.external_dns_helm_config.chart_version, local.addons_default_versions.external_dns)
         }
         externalSecrets = {
@@ -111,7 +123,7 @@ locals {
           chartVersion = try(var.external_secrets_helm_config.chart_version, local.addons_default_versions.external_secrets)
         }
         karpenter = {
-          enabled                   = try(local.addons.enable_karpenter, false)
+          enabled                   = local.addons.enable_karpenter
           iamRoleArn                = try(module.addons.gitops_metadata.karpenter_iam_role_arn, "")
           values                    = try(yamldecode(join("\n", var.karpenter_helm_config.values)), {})
           chartVersion              = try(var.karpenter_helm_config.chart_version, local.addons_default_versions.karpenter)
@@ -241,6 +253,10 @@ module "gitops_bridge_bootstrap" {
     ]
   }
   apps = local.argocd_apps
+  depends_on = [
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations
+  ]
 }
 
 ################################################################################
