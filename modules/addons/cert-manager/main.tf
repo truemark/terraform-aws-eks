@@ -18,7 +18,7 @@ module "cert_manager_iam_role" {
   role_name_prefix              = "cert-manager-"
   attach_cert_manager_policy    = true
   cert_manager_hosted_zone_arns = var.cert_manager_route53_hosted_zone_arns
-  assume_role_condition_test = "StringLike"
+  assume_role_condition_test    = "StringLike"
   oidc_providers = {
     eks = {
       provider_arn               = var.addons_context.oidc_provider_arn
