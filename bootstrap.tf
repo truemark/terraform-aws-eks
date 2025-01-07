@@ -124,7 +124,7 @@ locals {
           enableCrdWebhookConfig    = try(var.auto_mode_helm_config.enable_auto_mode_crd_webhook, false)
           truemarkNodeClassDefaults = try(var.auto_mode_helm_config.truemark_nodeclass_default, {})
           truemarkNodePoolDefaults  = try(var.auto_mode_helm_config.truemark_node_pool_default, {})
-          truemarkSystemNodePools  = try(var.auto_mode_helm_config.truemark_node_pool_system, {})
+          truemarkSystemNodePools   = try(var.auto_mode_helm_config.truemark_node_pool_system, {})
           nodeIamRoleName           = try(module.addons.gitops_metadata.auto_mode_node_iam_role_arn, null)
           clusterName               = module.eks.cluster_name
         }
@@ -271,13 +271,13 @@ module "gitops_bridge_bootstrap" {
 module "addons" {
   source = "./modules/addons"
 
-  oidc_provider_arn                = module.eks.oidc_provider_arn
-  aws_region                       = data.aws_region.current.name
-  aws_account_id                   = data.aws_caller_identity.current.account_id
-  aws_partition                    = data.aws_partition.current.partition
-  cluster_name                     = module.eks.cluster_name
-  cluster_endpoint                 = module.eks.cluster_endpoint
-  cluster_version                  = var.cluster_version
+  oidc_provider_arn = module.eks.oidc_provider_arn
+  aws_region        = data.aws_region.current.name
+  aws_account_id    = data.aws_caller_identity.current.account_id
+  aws_partition     = data.aws_partition.current.partition
+  cluster_name      = module.eks.cluster_name
+  cluster_endpoint  = module.eks.cluster_endpoint
+  cluster_version   = var.cluster_version
   # critical_addons_node_selector    = var.compute_mode == "eks_auto_mode" ? null : var.critical_addons_node_selector
   critical_addons_node_selector    = var.critical_addons_node_selector
   critical_addons_node_tolerations = var.critical_addons_node_tolerations
@@ -297,8 +297,8 @@ module "addons" {
   karpenter        = var.karpenter_helm_config
 
   # Auto-mode
-  # enable_auto_mode= local.addons.enable_auto_mode
-  # auto_mode        = var.auto_mode_helm_config
+  enable_auto_mode = local.addons.enable_auto_mode
+  auto_mode_additional_policies = {}
 
   # External Secrets
   enable_external_secrets = local.addons.enable_external_secrets
