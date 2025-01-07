@@ -38,7 +38,6 @@ variable "addons" {
   validation {
     condition = alltrue([
       for key in keys(var.addons) : !contains([
-
         "enable_cast_ai",
         "enable_karpenter",
         "enable_auto_mode"
@@ -71,6 +70,7 @@ locals {
     cert_manager                 = "v1.14.3"
     external_dns                 = "1.15.0"
     karpenter                    = "1.0.7"
+    auto_mode                    = "0.0.1"
     external_secrets             = "0.7.0"
     metrics_server               = "3.12.0"
     keda                         = "2.16.0"
@@ -116,11 +116,17 @@ locals {
           values       = try(yamldetfacode(join("\n", var.external_dns_helm_config.values)), {})
           chartVersion = try(var.external_dns_helm_config.chart_version, local.addons_default_versions.external_dns)
         }
-        externalSecrets = {
-          enabled      = local.addons.enable_external_secrets
-          iamRoleArn   = try(module.addons.gitops_metadata.external_secrets_iam_role_arn, "")
-          values       = try(yamldecode(join("\n", var.external_secrets_helm_config.values)), {})
-          chartVersion = try(var.external_secrets_helm_config.chart_version, local.addons_default_versions.external_secrets)
+        auto_mode = {
+          enabled                   = local.addons.enable_auto_mode
+          iamRoleArn                = try(module.addons.gitops_metadata.auto_mode_iam_role_arn, "")
+          values                    = try(yamldecode(join("\n", var.auto_mode_helm_config.values)), {})
+          chartVersion              = try(var.auto_mode_helm_config.chart_version, local.addons_default_versions.auto_mode)
+          enableCrdWebhookConfig    = try(var.auto_mode_helm_config.enable_auto_mode_crd_webhook, false)
+          truemarkNodeClassDefaults = try(var.auto_mode_helm_config.truemark_nodeclass_default, {})
+          truemarkNodePoolDefaults  = try(var.auto_mode_helm_config.truemark_node_pool_default, {})
+          truemarkSystemNodePools  = try(var.auto_mode_helm_config.truemark_node_pool_system, {})
+          nodeIamRoleName           = try(module.addons.gitops_metadata.auto_mode_node_iam_role_arn, null)
+          clusterName               = module.eks.cluster_name
         }
         karpenter = {
           enabled                   = local.addons.enable_karpenter
@@ -272,7 +278,8 @@ module "addons" {
   cluster_name                     = module.eks.cluster_name
   cluster_endpoint                 = module.eks.cluster_endpoint
   cluster_version                  = var.cluster_version
-  critical_addons_node_selector    = var.compute_mode == "eks_auto_mode" ? null : var.critical_addons_node_selector
+  # critical_addons_node_selector    = var.compute_mode == "eks_auto_mode" ? null : var.critical_addons_node_selector
+  critical_addons_node_selector    = var.critical_addons_node_selector
   critical_addons_node_tolerations = var.critical_addons_node_tolerations
 
 
@@ -287,6 +294,11 @@ module "addons" {
 
   # Karpenter
   enable_karpenter = local.addons.enable_karpenter
+  karpenter        = var.karpenter_helm_config
+
+  # Auto-mode
+  # enable_auto_mode= local.addons.enable_auto_mode
+  # auto_mode        = var.auto_mode_helm_config
 
   # External Secrets
   enable_external_secrets = local.addons.enable_external_secrets

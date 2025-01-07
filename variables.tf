@@ -124,11 +124,8 @@ variable "critical_addons_node_selector" {
   description = "Config for node selector for workloads"
   type        = map(any)
   default = {
-    "karpenter.sh/nodepool" = "truemark-amd64-spot"
+    "CriticalAddonsOnly" = "true"
   }
-  # default = {
-  #   CriticalAddonsOnly = "true"
-  # }
 }
 
 variable "critical_addons_node_affinity" {
@@ -314,6 +311,11 @@ variable "observability_helm_config" {
 }
 
 variable "castai_helm_config" {
+  description = "Configuration for the Castai add-on."
+  type        = any
+  default     = {}
+}
+variable "auto_mode_helm_config" {
   description = "Configuration for the Castai add-on."
   type        = any
   default     = {}

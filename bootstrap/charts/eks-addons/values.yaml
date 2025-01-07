@@ -45,6 +45,18 @@ karpenter:
   enableCrdWebhookConfig: false
   values: {}
 
+# Auto-mode nodepools and nodeclasses
+auto_mode:
+  enabled: false
+  name: auto_mode
+  createNamespace: true
+  chartVersion: 1.0.7
+  iamRoleArn: ""
+  serviceAccount:
+    create: true
+    name: auto_mode
+  values: {}
+
 # External DNS
 externalDNS:
   enabled: false
