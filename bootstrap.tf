@@ -8,11 +8,6 @@ variable "addons" {
 }
 
 ## Locals
-
-output "tested" {
-  value = module.addons.tested
-}
-
 locals {
   addons = {
     enable_cert_manager                 = try(var.addons.enable_cert_manager, true)
@@ -141,7 +136,7 @@ locals {
         castAi = {
           enabled   = local.addons.enable_cast_ai
           clusterId = var.cluster_name
-          apiKey    = var.castai_helm_config.api_key
+          apiKey    = try(var.castai_helm_config.api_key, "cast-ai")
           agent = {
             chartVersion = try(var.castai_helm_config.agent.chart_version, local.addons_default_versions.cast_ai.agent)
             values       = try(yamldecode(join("\n", var.castai_helm_config.agent.values)), {})

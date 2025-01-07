@@ -55,7 +55,3 @@ module "observability" {
   source         = "./observability"
   addons_context = local.addons_context
 }
-
-output "tested" {
-  value = module.external_dns[0].gitops_metadata
-}

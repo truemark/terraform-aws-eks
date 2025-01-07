@@ -95,7 +95,7 @@ module "eks" {
   #KMS
   kms_key_users  = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
   kms_key_owners = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-
+  #TODO: check if we can work with specific version pinning
   cluster_addons = {
     vpc-cni = {
       most_recent              = true
@@ -116,6 +116,9 @@ module "eks" {
       most_recent = true
     }
     kube-proxy = {
+      most_recent = true
+    }
+    metrics-server = {
       most_recent = true
     }
   }
