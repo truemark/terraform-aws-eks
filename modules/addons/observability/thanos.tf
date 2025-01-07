@@ -60,11 +60,11 @@ module "thanos_iam_role" {
   source           = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
   version          = "5.48.0"
   role_name_prefix = "thanos-"
+  assume_role_condition_test = "StringLike"
   oidc_providers = {
-    this = {
+    eks = {
       provider_arn               = var.addons_context.oidc_provider_arn
       namespace_service_accounts = ["observability:${local.thanos_service_account}"]
-      assume_role_condition_test = "StringLike"
     }
   }
   role_policy_arns = {
