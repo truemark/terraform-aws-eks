@@ -118,14 +118,12 @@ locals {
         }
         auto_mode = {
           enabled                   = local.addons.enable_auto_mode
-          iamRoleArn                = try(module.addons.gitops_metadata.auto_mode_iam_role_arn, "")
+          nodeIamRoleName           = try(module.addons.gitops_metadata.auto_mode_node_iam_role_arn, null)
           values                    = try(yamldecode(join("\n", var.auto_mode_helm_config.values)), {})
           chartVersion              = try(var.auto_mode_helm_config.chart_version, local.addons_default_versions.auto_mode)
-          enableCrdWebhookConfig    = try(var.auto_mode_helm_config.enable_auto_mode_crd_webhook, false)
           truemarkNodeClassDefaults = try(var.auto_mode_helm_config.truemark_nodeclass_default, {})
           truemarkNodePoolDefaults  = try(var.auto_mode_helm_config.truemark_node_pool_default, {})
           truemarkSystemNodePools   = try(var.auto_mode_helm_config.truemark_node_pool_system, {})
-          nodeIamRoleName           = try(module.addons.gitops_metadata.auto_mode_node_iam_role_arn, null)
           clusterName               = module.eks.cluster_name
         }
         karpenter = {
