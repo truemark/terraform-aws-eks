@@ -13,9 +13,6 @@ spec:
   project: {{ .Values.argocdProject | default "default" }}
   sources:
     - repoURL: '{{ .Values.addons_repo_url }}'
-      targetRevision: '{{ .Values.addons_repo_revision }}'
-      ref: values
-    - repoURL: public.ecr.aws/auto-mode
       targetRevision: {{ .Values.auto_mode.chartVersion }}
       chart: auto_mode
       helm:
