@@ -8,7 +8,6 @@ variable "addons" {
 }
 
 ## Locals
-
 locals {
   addons = {
     enable_cert_manager                 = try(var.addons.enable_cert_manager, true)
@@ -75,6 +74,12 @@ locals {
           values       = try(yamldecode(join("\n", var.external_dns_helm_config.values)), {})
           chartVersion = try(var.external_dns_helm_config.chart_version, local.addons_default_versions.external_dns)
         }
+        externalSecrets = {
+          enabled      = local.addons.enable_external_secrets
+          iamRoleArn   = try(module.addons.gitops_metadata.external_secrets_iam_role_arn, "")
+          values       = try(yamldecode(join("\n", var.external_secrets_helm_config.values)), {})
+          chartVersion = try(var.external_secrets_helm_config.chart_version, local.addons_default_versions.external_secrets)
+        }
         karpenter = {
           enabled                   = local.addons.enable_karpenter
           iamRoleArn                = try(module.addons.gitops_metadata.karpenter_iam_role_arn, "")
@@ -87,12 +92,6 @@ locals {
           clusterEndpoint           = module.eks.cluster_endpoint
           interruptionQueue         = module.addons.gitops_metadata.karpenter_interruption_queue
           nodeIamRoleName           = module.addons.gitops_metadata.karpenter_node_iam_role_arn
-        }
-        externalSecrets = {
-          enabled      = local.addons.enable_external_secrets
-          iamRoleArn   = try(module.addons.gitops_metadata.external_secrets_iam_role_arn, "")
-          values       = try(yamldecode(join("\n", var.external_secrets_helm_config.values)), {})
-          chartVersion = try(var.external_secrets_helm_config.chart_version, local.addons_default_versions.external_secrets)
         }
         metricsServer = {
           enabled      = local.addons.enable_metrics_server
@@ -112,9 +111,6 @@ locals {
           clusterName  = module.eks.cluster_name
           chartVersion = try(var.aws_load_balancer_controller_helm_config.chart_version, local.addons_default_versions.aws_load_balancer_controller)
           vpcId        = var.vpc_id
-          serviceAccount = {
-            name = module.addons.gitops_metadata.aws_load_balancer_controller_service_account_name
-          }
         }
         awsCsiEbsResources = {
           enabled = local.addons.enable_aws_ebs_csi_resources
@@ -129,19 +125,18 @@ locals {
           ingress         = var.istio_helm_config.ingress
         }
         velero = {
-          enabled            = local.addons.enable_velero
-          iamRoleArn         = try(module.addons.gitops_metadata.velero_iam_role_arn, "")
-          values             = try(yamldecode(join("\n", var.velero_helm_config.values)), {})
-          bucket             = module.addons.gitops_metadata.velero_backup_s3_bucket_name
-          prefix             = module.addons.gitops_metadata.velero_backup_s3_bucket_prefix
-          serviceAccountName = module.addons.gitops_metadata.velero_service_account_name
-          region             = data.aws_region.current.id
-          chartVersion       = try(var.velero_helm_config.chart_version, "8.0.0")
+          enabled      = local.addons.enable_velero
+          iamRoleArn   = try(module.addons.gitops_metadata.velero_iam_role_arn, "")
+          values       = try(yamldecode(join("\n", var.velero_helm_config.values)), {})
+          bucket       = module.addons.gitops_metadata.velero_backup_s3_bucket_name
+          prefix       = module.addons.gitops_metadata.velero_backup_s3_bucket_prefix
+          region       = data.aws_region.current.id
+          chartVersion = try(var.velero_helm_config.chart_version, "8.0.0")
         }
         castAi = {
           enabled   = local.addons.enable_cast_ai
           clusterId = var.cluster_name
-          apiKey    = var.castai_helm_config.api_key
+          apiKey    = try(var.castai_helm_config.api_key, "cast-ai")
           agent = {
             chartVersion = try(var.castai_helm_config.agent.chart_version, local.addons_default_versions.cast_ai.agent)
             values       = try(yamldecode(join("\n", var.castai_helm_config.agent.values)), {})
@@ -239,43 +234,31 @@ module "addons" {
 
   # Cert Manager
   enable_cert_manager = local.addons.enable_cert_manager
-  cert_manager        = var.cert_manager_helm_config
 
   # External DNS
-  enable_external_dns            = local.addons.enable_external_dns
-  external_dns                   = var.external_dns_helm_config
-  external_dns_route53_zone_arns = try(var.external_dns_helm_config.route53_zone_arns, [])
+  enable_external_dns = local.addons.enable_external_dns
 
   # Karpenter
   enable_karpenter = local.addons.enable_karpenter
-  karpenter        = var.karpenter_helm_config
 
   # External Secrets
   enable_external_secrets = local.addons.enable_external_secrets
-  external_secrets        = var.external_secrets_helm_config
 
   # Metrics Server
   enable_metrics_server = local.addons.enable_metrics_server
-  metrics_server        = var.metrics_server_helm_config
 
   # Keda
   enable_keda = local.addons.enable_keda
-  keda        = var.keda_helm_config
 
   # Load Balancer Controller
   enable_aws_load_balancer_controller = local.addons.enable_aws_load_balancer_controller
-  aws_load_balancer_controller        = var.aws_load_balancer_controller_helm_config
 
   # Velero
   enable_velero = local.addons.enable_velero
-  velero        = var.velero_helm_config
 
   # Truemark Observability
   enable_observability = local.addons.enable_observability
-  observability        = var.observability_helm_config
 
   # AWS EBS CSI Resources
   enable_aws_ebs_csi_resources = local.addons.enable_aws_ebs_csi_resources
-  #   tags = local.tags
 }
-

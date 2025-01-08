@@ -139,7 +139,7 @@ observability:
   fullnameOverride: "k8s-observabilility"
   thanos:
     enabled: true
-    chartVersion: 15.8.1
+    chartVersion: 15.9.2
     namespace: observability
     iamRoleArn: ""
     query:
