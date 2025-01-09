@@ -9,6 +9,16 @@ variable "cluster_name" {
   type        = string
 }
 
+variable "cluster_security_group_id" {
+  description = "Security group ID of the EKS cluster"
+  type        = string
+}
+
+variable "vpc_id" {
+  description = "AWS VPC ID"
+  type        = string
+}
+
 variable "cluster_endpoint" {
   description = "Endpoint for your Kubernetes API server."
   type        = string

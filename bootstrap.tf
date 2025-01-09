@@ -123,7 +123,6 @@ locals {
           chartVersion              = try(var.auto_mode_helm_config.chart_version, local.addons_default_versions.auto_mode)
           truemarkNodeClassDefaults = try(var.auto_mode_helm_config.truemark_nodeclass_default, {})
           truemarkNodePoolDefaults  = try(var.auto_mode_helm_config.truemark_node_pool_default, {})
-          truemarkSystemNodePools   = try(var.auto_mode_helm_config.truemark_node_pool_system, {})
           clusterName               = module.eks.cluster_name
         }
         karpenter = {
@@ -259,7 +258,8 @@ module "gitops_bridge_bootstrap" {
   apps = local.argocd_apps
   depends_on = [
     aws_eks_access_entry.access_entries,
-    aws_eks_access_policy_association.access_policy_associations
+    aws_eks_access_policy_association.access_policy_associations,
+    module.addons
   ]
 }
 
@@ -268,6 +268,11 @@ module "gitops_bridge_bootstrap" {
 ################################################################################
 module "addons" {
   source = "./modules/addons"
+  depends_on = [
+    aws_eks_access_entry.access_entries,
+    aws_eks_access_policy_association.access_policy_associations,
+    module.eks
+  ]
 
   oidc_provider_arn = module.eks.oidc_provider_arn
   aws_region        = data.aws_region.current.name
@@ -295,8 +300,10 @@ module "addons" {
   karpenter        = var.karpenter_helm_config
 
   # Auto-mode
-  enable_auto_mode = local.addons.enable_auto_mode
+  vpc_id = var.vpc_id
   auto_mode_additional_policies = {}
+  enable_auto_mode              = local.addons.enable_auto_mode
+  cluster_security_group_id = module.eks.cluster_security_group_id
 
   # External Secrets
   enable_external_secrets = local.addons.enable_external_secrets
