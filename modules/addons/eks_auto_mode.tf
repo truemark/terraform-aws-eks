@@ -315,7 +315,6 @@ resource "kubernetes_manifest" "auto_mode_node_class" {
   }
 }
 
-# resource "kubernetes_manifest" "auto_mode_node_pool" {
 resource "kubernetes_manifest" "auto_mode_node_pool" {
   count = var.enable_auto_mode ? 1 : 0
   manifest = {
@@ -350,7 +349,7 @@ resource "kubernetes_manifest" "auto_mode_node_pool" {
             {
               key      = "karpenter.sh/capacity-type"
               operator = "In"
-              values   = ["spot"]
+              values   = ["on-demand"]
             },
             {
               key      = "eks.amazonaws.com/instance-category"
