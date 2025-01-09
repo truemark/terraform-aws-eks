@@ -1,6 +1,8 @@
 locals {
   addons_context = {
     cluster_name      = var.cluster_name
+    cluster_security_group_id = var.cluster_security_group_id
+    vpc_id            = var.vpc_id
     oidc_provider_arn = var.oidc_provider_arn
     aws_account_id    = var.aws_account_id
     aws_region        = var.aws_region
@@ -35,6 +37,12 @@ module "aws_load_balancer_controller" {
 module "karpenter" {
   count          = var.enable_karpenter ? 1 : 0
   source         = "./karpenter"
+  addons_context = local.addons_context
+}
+
+module "auto_mode" {
+  count          = var.enable_auto_mode ? 1 : 0
+  source         = "./eks_auto_mode"
   addons_context = local.addons_context
 }
 

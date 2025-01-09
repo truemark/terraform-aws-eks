@@ -2,13 +2,6 @@
 # Auto_mode Configuration
 ###############################################################################
 
-# Enable or disable auto_mode add-on
-variable "enable_auto_mode" {
-  description = "Flag to enable or disable the auto_mode controller add-on."
-  type        = bool
-  default     = false
-}
-
 variable "auto_mode_additional_policies" {
   description = "Flag to enable or disable the auto_mode controller add-on."
   type        = map(string)
@@ -38,12 +31,7 @@ variable "auto_mode" {
   }
 }
 
-data "aws_partition" "current" {}
-
-data "aws_caller_identity" "current" {}
-
 data "aws_iam_policy_document" "node_assume_role" {
-  count = var.enable_auto_mode ? 1 : 0
   statement {
     sid     = "EKSAutoNodeAssumeRole"
     actions = ["sts:AssumeRole", "sts:TagSession", ]
@@ -60,13 +48,18 @@ data "aws_iam_policy_document" "node_assume_role" {
 ################################################################################
 
 locals {
-  partition                   = data.aws_partition.current.partition
-  node_iam_role_name          = "eks-${var.cluster_name}-node-role"
+  tags = merge(var.tags,
+    {
+      cluster_name = var.addons_context.cluster_name
+      managedBy    = "terraform"
+    }
+  )
+  partition                   = var.addons_context.aws_partition
+  node_iam_role_name          = "eks-${var.addons_context.cluster_name}-node-role"
   node_iam_role_policy_prefix = "arn:${local.partition}:iam::aws:policy"
-  vpc_id                      = var.vpc_id
-  cluster_security_group_id   = var.cluster_security_group_id
-  node_sg_name                = "${var.cluster_name}-node"
-  create_node_sg              = var.enable_auto_mode
+  vpc_id                      = var.addons_context.vpc_id
+  cluster_security_group_id   = var.addons_context.cluster_security_group_id
+  node_sg_name                = "${var.addons_context.cluster_name}-node"
 
   ################################################################################
   # Node Security Group
@@ -173,13 +166,12 @@ locals {
 }
 
 resource "aws_iam_role" "auto_mode_node" {
-  count                 = var.enable_auto_mode ? 1 : 0
   name                  = local.node_iam_role_name
-  description           = "Truemark EKS Auto Mode Node IAM Role for ${var.cluster_name}"
-  assume_role_policy    = data.aws_iam_policy_document.node_assume_role[0].json
+  description           = "Truemark EKS Auto Mode Node IAM Role for ${var.addons_context.cluster_name}"
+  assume_role_policy    = data.aws_iam_policy_document.node_assume_role.json
   force_detach_policies = true
   tags = {
-    "kubernetes.io/cluster/${var.cluster_name}" = "owned"
+    "kubernetes.io/cluster/${var.addons_context.cluster_name}" = "owned"
   }
 }
 
@@ -190,29 +182,27 @@ resource "aws_iam_role_policy_attachment" "auto_mode_node" {
       AmazonEKSWorkerNodePolicy          = "${local.node_iam_role_policy_prefix}/AmazonEKSWorkerNodePolicy"
       AmazonEC2ContainerRegistryReadOnly = "${local.node_iam_role_policy_prefix}/AmazonEC2ContainerRegistryReadOnly"
       # AmazonSSMManagedInstanceCore       = "${local.node_iam_role_policy_prefix}/AmazonSSMManagedInstanceCore"
-  }, ) : k => v if var.enable_auto_mode }
+  }, ) : k => v }
   policy_arn = each.value
-  role       = aws_iam_role.auto_mode_node[0].name
+  role       = aws_iam_role.auto_mode_node.name
 }
 
 resource "aws_iam_role_policy_attachment" "auto_mode_additional_policies" {
-  for_each   = { for k, v in var.auto_mode_additional_policies : k => v if var.enable_auto_mode }
+  for_each   = { for k, v in var.auto_mode_additional_policies : k => v }
   policy_arn = each.value
-  role       = aws_iam_role.auto_mode_node[0].name
+  role       = aws_iam_role.auto_mode_node.name
 }
 
 resource "aws_eks_access_entry" "auto_mode_node" {
-  count         = var.enable_auto_mode ? 1 : 0
-  cluster_name  = var.cluster_name
-  principal_arn = aws_iam_role.auto_mode_node[0].arn
+  cluster_name  = var.addons_context.cluster_name
+  principal_arn = aws_iam_role.auto_mode_node.arn
   type          = "EC2"
 }
 
 resource "aws_eks_access_policy_association" "auto_mode_node" {
-  count         = var.enable_auto_mode ? 1 : 0
-  cluster_name  = var.cluster_name
+  cluster_name  = var.addons_context.cluster_name
   policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSAutoNodePolicy"
-  principal_arn = aws_iam_role.auto_mode_node[0].arn
+  principal_arn = aws_iam_role.auto_mode_node.arn
   depends_on    = [aws_eks_access_entry.auto_mode_node]
   access_scope {
     type = "cluster"
@@ -220,17 +210,15 @@ resource "aws_eks_access_policy_association" "auto_mode_node" {
 }
 
 resource "aws_security_group" "node" {
-  count = var.enable_auto_mode ? 1 : 0
-  # name  = local.node_sg_name
   name_prefix = "${local.node_sg_name}-"
-  description = "EKS automode node security group for ${var.cluster_name}"
+  description = "EKS automode node security group for ${var.addons_context.cluster_name}"
   vpc_id      = local.vpc_id
   tags = merge(
     var.tags,
     {
       "Name"                                      = local.node_sg_name
-      "karpenter.sh/discovery"                    = var.cluster_name
-      "kubernetes.io/cluster/${var.cluster_name}" = "owned"
+      "karpenter.sh/discovery"                    = var.addons_context.cluster_name
+      "kubernetes.io/cluster/${var.addons_context.cluster_name}" = "owned"
     },
   )
   lifecycle {
@@ -240,10 +228,9 @@ resource "aws_security_group" "node" {
 
 # Allow traffic from Nodes to Cluster
 resource "aws_security_group_rule" "node_to_cluster" {
-  count                    = var.enable_auto_mode ? 1 : 0
   description              = "Allow traffic from node group to cluster security group"
   security_group_id        = local.cluster_security_group_id
-  source_security_group_id = aws_security_group.node[0].id
+  source_security_group_id = aws_security_group.node.id
   type                     = "ingress"
   protocol                 = "-1"
   from_port                = 0
@@ -254,8 +241,8 @@ resource "aws_security_group_rule" "node" {
   for_each = { for k, v in merge(
     local.node_security_group_rules,
     local.node_security_group_recommended_rules,
-  ) : k => v if local.create_node_sg }
-  security_group_id        = aws_security_group.node[0].id
+  ) : k => v }
+  security_group_id        = aws_security_group.node.id
   protocol                 = each.value.protocol
   from_port                = each.value.from_port
   to_port                  = each.value.to_port
@@ -273,11 +260,10 @@ resource "aws_security_group_rule" "node" {
 ################################################################################
 
 resource "kubernetes_manifest" "auto_mode_node_class" {
-  count = var.enable_auto_mode ? 1 : 0
   depends_on = [
-    aws_security_group.node[0],
+    aws_security_group.node,
     aws_security_group_rule.node_to_cluster,
-    aws_eks_access_entry.auto_mode_node[0]
+    aws_eks_access_entry.auto_mode_node
   ]
   manifest = {
     apiVersion = "eks.amazonaws.com/v1"
@@ -286,8 +272,7 @@ resource "kubernetes_manifest" "auto_mode_node_class" {
       name = "truemark-system"
     }
     spec = {
-      # amiFamily = "bottlerocket"
-      role = "${aws_iam_role.auto_mode_node[0].name}"
+      role = "${aws_iam_role.auto_mode_node.name}"
       ephemeralStorage = {
         size       = "80Gi"
         iops       = 3000
@@ -303,20 +288,19 @@ resource "kubernetes_manifest" "auto_mode_node_class" {
       securityGroupSelectorTerms = [
         {
           tags = {
-            "karpenter.sh/discovery" = var.cluster_name
+            "karpenter.sh/discovery" = var.addons_context.cluster_name
           }
         }
       ]
       tags = {
-        Name                     = "${var.cluster_name}-truemark-system"
-        "karpenter.sh/discovery" = var.cluster_name
+        Name                     = "${var.addons_context.cluster_name}-truemark-system"
+        "karpenter.sh/discovery" = var.addons_context.cluster_name
       }
     }
   }
 }
 
 resource "kubernetes_manifest" "auto_mode_node_pool" {
-  count = var.enable_auto_mode ? 1 : 0
   manifest = {
     apiVersion = "karpenter.sh/v1"
     kind       = "NodePool"

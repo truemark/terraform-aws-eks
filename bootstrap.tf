@@ -297,11 +297,9 @@ module "addons" {
 
   # Karpenter
   enable_karpenter = local.addons.enable_karpenter
-  karpenter        = var.karpenter_helm_config
 
   # Auto-mode
   vpc_id = var.vpc_id
-  auto_mode_additional_policies = {}
   enable_auto_mode              = local.addons.enable_auto_mode
   cluster_security_group_id = module.eks.cluster_security_group_id
 

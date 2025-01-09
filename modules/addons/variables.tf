@@ -148,6 +148,12 @@ variable "enable_karpenter" {
   default     = false
 }
 
+variable "enable_auto_mode" {
+  description = "Flag to enable or disable the auto_mode controller add-on."
+  type        = bool
+  default     = false
+}
+
 variable "enable_keda" {
   description = "Enable Keda add-on."
   type        = bool
