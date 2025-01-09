@@ -113,7 +113,7 @@ locals {
         externalDNS = {
           enabled      = local.addons.enable_external_dns
           iamRoleArn   = try(module.addons.gitops_metadata.external_dns_iam_role_arn, "")
-          values       = try(yamldetfacode(join("\n", var.external_dns_helm_config.values)), {})
+          values       = try(yamldecode(join("\n", var.external_dns_helm_config.values)), {})
           chartVersion = try(var.external_dns_helm_config.chart_version, local.addons_default_versions.external_dns)
         }
         auto_mode = {
