@@ -47,7 +47,7 @@ karpenter:
 
 # Auto-mode nodepools and nodeclasses
 auto_mode:
-  enabled: false
+  enabled: true
   name: auto_mode
   createNamespace: true
   chartVersion: 1.0.7

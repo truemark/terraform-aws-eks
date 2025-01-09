@@ -135,8 +135,8 @@ locals {
           truemarkNodePoolDefaults  = try(var.karpenter_helm_config.truemark_node_pool_default, {})
           clusterName               = module.eks.cluster_name
           clusterEndpoint           = module.eks.cluster_endpoint
-          interruptionQueue         = module.addons.gitops_metadata.karpenter_interruption_queue
-          nodeIamRoleName           = module.addons.gitops_metadata.karpenter_node_iam_role_arn
+          # interruptionQueue         = module.addons.gitops_metadata.karpenter_interruption_queue
+          # nodeIamRoleName           = module.addons.gitops_metadata.karpenter_node_iam_role_arn
         }
         metricsServer = {
           enabled      = local.addons.enable_metrics_server
@@ -259,7 +259,7 @@ module "gitops_bridge_bootstrap" {
   depends_on = [
     aws_eks_access_entry.access_entries,
     aws_eks_access_policy_association.access_policy_associations,
-    module.addons
+    # module.addons
   ]
 }
 
@@ -271,7 +271,7 @@ module "addons" {
   depends_on = [
     aws_eks_access_entry.access_entries,
     aws_eks_access_policy_association.access_policy_associations,
-    module.eks
+    # module.eks
   ]
 
   oidc_provider_arn = module.eks.oidc_provider_arn
@@ -299,8 +299,8 @@ module "addons" {
   enable_karpenter = local.addons.enable_karpenter
 
   # Auto-mode
-  vpc_id = var.vpc_id
-  enable_auto_mode              = local.addons.enable_auto_mode
+  vpc_id                    = var.vpc_id
+  enable_auto_mode          = local.addons.enable_auto_mode
   cluster_security_group_id = module.eks.cluster_security_group_id
 
   # External Secrets
