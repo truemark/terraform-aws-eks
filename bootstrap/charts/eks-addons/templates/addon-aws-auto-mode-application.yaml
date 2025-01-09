@@ -13,7 +13,7 @@ spec:
   project: {{ .Values.argocdProject | default "default" }}
   sources:
     - repoURL: '{{ .Values.addons_repo_url }}'
-      # targetRevision: {{ .Values.auto_mode.chartVersion }}
+      targetRevision: '{{ .Values.addons_repo_revision }}'
       path: bootstrap/addons/auto_mode
       helm:
         releaseName: auto-mode-resources
