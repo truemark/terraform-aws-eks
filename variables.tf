@@ -315,6 +315,7 @@ variable "castai_helm_config" {
   type        = any
   default     = {}
 }
+
 variable "auto_mode_helm_config" {
   description = "Configuration for the Castai add-on."
   type        = any

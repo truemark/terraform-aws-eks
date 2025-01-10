@@ -47,6 +47,14 @@ variable "addons" {
   }
 }
 
+
+variable "deploy_addons" {
+  description = "Flag to enable or disable the add-ons module. User for staged deployments due to kube_manifest provider limitations."
+  type        = bool
+  default     = true
+}
+
+
 ## Locals
 locals {
   addons = {
@@ -197,7 +205,7 @@ locals {
           }
         }
         },
-        local.addons.enable_observability ? { observability = {
+        local.addons.enable_observability && var.deploy_addons ? { observability = {
           enabled = local.addons.enable_observability
           values  = try(yamldecode(join("\n", var.observability_helm_config.values)), {})
           region  = data.aws_region.current.id
@@ -267,22 +275,23 @@ module "gitops_bridge_bootstrap" {
 # EKS Blueprints Addons
 ################################################################################
 module "addons" {
-  source = "./modules/addons"
+  deploy_addons = var.deploy_addons
+  source        = "./modules/addons"
   depends_on = [
     aws_eks_access_entry.access_entries,
     aws_eks_access_policy_association.access_policy_associations,
-    # module.eks
   ]
 
   oidc_provider_arn = module.eks.oidc_provider_arn
   aws_region        = data.aws_region.current.name
   aws_account_id    = data.aws_caller_identity.current.account_id
-  aws_partition     = data.aws_partition.current.partition
+  aws_partition     = local.aws_partition
   cluster_name      = module.eks.cluster_name
   cluster_endpoint  = module.eks.cluster_endpoint
   cluster_version   = var.cluster_version
   # critical_addons_node_selector    = var.compute_mode == "eks_auto_mode" ? null : var.critical_addons_node_selector
   critical_addons_node_selector    = var.critical_addons_node_selector
+  critical_addons_node_affinity    = var.critical_addons_node_affinity
   critical_addons_node_tolerations = var.critical_addons_node_tolerations
 
 
@@ -302,6 +311,7 @@ module "addons" {
   vpc_id                    = var.vpc_id
   enable_auto_mode          = local.addons.enable_auto_mode
   cluster_security_group_id = module.eks.cluster_security_group_id
+  node_security_group_id    = module.eks.node_security_group_id
 
   # External Secrets
   enable_external_secrets = local.addons.enable_external_secrets

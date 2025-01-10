@@ -14,6 +14,11 @@ variable "cluster_security_group_id" {
   type        = string
 }
 
+variable "node_security_group_id" {
+  description = "Security group ID of the EKS Nodes"
+  type        = string
+}
+
 variable "vpc_id" {
   description = "AWS VPC ID"
   type        = string
@@ -176,4 +181,10 @@ variable "enable_observability" {
   description = "Flag to enable or disable the observability.thanos controller add-on."
   type        = bool
   default     = false
+}
+
+variable "deploy_addons" {
+  description = "Flag to enable or disable the observability.thanos controller add-on."
+  type        = bool
+  default     = true
 }

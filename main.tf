@@ -14,6 +14,7 @@ locals {
 
   # No need for critical addons nodegroup when using auto_mode
   create_default_critical_addon_node_group = var.compute_mode == "eks_auto_mode" ? false : var.create_default_critical_addon_node_group
+  aws_partition                            = data.aws_partition.current.partition
   default_critical_addon_nodegroup = {
     instance_types = var.default_critical_addon_node_group_instance_types
     ami_type       = "BOTTLEROCKET_ARM_64"
@@ -61,7 +62,6 @@ locals {
       "truemark-system" = local.default_critical_addon_nodegroup
     } : {}
   )
-
 }
 
 module "ebs_csi_irsa_role" {
@@ -94,6 +94,7 @@ module "eks" {
   node_security_group_additional_rules     = var.node_security_group_additional_rules
   cluster_additional_security_group_ids    = var.cluster_additional_security_group_ids
   enable_cluster_creator_admin_permissions = var.enable_cluster_creator_admin_permissions
+  create_node_security_group               = true
 
   #KMS
   kms_key_users  = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
@@ -143,7 +144,7 @@ module "eks" {
     }
   }
 
-  node_security_group_tags = local.addons.enable_karpenter ? { "karpenter.sh/discovery" = var.cluster_name } : {}
+  node_security_group_tags = local.addons.enable_karpenter || local.addons.enable_auto_mode ? { "karpenter.sh/discovery" = var.cluster_name } : {}
 }
 
 resource "aws_eks_access_entry" "access_entries" {

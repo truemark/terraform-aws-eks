@@ -47,10 +47,10 @@ karpenter:
 
 # Auto-mode nodepools and nodeclasses
 auto_mode:
-  enabled: true
+  enabled: false
   name: auto_mode
   createNamespace: true
-  chartVersion: 1.0.7
+  chartVersion: 0.0.1
   iamRoleArn: ""
   serviceAccount:
     create: true
