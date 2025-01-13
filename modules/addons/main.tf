@@ -1,13 +1,16 @@
 locals {
   addons_context = {
-    cluster_name              = var.cluster_name
-    cluster_security_group_id = var.cluster_security_group_id
-    node_security_group_id    = var.node_security_group_id
-    vpc_id                    = var.vpc_id
-    oidc_provider_arn         = var.oidc_provider_arn
-    aws_account_id            = var.aws_account_id
-    aws_region                = var.aws_region
-    aws_partition             = var.aws_partition
+    cluster_name                  = var.cluster_name
+    cluster_security_group_id     = var.cluster_security_group_id
+    node_security_group_id        = var.node_security_group_id
+    vpc_id                        = var.vpc_id
+    oidc_provider_arn             = var.oidc_provider_arn
+    aws_account_id                = var.aws_account_id
+    aws_region                    = var.aws_region
+    aws_partition                 = var.aws_partition
+    auto_mode_system_nodes_config = var.auto_mode_system_nodes_config
+    critical_addons_node_selector = var.critical_addons_node_selector
+    critical_addons_node_tolerations = var.critical_addons_node_tolerations
   }
 }
 

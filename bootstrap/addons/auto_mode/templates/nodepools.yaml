@@ -26,29 +26,3 @@ spec:
           value: truemark-{{ $k }}
   weight: 10
 {{- end }}
-{{- range $k, $v := .Values.truemarkSystemNodePools }}
----
-apiVersion: karpenter.sh/v1
-kind: NodePool
-metadata:
-  name: truemark-{{ $k }}
-spec:
-  disruption:
-    budgets:
-      - nodes: 10%
-    consolidateAfter: 0s
-    consolidationPolicy: WhenEmptyOrUnderutilized
-  template:
-    metadata: {}
-    spec:
-      expireAfter: {{ $v.expireAfter }}
-      nodeClassRef:
-        group: eks.amazonaws.com
-        kind: NodeClass
-        name: truemark
-      requirements:
-        {{- toYaml $v.requirements | nindent 8 }}
-      taints:
-        {{- toYaml $v.taint | nindent 8 }}
-  weight: 10
-{{- end }}

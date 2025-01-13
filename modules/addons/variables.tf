@@ -29,6 +29,16 @@ variable "cluster_endpoint" {
   type        = string
 }
 
+variable "cluster_certificate_authority_data" {
+  description = "Base64 encoded certificate data required to communicate with your cluster."
+  type        = string
+}
+
+variable "cluster_token" {
+  description = "Authentication token for the EKS cluster."
+  type        = string
+}
+
 variable "cluster_version" {
   description = "Kubernetes `<major>.<minor>` version to use for the EKS cluster (i.e.: `1.24`)."
   type        = string
@@ -102,6 +112,11 @@ variable "critical_addons_node_affinity" {
 variable "critical_addons_node_tolerations" {
   description = "Config for node tolerations for workloads."
   type        = list(any)
+}
+
+variable "auto_mode_system_nodes_config" {
+  description = "Kubernetes manifest with system node pool configuration"
+  default = {}
 }
 
 variable "aws_partition" {}

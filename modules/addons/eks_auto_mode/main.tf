@@ -12,8 +12,8 @@ data "aws_iam_policy_document" "node_assume_role" {
     }
   }
 }
-
 locals {
+  labels = var.addons_context.critical_addons_node_selector
   tags = merge(
     var.tags,
     {
@@ -27,102 +27,119 @@ locals {
   vpc_id                      = var.addons_context.vpc_id
   cluster_security_group_id   = var.addons_context.cluster_security_group_id
   node_sg_name                = "${var.addons_context.cluster_name}-node"
+  am_config = var.addons_context.auto_mode_system_nodes_config
+  auto_mode_system_nodeclass_manifest = {
+    apiVersion = "eks.amazonaws.com/v1"
+    kind       = "NodeClass"
+    metadata = {
+      name = "${local.am_config.nodeclass_name}"
+    }
+    spec = {
+      role = "${aws_iam_role.auto_mode_node.name}"
+      ephemeralStorage = {
+        size       = "100Gi"
+        iops       = 3000
+        throughput = 125
+      }
+      subnetSelectorTerms = [
+        {
+          tags = {
+            network = "private"
+          }
+        }
+      ]
+      securityGroupSelectorTerms = [
+        {
+          tags = {
+            "karpenter.sh/discovery" = "${var.addons_context.cluster_name}"
+          }
+        },
+        {
+          id = "${var.addons_context.node_security_group_id}"
+        }
+      ]
+      tags = {
+        Name                     = "${var.addons_context.cluster_name}-${local.am_config.nodeclass_name}"
+        "karpenter.sh/discovery" = "${var.addons_context.cluster_name}"
+      }
+    }
+  }
 
-  ################################################################################
-  # Node Security Group
-  # Defaults follow https://docs.aws.amazon.com/eks/latest/userguide/sec-group-reqs.html
-  # Plus NTP/HTTPS (otherwise nodes fail to launch)
-  ################################################################################
-
-  # node_security_group_rules = {
-  #   ingress_cluster_443 = {
-  #     description                   = "Cluster API to node groups"
-  #     protocol                      = "tcp"
-  #     from_port                     = 443
-  #     to_port                       = 443
-  #     type                          = "ingress"
-  #     source_cluster_security_group = true
-  #   }
-  #   ingress_cluster_kubelet = {
-  #     description                   = "Cluster API to node kubelets"
-  #     protocol                      = "tcp"
-  #     from_port                     = 10250
-  #     to_port                       = 10250
-  #     type                          = "ingress"
-  #     source_cluster_security_group = true
-  #   }
-  #   ingress_self_coredns_tcp = {
-  #     description = "Node to node CoreDNS"
-  #     protocol    = "tcp"
-  #     from_port   = 53
-  #     to_port     = 53
-  #     type        = "ingress"
-  #     self        = true
-  #   }
-  #   ingress_self_coredns_udp = {
-  #     description = "Node to node CoreDNS UDP"
-  #     protocol    = "udp"
-  #     from_port   = 53
-  #     to_port     = 53
-  #     type        = "ingress"
-  #     self        = true
-  #   }
-  # }
-
-  # node_security_group_recommended_rules = { for k, v in {
-  #   ingress_nodes_ephemeral = {
-  #     description = "Node to node ingress on ephemeral ports"
-  #     protocol    = "tcp"
-  #     from_port   = 1025
-  #     to_port     = 65535
-  #     type        = "ingress"
-  #     self        = true
-  #   }
-  #   # metrics-server
-  #   ingress_cluster_4443_webhook = {
-  #     description                   = "Cluster API to node 4443/tcp webhook"
-  #     protocol                      = "tcp"
-  #     from_port                     = 4443
-  #     to_port                       = 4443
-  #     type                          = "ingress"
-  #     source_cluster_security_group = true
-  #   }
-  #   # prometheus-adapter
-  #   ingress_cluster_6443_webhook = {
-  #     description                   = "Cluster API to node 6443/tcp webhook"
-  #     protocol                      = "tcp"
-  #     from_port                     = 6443
-  #     to_port                       = 6443
-  #     type                          = "ingress"
-  #     source_cluster_security_group = true
-  #   }
-  #   # Karpenter
-  #   ingress_cluster_8443_webhook = {
-  #     description                   = "Cluster API to node 8443/tcp webhook"
-  #     protocol                      = "tcp"
-  #     from_port                     = 8443
-  #     to_port                       = 8443
-  #     type                          = "ingress"
-  #     source_cluster_security_group = true
-  #   }
-  #   # ALB controller, NGINX
-  #   ingress_cluster_9443_webhook = {
-  #     description                   = "Cluster API to node 9443/tcp webhook"
-  #     protocol                      = "tcp"
-  #     from_port                     = 9443
-  #     to_port                       = 9443
-  #     type                          = "ingress"
-  #     source_cluster_security_group = true
-  #   }
-  #   egress_all = {
-  #     description = "Allow all egress"
-  #     protocol    = "-1"
-  #     from_port   = 0
-  #     to_port     = 0
-  #     type        = "egress"
-  #     cidr_blocks = ["0.0.0.0/0"]
-  # } } : k => v }
+  auto_mode_system_nodepool_manifest = {
+    apiVersion = "karpenter.sh/v1"
+    kind       = "NodePool"
+    metadata = {
+      labels = {
+        CriticalAddonsOnly = "true"
+      }
+        #local.labels
+      name = "${local.am_config.nodepool_name}"
+    }
+    spec = {
+      disruption = {
+        budgets = [
+          {
+            nodes = "10%"
+          }
+        ]
+        consolidateAfter    = "0s"
+        consolidationPolicy = "WhenEmptyOrUnderutilized"
+      }
+      limits = "${local.am_config.nodepool_limits}"
+      template = {
+        spec = {
+          expireAfter = "480h"
+          nodeClassRef = {
+            group = "eks.amazonaws.com"
+            kind  = "NodeClass"
+            name  = "${local.am_config.nodeclass_name}"
+          }
+         requirements = [
+            {
+              key      = "karpenter.sh/capacity-type"
+              operator = "In"
+              values   = toset(local.am_config.instance_capacity_type)
+            },
+            {
+              key      = "eks.amazonaws.com/instance-category"
+              operator = "In"
+              values   = toset(local.am_config.instance_category)
+            },
+            {
+              key      = "eks.amazonaws.com/instance-generation"
+              operator = "Gt"
+              values   = "${local.am_config.instance_generation}"
+            },
+            {
+              key      = "kubernetes.io/arch"
+              operator = "In"
+              values   = toset(local.am_config.instance_arch)
+            },
+            {
+              key      = "eks.amazonaws.com/instance-cpu"
+              operator = "In"
+              values   = toset(local.am_config.instance_cpu)
+            },
+            {
+              key      = "eks.amazonaws.com/instance-hypervisor"
+              operator = "In"
+              values   = toset(local.am_config.instance_hypervisor)
+            }
+          ]
+          terminationGracePeriod = local.am_config.instance_termination_grace_period
+          taints = [
+            {
+              key    = "CriticalAddonsOnly"
+              effect = "NoSchedule"
+              value  = "true"
+            }
+          ]
+        }
+      }
+    }
+  }
 }
+
 
 resource "aws_iam_role" "auto_mode_node" {
   name_prefix           = local.node_iam_role_name_prefix
@@ -161,173 +178,25 @@ resource "aws_eks_access_policy_association" "auto_mode_node" {
   }
 }
 
-# resource "aws_security_group" "node" {
-#   name_prefix = "${local.node_sg_name}-"
-#   description = "EKS automode node security group for ${var.addons_context.cluster_name}"
-#   vpc_id      = local.vpc_id
-#   tags = merge(
-#     var.tags,
-#     {
-#       "Name"                                      = local.node_sg_name
-#       "karpenter.sh/discovery"                    = var.addons_context.cluster_name
-#       "kubernetes.io/cluster/${var.addons_context.cluster_name}" = "owned"
-#     },
-#   )
-#   lifecycle {
-#     create_before_destroy = true
-#   }
-# }
-
-# Allow traffic from Nodes to Cluster
-# resource "aws_security_group_rule" "node_to_cluster" {
-#   description              = "Allow traffic from node group to cluster security group"
-#   security_group_id        = local.cluster_security_group_id
-#   source_security_group_id = aws_security_group.node.id
-#   type                     = "ingress"
-#   protocol                 = "-1"
-#   from_port                = 0
-#   to_port                  = 0
-# }
-
-# resource "aws_security_group_rule" "node" {
-#   for_each = { for k, v in merge(
-#     local.node_security_group_rules,
-#     local.node_security_group_recommended_rules,
-#   ) : k => v }
-#   security_group_id        = aws_security_group.node.id
-#   protocol                 = each.value.protocol
-#   from_port                = each.value.from_port
-#   to_port                  = each.value.to_port
-#   type                     = each.value.type
-#   description              = lookup(each.value, "description", null)
-#   cidr_blocks              = lookup(each.value, "cidr_blocks", null)
-#   ipv6_cidr_blocks         = lookup(each.value, "ipv6_cidr_blocks", null)
-#   prefix_list_ids          = lookup(each.value, "prefix_list_ids", [])
-#   self                     = lookup(each.value, "self", null)
-#   source_security_group_id = try(each.value.source_cluster_security_group, false) ? local.cluster_security_group_id : lookup(each.value, "source_security_group_id", null)
-# }
-
 ###############################################################################
 # Create nodepool for system components
 ###############################################################################
 
 resource "kubernetes_manifest" "auto_mode_node_class" {
+  manifest = local.auto_mode_system_nodeclass_manifest
   depends_on = [
-    # aws_security_group.node,
-    # aws_security_group_rule.node_to_cluster,
     aws_eks_access_entry.auto_mode_node
   ]
-  manifest = {
-    apiVersion = "eks.amazonaws.com/v1"
-    kind       = "NodeClass"
-    metadata = {
-      name = "truemark-system"
-    }
-    spec = {
-      role = "${aws_iam_role.auto_mode_node.name}"
-      ephemeralStorage = {
-        size       = "80Gi"
-        iops       = 3000
-        throughput = 125
-      }
-      subnetSelectorTerms = [
-        {
-          tags = {
-            network = "private"
-          }
-        }
-      ]
-      securityGroupSelectorTerms = [
-        {
-          tags = {
-            "karpenter.sh/discovery" = var.addons_context.cluster_name
-          }
-        },
-        {
-          id = var.addons_context.node_security_group_id
-        }
-
-      ]
-      tags = {
-        Name                     = "${var.addons_context.cluster_name}-truemark-system"
-        "karpenter.sh/discovery" = var.addons_context.cluster_name
-      }
-    }
-  }
 }
 
+# resource "kubernetes_manifest" "auto_mode_node_pool" {
+#   manifest = local.auto_mode_system_nodepool_manifest
+#   depends_on = [
+#     kubernetes_manifest.auto_mode_node_class
+#   ]
+# }
 resource "kubernetes_manifest" "auto_mode_node_pool" {
-  manifest = {
-    apiVersion = "karpenter.sh/v1"
-    kind       = "NodePool"
-    metadata = {
-      labels = {
-        CriticalAddonsOnly = "true"
-      }
-      name = "truemark-system"
-    }
-    spec = {
-      disruption = {
-        budgets = [
-          {
-            nodes = "10%"
-          }
-        ]
-        consolidateAfter    = "0s"
-        consolidationPolicy = "WhenEmptyOrUnderutilized"
-      }
-      limits = {}
-      template = {
-        spec = {
-          expireAfter = "480h"
-          nodeClassRef = {
-            group = "eks.amazonaws.com"
-            kind  = "NodeClass"
-            name  = "truemark-system"
-          }
-          requirements = [
-            {
-              key      = "karpenter.sh/capacity-type"
-              operator = "In"
-              values   = ["on-demand"]
-            },
-            {
-              key      = "eks.amazonaws.com/instance-category"
-              operator = "In"
-              values   = ["c", "m", "r"]
-            },
-            {
-              key      = "eks.amazonaws.com/instance-generation"
-              operator = "Gt"
-              values   = ["4"]
-            },
-            {
-              key      = "kubernetes.io/arch"
-              operator = "In"
-              values   = ["amd64"]
-            },
-            {
-              key      = "eks.amazonaws.com/instance-cpu"
-              operator = "In"
-              values   = ["2", "4"]
-            },
-            {
-              key      = "eks.amazonaws.com/instance-hypervisor"
-              operator = "In"
-              values   = ["nitro"]
-            }
-          ]
-          terminationGracePeriod = "24h0m0s"
-          taints = [
-            {
-              effect = "NoSchedule"
-              key    = "CriticalAddonsOnly"
-            }
-          ]
-        }
-      }
-    }
-  }
+  manifest = yamldecode(local.nodepool_yml)
   depends_on = [
     kubernetes_manifest.auto_mode_node_class
   ]
