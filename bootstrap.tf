@@ -78,7 +78,7 @@ locals {
     cert_manager                 = "v1.14.3"
     external_dns                 = "1.15.0"
     karpenter                    = "1.0.7"
-    auto_mode                    = "0.0.1"
+    auto_mode                    = var.addons_target_revision #"0.0.1"
     external_secrets             = "0.7.0"
     metrics_server               = "3.12.0"
     keda                         = "2.16.0"
@@ -91,8 +91,9 @@ locals {
     }
   }
 
+  auto_mode_system_nodepool_manifest = module.addons.gitops_metadata.auto_mode_system_nodepool_manifest
   addons_metadata = merge(
-    # module.addons.gitops_metadata,
+    # module.addons.gitops_metadata
     {
       aws_cluster_name = module.eks.cluster_name
       aws_region       = data.aws_region.current.name
@@ -107,10 +108,11 @@ locals {
 
   argocd_apps = merge({
     eks-addons = {
-      project         = "default"
-      repo_url        = var.addons_repo_url
-      target_revision = var.addons_target_revision
-      path            = var.addons_repo_path
+      project              = "default"
+      repo_url             = var.addons_repo_url
+      target_revision      = var.addons_target_revision
+      addons_repo_revision = var.addons_target_revision
+      path                 = var.addons_repo_path
       values = merge({
         certManager = {
           enabled      = local.addons.enable_cert_manager
@@ -126,12 +128,13 @@ locals {
         }
         auto_mode = {
           enabled                   = local.addons.enable_auto_mode
-          nodeIamRoleName           = try(module.addons.gitops_metadata.auto_mode_node_iam_role_arn, null)
+          nodeIamRoleName           = try(module.addons.gitops_metadata.auto_mode_iam_role_name, null)
           values                    = try(yamldecode(join("\n", var.auto_mode_helm_config.values)), {})
           chartVersion              = try(var.auto_mode_helm_config.chart_version, local.addons_default_versions.auto_mode)
           truemarkNodeClassDefaults = try(var.auto_mode_helm_config.truemark_nodeclass_default, {})
           truemarkNodePoolDefaults  = try(var.auto_mode_helm_config.truemark_node_pool_default, {})
           clusterName               = module.eks.cluster_name
+          target_revision           = var.addons_target_revision
         }
         karpenter = {
           enabled                   = local.addons.enable_karpenter
@@ -282,18 +285,19 @@ module "addons" {
     aws_eks_access_policy_association.access_policy_associations,
   ]
 
-  oidc_provider_arn = module.eks.oidc_provider_arn
-  aws_region        = data.aws_region.current.name
-  aws_account_id    = data.aws_caller_identity.current.account_id
-  aws_partition     = local.aws_partition
-  cluster_name      = module.eks.cluster_name
-  cluster_endpoint  = module.eks.cluster_endpoint
-  cluster_version   = var.cluster_version
-  # critical_addons_node_selector    = var.compute_mode == "eks_auto_mode" ? null : var.critical_addons_node_selector
-  critical_addons_node_selector    = var.critical_addons_node_selector
-  critical_addons_node_affinity    = var.critical_addons_node_affinity
-  critical_addons_node_tolerations = var.critical_addons_node_tolerations
-
+  oidc_provider_arn                  = module.eks.oidc_provider_arn
+  aws_region                         = data.aws_region.current.name
+  aws_account_id                     = data.aws_caller_identity.current.account_id
+  aws_partition                      = local.aws_partition
+  cluster_name                       = module.eks.cluster_name
+  cluster_endpoint                   = module.eks.cluster_endpoint
+  cluster_certificate_authority_data = module.eks.cluster_certificate_authority_data
+  cluster_token                      = data.aws_eks_cluster_auth.cluster.token
+  cluster_version                    = var.cluster_version
+  critical_addons_node_selector      = var.critical_addons_node_selector
+  critical_addons_node_affinity      = var.critical_addons_node_affinity
+  critical_addons_node_tolerations   = var.critical_addons_node_tolerations
+  auto_mode_system_nodes_config      = var.auto_mode_system_nodes_config
 
   # Using GitOps Bridge
   create_kubernetes_resources = var.enable_gitops_bridge_bootstrap ? false : true

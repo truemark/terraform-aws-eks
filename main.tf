@@ -104,7 +104,7 @@ module "eks" {
     enabled = true
   } : {}
 
-  cluster_addons = {
+  cluster_addons = var.deploy_addons ? {
     vpc-cni = {
       most_recent              = true
       before_compute           = var.vpc_cni_before_compute
@@ -129,7 +129,7 @@ module "eks" {
     metrics-server = {
       most_recent = true
     }
-  }
+  } : {}
 
   vpc_id     = var.vpc_id
   subnet_ids = var.subnets_ids

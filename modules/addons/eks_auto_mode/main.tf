@@ -27,7 +27,7 @@ locals {
   vpc_id                      = var.addons_context.vpc_id
   cluster_security_group_id   = var.addons_context.cluster_security_group_id
   node_sg_name                = "${var.addons_context.cluster_name}-node"
-  am_config = var.addons_context.auto_mode_system_nodes_config
+  am_config                   = var.addons_context.auto_mode_system_nodes_config
   auto_mode_system_nodeclass_manifest = {
     apiVersion = "eks.amazonaws.com/v1"
     kind       = "NodeClass"
@@ -72,7 +72,7 @@ locals {
       labels = {
         CriticalAddonsOnly = "true"
       }
-        #local.labels
+      #local.labels
       name = "${local.am_config.nodepool_name}"
     }
     spec = {
@@ -94,7 +94,7 @@ locals {
             kind  = "NodeClass"
             name  = "${local.am_config.nodeclass_name}"
           }
-         requirements = [
+          requirements = [
             {
               key      = "karpenter.sh/capacity-type"
               operator = "In"

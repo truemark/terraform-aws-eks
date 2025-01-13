@@ -116,7 +116,7 @@ variable "critical_addons_node_tolerations" {
 
 variable "auto_mode_system_nodes_config" {
   description = "Kubernetes manifest with system node pool configuration"
-  default = {}
+  default     = {}
 }
 
 variable "aws_partition" {}

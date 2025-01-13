@@ -85,13 +85,39 @@ EOF
   }
 }
 
-variable "eks_auto_mode_pools" {
-  description = "Map of EKS managed node group definitions to create."
-  type        = list(string)
-  default     = ["system"]
-  validation {
-    condition     = alltrue([for pool in var.eks_auto_mode_pools : contains(["system", "general-purpose"], pool)])
-    error_message = "Can only be system and/or general-purpose"
+variable "auto_mode_system_nodes_config" {
+  description = "Contains configuration for system nodepool and nodeclass"
+  type = object({
+    nodepool_name  = string
+    nodeclass_name = string
+    nodepool_limits = optional(object({
+      cpu    = optional(string, "64")
+      memory = optional(string, "64gi")
+    }))
+    instance_category                 = optional(list(string), ["c", "m", "r"])
+    instance_cpu                      = optional(list(string), ["2", "4", "8"])
+    instance_hypervisor               = optional(list(string), ["nitro"])
+    instance_arch                     = optional(list(string), ["amd64"])
+    instance_capacity_type            = optional(list(string), ["spot"])
+    instance_termination_grace_period = optional(string, "24h0m0s")
+    instance_expire_after             = optional(string, "480h")
+    instance_generation               = optional(string, "4")
+  })
+  default = {
+    nodepool_name = "truemark-system"
+    nodepool_limits = {
+      cpu    = "64"
+      memory = "64Gi"
+    }
+    nodeclass_name                    = "truemark-system"
+    instance_capacity_type            = ["spot"]
+    instance_category                 = ["c", "m", "r"]
+    instance_cpu                      = ["2", "4", "8"]
+    instance_hypervisor               = ["nitro"]
+    instance_arch                     = ["amd64"]
+    instance_generation               = "4"
+    instance_termination_grace_period = "24h0m0s"
+    instance_expire_after             = "480h"
   }
 }
 
