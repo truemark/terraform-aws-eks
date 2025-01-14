@@ -174,7 +174,7 @@ variable "critical_addons_node_affinity" {
                 {
                   key      = "CriticalAddonsOnly"
                   operator = "Equals"
-                  values   = true
+                  values   = "\"true\""
                 }
               ]
             }
