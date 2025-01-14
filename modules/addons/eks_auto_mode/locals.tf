@@ -23,9 +23,21 @@ spec:
       - key: eks.amazonaws.com/instance-category
         operator: In
         values:  ${jsonencode(local.am_config.instance_category)}
+      - key: kubernetes.io/arch
+        operator: In
+        values: ${jsonencode(local.am_config.instance_arch)}
       - key: karpenter.sh/capacity-type
         operator: In
         values: ${jsonencode(local.am_config.instance_capacity_type)}
+      - key: eks.amazonaws.com/instance-hypervisor
+        operator: In
+        values: ${jsonencode(local.am_config.instance_hypervisor)}
+      - key: eks.amazonaws.com/instance-cpu
+        operator: In
+        values: ${jsonencode(local.am_config.instance_cpu)}
+      - key: eks.amazonaws.com/instance-category
+        operator: In
+        values: ${jsonencode(local.am_config.instance_category)}
       taints:
       - effect: NoSchedule
         key: CriticalAddonsOnly
