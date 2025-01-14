@@ -110,10 +110,3 @@ output "addons" {
   value = local.addons
 }
 
-output "auto_mode_system_nodepool_manifest" {
-  value = local.auto_mode_system_nodepool_manifest
-}
-
-output "auto_mode_role" {
-  value = module.addons.gitops_metadata.auto_mode_iam_role_name
-}

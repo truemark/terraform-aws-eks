@@ -30,7 +30,8 @@ variable "addons" {
         "enable_aws_load_balancer_controller",
         "enable_aws_ebs_csi_resources",
         "enable_velero",
-        "enable_observability"
+        "enable_observability",
+        "enable_cast_ai"
       ], key)
     ])
     error_message = "Invalid key in var.addons"
@@ -38,12 +39,11 @@ variable "addons" {
   validation {
     condition = alltrue([
       for key in keys(var.addons) : !contains([
-        "enable_cast_ai",
         "enable_karpenter",
         "enable_auto_mode"
       ], key)
     ])
-    error_message = "The enable_cast_ai, enable_karpenter params have been deprecated. Compute-related configuration should be set via compute_mode variable."
+    error_message = "The enable_karpenter params have been moved to compute_mode variable."
   }
 }
 
@@ -69,7 +69,7 @@ locals {
     enable_aws_ebs_csi_resources        = try(var.addons.enable_aws_ebs_csi_resources, true)
     enable_velero                       = try(var.addons.enable_velero, false)
     enable_observability                = try(var.addons.enable_observability, false)
-    enable_cast_ai                      = var.compute_mode == "cast_ai" ? true : false
+    enable_cast_ai                      = try(var.addons.enable_cast_ai, false)
     enable_karpenter                    = var.compute_mode == "karpenter" ? true : false
     enable_auto_mode                    = var.compute_mode == "eks_auto_mode" ? true : false
   }
@@ -78,12 +78,12 @@ locals {
     cert_manager                 = "v1.14.3"
     external_dns                 = "1.15.0"
     karpenter                    = "1.0.7"
-    auto_mode                    = var.addons_target_revision #"0.0.1"
     external_secrets             = "0.7.0"
     metrics_server               = "3.12.0"
     keda                         = "2.16.0"
     aws_load_balancer_controller = "1.10.0"
     istio                        = "1.23.3"
+    auto_mode                    = var.addons_target_revision
     cast_ai = {
       agent              = "0.86.0"
       cluster_controller = "0.74.4"
@@ -91,7 +91,7 @@ locals {
     }
   }
 
-  auto_mode_system_nodepool_manifest = module.addons.gitops_metadata.auto_mode_system_nodepool_manifest
+  auto_mode_system_nodepool_manifest = try(module.addons.gitops_metadata.auto_mode_system_nodepool_manifest, null)
   addons_metadata = merge(
     # module.addons.gitops_metadata
     {

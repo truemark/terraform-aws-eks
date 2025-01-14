@@ -189,12 +189,6 @@ resource "kubernetes_manifest" "auto_mode_node_class" {
   ]
 }
 
-# resource "kubernetes_manifest" "auto_mode_node_pool" {
-#   manifest = local.auto_mode_system_nodepool_manifest
-#   depends_on = [
-#     kubernetes_manifest.auto_mode_node_class
-#   ]
-# }
 resource "kubernetes_manifest" "auto_mode_node_pool" {
   manifest = yamldecode(local.nodepool_yml)
   depends_on = [
