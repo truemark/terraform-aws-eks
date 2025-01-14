@@ -1,0 +1,25 @@
+apiVersion: eks.amazonaws.com/v1
+kind: NodeClass
+metadata:
+  name: truemark
+spec:
+  amiFamily: {{ .Values.truemarkNodeClassDefaults.amiFamily }}
+  amiSelectorTerms:
+    {{- toYaml .Values.truemarkNodeClassDefaults.amiSelectorTerms | nindent 4 }}
+  blockDeviceMappings:
+    {{- toYaml .Values.truemarkNodeClassDefaults.blockDeviceMappings | nindent 4 }}
+  metadataOptions:
+    httpEndpoint: enabled
+    httpProtocolIPv6: disabled
+    httpPutResponseHopLimit: 1
+    httpTokens: required
+  role: {{ .Values.nodeIamRoleName}}
+  securityGroupSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: {{ .Values.clusterName }}
+  subnetSelectorTerms:
+    - tags:
+        network: private
+  tags:
+    Name: {{ .Values.clusterName }}-node
+    karpenter.sh/discovery: {{ .Values.clusterName }}

@@ -56,6 +56,12 @@ variable "create_cloudwatch_log_group" {
   default     = true
 }
 
+variable "bootstrap_self_managed_addons" {
+  description = "Indicates whether to bootstrap self-managed add-ons for the EKS cluster."
+  type        = bool
+  default     = true
+}
+
 ###############################################
 # EKS Addons Configuration
 ###############################################
@@ -66,9 +72,61 @@ variable "vpc_cni_before_compute" {
 }
 
 
-###############################################
-# Node Group Configuration
-###############################################
+################################################################################
+# Compute Resources
+################################################################################
+variable "compute_mode" {
+  description = <<EOF
+Description:
+Specifies the compute provider to use for the EKS. Must be one of the following modes:
+
+- eks_auto_mode: Use EKS managed node groups.
+- karpenter: Use Karpenter for provisioning nodes.
+- cast_ai: Use CAST AI for optimizing cloud costs.
+EOF
+  type        = string
+  validation {
+    condition     = contains(["eks_auto_mode", "karpenter", "cast_ai"], var.compute_mode)
+    error_message = "Invalid compute mode. Must be one of: eks_auto_mode, karpenter, cast_ai."
+  }
+}
+
+variable "auto_mode_system_nodes_config" {
+  description = "Contains configuration for system nodepool and nodeclass"
+  type = object({
+    nodepool_name  = string
+    nodeclass_name = string
+    nodepool_limits = optional(object({
+      cpu    = optional(string, "64")
+      memory = optional(string, "64gi")
+    }))
+    instance_category                 = optional(list(string), ["c", "m", "r"])
+    instance_cpu                      = optional(list(string), ["2", "4", "8"])
+    instance_hypervisor               = optional(list(string), ["nitro"])
+    instance_arch                     = optional(list(string), ["amd64"])
+    instance_capacity_type            = optional(list(string), ["spot"])
+    instance_termination_grace_period = optional(string, "24h0m0s")
+    instance_expire_after             = optional(string, "480h")
+    instance_generation               = optional(string, "4")
+  })
+  default = {
+    nodepool_name = "truemark-system"
+    nodepool_limits = {
+      cpu    = "64"
+      memory = "64Gi"
+    }
+    nodeclass_name                    = "truemark-system"
+    instance_capacity_type            = ["spot"]
+    instance_category                 = ["c", "m", "r"]
+    instance_cpu                      = ["2", "4", "8"]
+    instance_hypervisor               = ["nitro"]
+    instance_arch                     = ["amd64"]
+    instance_generation               = "4"
+    instance_termination_grace_period = "24h0m0s"
+    instance_expire_after             = "480h"
+  }
+}
+
 variable "eks_managed_node_groups" {
   description = "Map of EKS managed node group definitions to create."
   type        = any
@@ -78,7 +136,7 @@ variable "eks_managed_node_groups" {
 variable "create_default_critical_addon_node_group" {
   description = "Create a default critical addon node group"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "default_critical_addon_node_group_instance_types" {
@@ -98,7 +156,44 @@ variable "critical_addons_node_selector" {
   description = "Config for node selector for workloads"
   type        = map(any)
   default = {
-    CriticalAddonsOnly = "true"
+    "CriticalAddonsOnly" = "true"
+  }
+}
+
+variable "critical_addons_node_affinity" {
+  description = "Config for node tolerations for workloads"
+  type        = map(any)
+  default = {
+    nodeAffinity = {
+      preferredDuringSchedulingIgnoredDuringExecution = {
+        nodeSelectorTerms = [
+          {
+            weight = 1,
+            preference = {
+              matchExpressions = [
+                {
+                  key      = "CriticalAddonsOnly"
+                  operator = "Equals"
+                  values   = "\"true\""
+                }
+              ]
+            }
+          },
+          {
+            weight = 2,
+            preference = {
+              matchExpressions = [
+                {
+                  key      = "karpenter.sh/nodepool"
+                  operator = "In"
+                  values   = ["system", "truemark-system"]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
   }
 }
 
@@ -107,9 +202,8 @@ variable "critical_addons_node_tolerations" {
   type        = list(map(string))
   default = [{
     key      = "CriticalAddonsOnly"
-    operator = "Equal"
+    operator = "Exists"
     effect   = "NoSchedule"
-    value    = "true"
   }]
 }
 
@@ -249,6 +343,12 @@ variable "observability_helm_config" {
 }
 
 variable "castai_helm_config" {
+  description = "Configuration for the Castai add-on."
+  type        = any
+  default     = {}
+}
+
+variable "auto_mode_helm_config" {
   description = "Configuration for the Castai add-on."
   type        = any
   default     = {}
