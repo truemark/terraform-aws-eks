@@ -9,8 +9,33 @@ variable "cluster_name" {
   type        = string
 }
 
+variable "cluster_security_group_id" {
+  description = "Security group ID of the EKS cluster"
+  type        = string
+}
+
+variable "node_security_group_id" {
+  description = "Security group ID of the EKS Nodes"
+  type        = string
+}
+
+variable "vpc_id" {
+  description = "AWS VPC ID"
+  type        = string
+}
+
 variable "cluster_endpoint" {
   description = "Endpoint for your Kubernetes API server."
+  type        = string
+}
+
+variable "cluster_certificate_authority_data" {
+  description = "Base64 encoded certificate data required to communicate with your cluster."
+  type        = string
+}
+
+variable "cluster_token" {
+  description = "Authentication token for the EKS cluster."
   type        = string
 }
 
@@ -47,9 +72,51 @@ variable "critical_addons_node_selector" {
   type        = map(any)
 }
 
+variable "critical_addons_node_affinity" {
+  description = "Config for node tolerations for workloads"
+  type        = map(any)
+  default = {
+    nodeAffinity = {
+      preferredDuringSchedulingIgnoredDuringExecution = {
+        nodeSelectorTerms = [
+          {
+            weight = 1,
+            preference = {
+              matchExpressions = [
+                {
+                  key      = "CriticalAddonsOnly"
+                  operator = "In"
+                  values   = ["true"]
+                }
+              ]
+            }
+          },
+          {
+            weight = 2,
+            preference = {
+              matchExpressions = [
+                {
+                  key      = "karpenter.sh/nodepool"
+                  operator = "In"
+                  values   = ["system", "truemark-system"]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+
 variable "critical_addons_node_tolerations" {
   description = "Config for node tolerations for workloads."
   type        = list(any)
+}
+
+variable "auto_mode_system_nodes_config" {
+  description = "Kubernetes manifest with system node pool configuration"
+  default     = {}
 }
 
 variable "aws_partition" {}
@@ -101,6 +168,12 @@ variable "enable_karpenter" {
   default     = false
 }
 
+variable "enable_auto_mode" {
+  description = "Flag to enable or disable the auto_mode controller add-on."
+  type        = bool
+  default     = false
+}
+
 variable "enable_keda" {
   description = "Enable Keda add-on."
   type        = bool
@@ -123,4 +196,10 @@ variable "enable_observability" {
   description = "Flag to enable or disable the observability.thanos controller add-on."
   type        = bool
   default     = false
+}
+
+variable "deploy_addons" {
+  description = "Flag to enable or disable the observability.thanos controller add-on."
+  type        = bool
+  default     = true
 }
