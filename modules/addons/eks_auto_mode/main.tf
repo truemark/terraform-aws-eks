@@ -72,16 +72,16 @@ resource "aws_eks_access_policy_association" "auto_mode_node" {
 # Create nodepool for system components
 ###############################################################################
 
-# resource "kubernetes_manifest" "auto_mode_node_class" {
-#   manifest = local.auto_mode_system_nodeclass_manifest
-#   depends_on = [
-#     aws_eks_access_entry.auto_mode_node
-#   ]
-# }
+resource "kubernetes_manifest" "auto_mode_node_class" {
+  manifest = local.auto_mode_system_nodeclass_manifest
+  depends_on = [
+    aws_eks_access_entry.auto_mode_node
+  ]
+}
 
-# resource "kubernetes_manifest" "auto_mode_node_pool" {
-#   manifest = yamldecode(local.nodepool_yml)
-#   depends_on = [
-#     kubernetes_manifest.auto_mode_node_class
-#   ]
-# }
+resource "kubernetes_manifest" "auto_mode_node_pool" {
+  manifest = yamldecode(local.nodepool_yml)
+  depends_on = [
+    kubernetes_manifest.auto_mode_node_class
+  ]
+}
