@@ -32,4 +32,43 @@ spec:
         value: true
       terminationGracePeriod: ${local.am_config.instance_termination_grace_period}
   EOF
+
+  auto_mode_system_nodeclass_manifest = {
+    apiVersion = "eks.amazonaws.com/v1"
+    kind       = "NodeClass"
+    metadata = {
+      name = "${local.am_config.nodeclass_name}"
+    }
+    spec = {
+      role = "${aws_iam_role.auto_mode_node.name}"
+      ephemeralStorage = {
+        size       = "100Gi"
+        iops       = 3000
+        throughput = 125
+      }
+      subnetSelectorTerms = [
+        {
+          tags = {
+            network = "private"
+          }
+        }
+      ]
+      securityGroupSelectorTerms = [
+        {
+          tags = {
+            "karpenter.sh/discovery" = "${var.addons_context.cluster_name}"
+          }
+        },
+        {
+          id = "${var.addons_context.node_security_group_id}"
+        }
+      ]
+      tags = {
+        Name                     = "${var.addons_context.cluster_name}-${local.am_config.nodeclass_name}"
+        "karpenter.sh/discovery" = "${var.addons_context.cluster_name}"
+      }
+    }
+  }
 }
+
+
