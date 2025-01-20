@@ -136,7 +136,7 @@ module "eks" {
     }
   }
 
-  node_security_group_tags = var.addons.enable_karpenter ? { "karpenter.sh/discovery" = var.cluster_name } : {}
+  node_security_group_tags = local.addons.enable_karpenter ? { "karpenter.sh/discovery" = var.cluster_name } : {}
 }
 
 resource "aws_eks_access_entry" "access_entries" {

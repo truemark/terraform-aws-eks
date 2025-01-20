@@ -167,8 +167,7 @@ locals {
               iamRoleArn = module.addons.gitops_metadata.observability_prometheus_iam_role_arn
             }, var.observability_helm_config.kube_prometheus_stack.prometheus)
             alertmanager = {
-              alertsTopicArn   = var.observability_helm_config.kube_prometheus_stack.alertmanager.alerts_topic_arn
-              alertsSnsSubject = var.observability_helm_config.kube_prometheus_stack.alertmanager.alerts_sns_subject
+              alertsTopicArn = try(var.observability_helm_config.kube_prometheus_stack.alertmanager.alerts_topic_arn, "")
             }
             grafana = {
               adminPassword = module.addons.gitops_metadata.observability_grafana_admin_password
@@ -257,7 +256,8 @@ module "addons" {
   enable_velero = local.addons.enable_velero
 
   # Truemark Observability
-  enable_observability = local.addons.enable_observability
+  enable_observability      = local.addons.enable_observability
+  observability_helm_config = var.observability_helm_config
 
   # AWS EBS CSI Resources
   enable_aws_ebs_csi_resources = local.addons.enable_aws_ebs_csi_resources

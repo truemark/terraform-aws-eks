@@ -73,6 +73,31 @@ spec:
                 eks.amazonaws.com/role-arn: {{ .Values.observability.kubePrometheusStack.prometheus.iamRoleArn }}
               templates:
                 - '/etc/alertmanager/config/*.tmpl'
+            config:
+              global:
+                resolve_timeout: 5m
+              route:
+                group_by: [ '...' ]
+                group_wait: 30s
+                group_interval: 5m
+                repeat_interval: 12h
+                receiver: 'sns'
+                routes:
+                  - receiver: 'null'
+                    matchers:
+                      - alertname = "Watchdog"
+              receivers:
+                - name: 'null'
+                - name: 'sns'
+                  sns_configs:
+                    - subject: 'prometheus_alert'
+                      sigv4:
+                        region: {{ .Values.observability.region }}
+                      topic_arn: {{ .Values.observability.kubePrometheusStack.alertmanager.alertsTopicArn }}
+                      attributes:
+                        cluster_name: {{ .Values.clusterName }}
+              templates:
+                - '/etc/alertmanager/config/*.tmpl'
             templateFiles:
               sns.tmpl: |
                 '{{`{{ define "sns.default.message" }}{"receiver":"{{ .Receiver }}","source":"prometheus","status":"{{ .Status }}","alerts":[{{ range $alertIndex, $alerts := .Alerts }}{{ if $alertIndex }},{{ end }}{"status":"{{ $alerts.Status }}",{{ if gt (len $alerts.Labels.SortedPairs) 0 }}"labels":{{ "{" }}{{ range $index, $label := $alerts.Labels.SortedPairs }}{{ if $index }},{{ end }}"{{ $label.Name }}":"{{ $label.Value }}"{{ end }}{{ "}" }},{{ end }}{{ if gt (len $alerts.Annotations.SortedPairs) 0 }}"annotations":{{ "{" }}{{ range $index, $annotations := $alerts.Annotations.SortedPairs }}{{ if $index }},{{ end }}"{{ $annotations.Name }}":"{{ $annotations.Value }}"{{ end }}{{ "}" }}{{ end }}}{{ end }}]}{{ end }}`}}'

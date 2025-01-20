@@ -124,3 +124,9 @@ variable "enable_observability" {
   type        = bool
   default     = false
 }
+
+variable "observability_helm_config" {
+  description = "Configuration for the Observability add-on."
+  type        = any
+  default     = {}
+}

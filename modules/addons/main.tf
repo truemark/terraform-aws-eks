@@ -53,5 +53,6 @@ module "velero" {
 module "observability" {
   count          = var.enable_observability ? 1 : 0
   source         = "./observability"
-  addons_context = local.addons_context
+  addons_context = merge(local.addons_context)
+  observability_helm_config = var.observability_helm_config
 }
