@@ -58,16 +58,16 @@ spec:
           fullnameOverride: {{ .Values.observability.fullnameOverride }}
           nodeExporter:
             enabled: true
+          defaultRules:
+            create: {{ .Values.observability.kubePrometheusStack.defaultRules.create | default true }}
+            rules:
+              kubeSchedulerAlerting: false
+              kubeSchedulerDown: false
+            disabled:
+              KubeSchedulerDown: true
+              KubeControllerManagerDown: true
           alertmanager:
             enabled: {{ .Values.observability.kubePrometheusStack.alertmanager.enabled | default true }}
-            defaultRules:
-              create: {{ .Values.observability.kubePrometheusStack.defaultRules.create | default true }}
-              rules:
-                kubeSchedulerAlerting: false
-                kubeSchedulerDown: false
-              disabled:
-                KubeSchedulerDown: true
-                KubeControllerManagerDown: true
             serviceAccount:
               annotations:
                 eks.amazonaws.com/role-arn: {{ .Values.observability.kubePrometheusStack.prometheus.iamRoleArn }}
