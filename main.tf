@@ -38,6 +38,10 @@ locals {
     metrics-server = {
       most_recent = true
     }
+    guard-duty = var.enable_guard_duty ? { 
+        most_recent = var.guard_duty_addon_version != null ? false : true
+        version     = var.guard_duty_addon_version 
+      } : {}
   }
 
   # No need for critical addons nodegroup when using auto_mode
