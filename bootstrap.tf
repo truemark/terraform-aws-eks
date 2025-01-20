@@ -62,6 +62,7 @@ locals {
       target_revision = var.addons_target_revision
       path            = var.addons_repo_path
       values = merge({
+        eksClusterName = module.eks.cluster_name
         certManager = {
           enabled      = local.addons.enable_cert_manager
           iamRoleArn   = try(module.addons.gitops_metadata.cert_manager_iam_role_arn, "")

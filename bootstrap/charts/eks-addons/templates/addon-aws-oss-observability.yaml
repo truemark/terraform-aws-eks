@@ -95,7 +95,7 @@ spec:
                         region: {{ .Values.observability.region }}
                       topic_arn: {{ .Values.observability.kubePrometheusStack.alertmanager.alertsTopicArn }}
                       attributes:
-                        cluster_name: {{ .Values.clusterName }}
+                        cluster_name: {{ .Values.eksClusterName }}
               templates:
                 - '/etc/alertmanager/config/*.tmpl'
             templateFiles:
