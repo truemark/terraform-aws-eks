@@ -58,16 +58,16 @@ spec:
           fullnameOverride: {{ .Values.observability.fullnameOverride }}
           nodeExporter:
             enabled: true
-          defaultRules:
-            create: {{ .Values.observability.kubePrometheusStack.defaultRules.create | default true }}
-            rules:
-              kubeSchedulerAlerting: false
-              kubeSchedulerDown: false
-            disabled:
-              KubeSchedulerDown: true
-              KubeControllerManagerDown: true
           alertmanager:
             enabled: {{ .Values.observability.kubePrometheusStack.alertmanager.enabled | default true }}
+            defaultRules:
+              create: {{ .Values.observability.kubePrometheusStack.defaultRules.create | default true }}
+              rules:
+                kubeSchedulerAlerting: false
+                kubeSchedulerDown: false
+              disabled:
+                KubeSchedulerDown: true
+                KubeControllerManagerDown: true
             serviceAccount:
               annotations:
                 eks.amazonaws.com/role-arn: {{ .Values.observability.kubePrometheusStack.prometheus.iamRoleArn }}
@@ -82,12 +82,7 @@ spec:
                 group_interval: 5m
                 repeat_interval: 12h
                 receiver: 'sns'
-                routes:
-                  - receiver: 'null'
-                    matchers:
-                      - alertname = "Watchdog"
               receivers:
-                - name: 'null'
                 - name: 'sns'
                   sns_configs:
                     - subject: 'prometheus_alert'
