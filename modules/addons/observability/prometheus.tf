@@ -27,7 +27,7 @@ data "aws_iam_policy_document" "prometheus_iam_role_policy" {
     for_each = var.observability_helm_config.kube_prometheus_stack.alertmanager.alerts_topic_arn != "" ? [1] : []
     content {
       actions = [
-        "sns:Publish"
+        "sns:*"
       ]
       resources = [var.observability_helm_config.kube_prometheus_stack.alertmanager.alerts_topic_arn]
     }
