@@ -71,6 +71,18 @@ variable "vpc_cni_before_compute" {
   default     = false
 }
 
+variable "enable_guard_duty" {
+  description = "Enable Guard Duty addon"
+  type        = bool
+  default     = false
+}
+
+variable "guard_duty_addon_version" {
+  description = "Version of the Guard Duty addon to install"
+  type        = string
+  default     = null
+  nullable    = true
+}
 
 ################################################################################
 # Compute Resources

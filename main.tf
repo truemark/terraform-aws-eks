@@ -104,7 +104,7 @@ module "eks" {
     enabled = true
   } : {}
 
-  cluster_addons = var.deploy_addons ? {
+  cluster_addons = var.deploy_addons ? merge({
     vpc-cni = {
       most_recent              = true
       before_compute           = var.vpc_cni_before_compute
@@ -129,7 +129,13 @@ module "eks" {
     metrics-server = {
       most_recent = true
     }
-  } : {}
+    },
+    var.enable_guard_duty ? {
+      guard-duty = {
+        most_recent = var.guard_duty_addon_version != null ? false : true
+        version     = var.guard_duty_addon_version
+      }
+  } : {}) : {}
 
   vpc_id     = var.vpc_id
   subnet_ids = var.subnets_ids
