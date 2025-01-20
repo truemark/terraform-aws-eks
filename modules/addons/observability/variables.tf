@@ -8,3 +8,9 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "observability_helm_config" {
+  description = "Configuration for the Observability add-on."
+  type        = any
+  default     = {}
+}
