@@ -198,6 +198,12 @@ variable "enable_observability" {
   default     = false
 }
 
+variable "observability_helm_config" {
+  description = "Configuration for the Observability add-on."
+  type        = any
+  default     = {}
+}
+
 variable "deploy_addons" {
   description = "Flag to enable or disable the observability.thanos controller add-on."
   type        = bool
