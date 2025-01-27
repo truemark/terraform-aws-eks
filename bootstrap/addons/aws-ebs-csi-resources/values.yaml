@@ -7,7 +7,7 @@ gp2:
     fsType: ext4
     type: gp2
   spec:
-    provisioner: kubernetes.io/aws-ebs
+    # provisioner: kubernetes.io/aws-ebs
     reclaimPolicy: Delete
     volumeBindingMode: WaitForFirstConsumer
 gp3:
@@ -19,7 +19,6 @@ gp3:
     type: gp3
     encrypted: "true"
   spec:
-    provisioner: ebs.csi.aws.com
     reclaimPolicy: Delete
     volumeBindingMode: WaitForFirstConsumer
     allowVolumeExpansion: true
@@ -32,7 +31,6 @@ gp3_ext4_encrypted:
     type: gp3
     encrypted: "true"
   spec:
-    provisioner: ebs.csi.aws.com
     reclaimPolicy: Delete
     volumeBindingMode: WaitForFirstConsumer
     allowVolumeExpansion: true
