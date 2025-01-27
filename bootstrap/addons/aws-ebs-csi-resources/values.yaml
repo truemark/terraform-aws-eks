@@ -25,6 +25,8 @@ gp3:
     allowVolumeExpansion: true
 gp3_ext4_encrypted:
   enabled: true
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "false"  
   parameters:
     fsType: ext4
     type: gp3
