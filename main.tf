@@ -111,7 +111,7 @@ module "ebs_csi_irsa_role" {
 
 module "eks" {
   source                                   = "terraform-aws-modules/eks/aws"
-  version                                  = "20.31.6"
+  version                                  = "v20.33.1"
   bootstrap_self_managed_addons            = var.compute_mode == "eks_auto_mode" ? false : var.bootstrap_self_managed_addons
   cluster_name                             = var.cluster_name
   cluster_version                          = var.cluster_version
