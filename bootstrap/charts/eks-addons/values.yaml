@@ -236,5 +236,5 @@ castAi:
     chartVersion: "0.22.1"
 
 awsCsiEbsResources:
-  enabled: true
+  enabled: false
   csidriver: ebs.csi.aws.com
