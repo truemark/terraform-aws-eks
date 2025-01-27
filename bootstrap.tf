@@ -9,7 +9,7 @@ variable "addons" {
     enable_istio_ingress                = optional(bool, false)
     enable_external_secrets             = optional(bool, false)
     enable_keda                         = optional(bool, false)
-    enable_aws_ebs_csi_resources        = optional(bool, false)
+    enable_aws_ebs_csi_resources        = optional(bool, true)
     enable_velero                       = optional(bool, false)
     enable_observability                = optional(bool, false)
   })
@@ -170,6 +170,7 @@ locals {
         }
         awsCsiEbsResources = {
           enabled = local.addons.enable_aws_ebs_csi_resources
+          csidriver = local.addons.enable_auto_mode ? "ebs.csi.eks.amazonaws.com" : "ebs.csi.aws.com"
         }
         istio = {
           chartVersion = try(var.istio_helm_config.chart_version, local.addons_default_versions.istio)

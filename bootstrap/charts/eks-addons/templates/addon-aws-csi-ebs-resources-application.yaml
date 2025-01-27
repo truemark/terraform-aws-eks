@@ -18,6 +18,8 @@ spec:
       helm:
         releaseName: ebs-csi-resources
         ignoreMissingValueFiles: true
+        values: |
+          csidriver: '{{ .Values.awsCsiEbsResources.csidriver }}'
   destination:
     namespace: '{{ .Values.awsCsiEbsResources.namespace }}'
     name: '{{ .Values.clusterName }}'

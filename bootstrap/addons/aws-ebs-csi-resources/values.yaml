@@ -1,3 +1,4 @@
+csidriver: ebs.csi.aws.com #ebs.csi.eks.amazonaws.com
 gp2:
   enabled: true
   annotations:

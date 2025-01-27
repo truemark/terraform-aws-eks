@@ -59,7 +59,7 @@ variable "create_cloudwatch_log_group" {
 variable "bootstrap_self_managed_addons" {
   description = "Indicates whether to bootstrap self-managed add-ons for the EKS cluster."
   type        = bool
-  default     = true
+  default     = false
 }
 
 ###############################################

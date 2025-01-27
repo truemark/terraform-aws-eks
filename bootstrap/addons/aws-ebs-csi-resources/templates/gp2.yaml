@@ -7,5 +7,9 @@ metadata:
     {{- .Values.gp2.annotations | toYaml | nindent 4 }}
 parameters:
   {{- .Values.gp2.parameters | toYaml | nindent 2 }}
-{{ .Values.gp2.spec | toYaml }}
+spec:
+  provisioner: {{ .Values.csidriver }}
+  reclaimPolicy: {{ .Values.gp2.spec.reclaimPolicy }}
+  volumeBindingMode: {{ .Values.gp2.spec.volumeBindingMode }}
+  allowVolumeExpansion: {{ .Values.gp2.spec.allowVolumeExpansion }}
 {{- end }}

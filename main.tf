@@ -12,6 +12,35 @@ locals {
     { for role in var.eks_access_cross_account_iam_roles : role.role_name => merge({ "role_name" = role.role_name, "access_scope" = role.access_scope, "policy_name" = role.policy_name, "arn" = role.prefix != null ? format("arn:aws:iam::%s:role/%s/%s", role.account, role.prefix, role.role_name) : format("arn:aws:iam::%s:role/%s", role.account, role.role_name) }) }
   )
 
+  critical_addons = {
+    vpc-cni = {
+      most_recent              = true
+      before_compute           = var.vpc_cni_before_compute
+      service_account_role_arn = module.vpc_cni_irsa.iam_role_arn
+    }
+    eks-pod-identity-agent = {
+      most_recent = true
+    }
+    aws-ebs-csi-driver = {
+      most_recent              = true
+      service_account_role_arn = module.ebs_csi_irsa_role.iam_role_arn
+    }
+    snapshot-controller = {
+      most_recent = true
+    }
+    kube-proxy = {
+      most_recent = true
+    }
+    coredns = {
+      most_recent = true
+    }
+  }
+  other_addons = {
+    metrics-server = {
+      most_recent = true
+    }
+  }
+
   # No need for critical addons nodegroup when using auto_mode
   create_default_critical_addon_node_group = var.compute_mode == "eks_auto_mode" ? false : var.create_default_critical_addon_node_group
   aws_partition                            = data.aws_partition.current.partition
@@ -83,7 +112,7 @@ module "ebs_csi_irsa_role" {
 module "eks" {
   source                                   = "terraform-aws-modules/eks/aws"
   version                                  = "20.31.6"
-  bootstrap_self_managed_addons            = var.bootstrap_self_managed_addons
+  bootstrap_self_managed_addons            = var.compute_mode == "eks_auto_mode" ? false : var.bootstrap_self_managed_addons
   cluster_name                             = var.cluster_name
   cluster_version                          = var.cluster_version
   cluster_endpoint_private_access          = var.cluster_endpoint_private_access
@@ -104,36 +133,10 @@ module "eks" {
     enabled = true
   } : {}
 
-  cluster_addons = var.deploy_addons ? {
-    vpc-cni = {
-      most_recent              = true
-      before_compute           = var.vpc_cni_before_compute
-      service_account_role_arn = module.vpc_cni_irsa.iam_role_arn
-    }
-    eks-pod-identity-agent = {
-      most_recent = true
-    }
-    aws-ebs-csi-driver = {
-      most_recent              = true
-      service_account_role_arn = module.ebs_csi_irsa_role.iam_role_arn
-    }
-    snapshot-controller = {
-      most_recent = true
-    }
-    coredns = {
-      most_recent = true
-    }
-    kube-proxy = {
-      most_recent = true
-    }
-    metrics-server = {
-      most_recent = true
-    }
-  } : {}
-
-  vpc_id     = var.vpc_id
-  subnet_ids = var.subnets_ids
-  tags       = var.tags
+  cluster_addons = var.compute_mode == "eks_auto_mode" ? local.other_addons : merge(local.critical_addons, local.other_addons)
+  vpc_id         = var.vpc_id
+  subnet_ids     = var.subnets_ids
+  tags           = var.tags
 
   eks_managed_node_groups = local.eks_managed_node_groups
 
