@@ -237,5 +237,6 @@ castAi:
 
 awsCsiEbsResources:
   enabled: false
-  csidriver: ebs.csi.aws.com
-  chartVersion: fix_ebs_volumes
+  values: {
+    csidriver: ebs.csi.aws.com
+  }
