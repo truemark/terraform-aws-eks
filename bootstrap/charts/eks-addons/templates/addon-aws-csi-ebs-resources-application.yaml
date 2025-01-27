@@ -17,7 +17,7 @@ spec:
       path: bootstrap/addons/aws-ebs-csi-resources
       helm:
         releaseName: ebs-csi-resources
-        ignoreMissingValueFiles: true
+        ignoreMissingValueFiles: false
         values: |
           csidriver: '{{ .Values.awsCsiEbsResources.csidriver }}'
   destination:
@@ -29,7 +29,7 @@ spec:
       selfHeal: true
     syncOptions:
       - "CreateNamespace=false"
-      - "Validate=false"
+      - "Validate=true"
       - "PrunePropagationPolicy=Foreground"
       - "PruneLast=true"
       - "RespectIgnoreDifferences=false"
