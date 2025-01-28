@@ -114,6 +114,7 @@ locals {
       addons_repo_revision = var.addons_target_revision
       path                 = var.addons_repo_path
       values = merge({
+        addons_repo_revision = var.addons_target_revision
         certManager = {
           enabled      = local.addons.enable_cert_manager
           iamRoleArn   = try(module.addons.gitops_metadata.cert_manager_iam_role_arn, "")
@@ -169,7 +170,6 @@ locals {
           vpcId        = var.vpc_id
         }
         awsCsiEbsResources = {
-          addons_repo_revision = var.addons_target_revision
           enabled              = local.addons.enable_aws_ebs_csi_resources
           csidriver            = local.addons.enable_auto_mode ? "ebs.csi.eks.amazonaws.com" : "ebs.csi.aws.com"
         }
