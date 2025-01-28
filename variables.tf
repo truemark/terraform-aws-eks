@@ -82,12 +82,11 @@ Specifies the compute provider to use for the EKS. Must be one of the following 
 
 - eks_auto_mode: Use EKS managed node groups.
 - karpenter: Use Karpenter for provisioning nodes.
-- cast_ai: Use CAST AI for optimizing cloud costs.
 EOF
   type        = string
   validation {
-    condition     = contains(["eks_auto_mode", "karpenter", "cast_ai"], var.compute_mode)
-    error_message = "Invalid compute mode. Must be one of: eks_auto_mode, karpenter, cast_ai."
+    condition     = contains(["eks_auto_mode", "karpenter"], var.compute_mode)
+    error_message = "Invalid compute mode. Must be either eks_auto_mode or karpenter"
   }
 }
 

@@ -7,5 +7,8 @@ metadata:
     {{- .Values.gp3_ext4_encrypted.annotations | toYaml | nindent 4 }}
 parameters:
   {{- .Values.gp3_ext4_encrypted.parameters | toYaml | nindent 2 }}
-{{ .Values.gp3_ext4_encrypted.spec | toYaml }}
+provisioner: {{ .Values.csidriver }}
+reclaimPolicy: {{ .Values.gp3_ext4_encrypted.spec.reclaimPolicy }}
+volumeBindingMode: {{ .Values.gp3_ext4_encrypted.spec.volumeBindingMode }}
+allowVolumeExpansion: {{ .Values.gp3_ext4_encrypted.spec.allowVolumeExpansion }}
 {{- end }}
