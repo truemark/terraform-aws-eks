@@ -234,3 +234,9 @@ castAi:
     chartVersion: "0.74.4"
   spotHandler:
     chartVersion: "0.22.1"
+
+awsCsiEbsResources:
+  enabled: false
+  values: {
+    csidriver: ebs.csi.aws.com
+  }

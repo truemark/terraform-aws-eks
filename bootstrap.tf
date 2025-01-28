@@ -169,8 +169,9 @@ locals {
           vpcId        = var.vpc_id
         }
         awsCsiEbsResources = {
-          enabled = local.addons.enable_aws_ebs_csi_resources
-        }
+          addons_repo_revision = var.addons_target_revision
+          enabled              = local.addons.enable_aws_ebs_csi_resources
+          csidriver            = local.addons.enable_auto_mode ? "ebs.csi.eks.amazonaws.com" : "ebs.csi.aws.com"
         istio = {
           chartVersion = try(var.istio_helm_config.chart_version, local.addons_default_versions.istio)
           values       = try(yamldecode(join("\n", var.istio_helm_config.values)), {})
