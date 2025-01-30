@@ -83,6 +83,7 @@ spec:
                 repeat_interval: 12h
                 receiver: 'sns'
               receivers:
+                - name: 'null'
                 - name: 'sns'
                   sns_configs:
                     - subject: 'prometheus_alert'
