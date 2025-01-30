@@ -29,7 +29,7 @@ spec:
           installCRDs: true
           {{- else if semverCompare ">=1.15.0" .Values.certManager.chartVersion }}
           crds:
-            install: true
+            enabled: true
             keep: true
           {{- end }}
           serviceAccount:
