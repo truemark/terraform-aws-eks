@@ -24,7 +24,7 @@ spec:
         valueFiles:
           - $values/{{ .Values.addons_repo_basepath }}addons/cert-manager/values.yaml
           - $values/{{ .Values.addons_repo_basepath }}addons/cert-manager/values-{{ .Values.certManager.chartVersion }}.yaml
-        values: |
+        valuesObject:
           {{- if semverCompare "<=1.14.0" .Values.certManager.chartVersion }}
           installCRDs: true
           {{- else if semverCompare ">=1.15.0" .Values.certManager.chartVersion }}
