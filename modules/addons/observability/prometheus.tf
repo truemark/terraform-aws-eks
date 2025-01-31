@@ -23,13 +23,15 @@ data "aws_iam_policy_document" "prometheus_iam_role_policy" {
       "${module.thanos_s3_bucket.s3_bucket_arn}/*",
     ]
   }
-
-  #   statement {
-  #     actions = [
-  #       "sns:*"
-  #     ]
-  #     resources = [var.observability.kube_prometheus_stack.alertmanager.alerts_topic_arn]
-  #   }
+  dynamic statement {
+    for_each = var.observability_helm_config.kube_prometheus_stack.alertmanager.alerts_topic_arn != "" ? [1] : []
+    content {
+      actions = [
+        "sns:*"
+      ]
+      resources = [var.observability_helm_config.kube_prometheus_stack.alertmanager.alerts_topic_arn]
+    }
+  }
 
   statement {
     actions = [
