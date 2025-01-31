@@ -83,6 +83,9 @@ spec:
                 repeat_interval: 12h
                 receiver: 'sns'
               receivers:
+                # null receiver is to enable DeadMansSnitch integration, to alert if our alerting pipeline is down, as of now
+                # not used, we need to change null to something like https://healthchecks.io/ to alert us if
+                # watchdog goes to non firing stage
                 - name: 'null'
                 - name: 'sns'
                   sns_configs:
