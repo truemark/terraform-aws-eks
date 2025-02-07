@@ -342,6 +342,7 @@ module "addons" {
 
 ## SSM Parameters
 resource "aws_ssm_parameter" "karpeneter_contoller_role_arn" {
+  count       = local.addons.enable_karpenter ? 1 : 0
   name        = "/truemark/eks/${var.cluster_name}/karpenter_controller_role_arn"
   description = "Base64 encoded certificate data required to communicate with the cluster"
   type        = "String"
@@ -350,6 +351,7 @@ resource "aws_ssm_parameter" "karpeneter_contoller_role_arn" {
 }
 
 resource "aws_ssm_parameter" "karpeneter_node_role_arn" {
+  count       = local.addons.enable_karpenter ? 1 : 0
   name        = "/truemark/eks/${var.cluster_name}/karpenter_node_role_arn"
   description = "Base64 encoded certificate data required to communicate with the cluster"
   type        = "String"
