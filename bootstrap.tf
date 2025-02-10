@@ -339,3 +339,22 @@ module "addons" {
   # AWS EBS CSI Resources
   enable_aws_ebs_csi_resources = local.addons.enable_aws_ebs_csi_resources
 }
+
+## SSM Parameters
+resource "aws_ssm_parameter" "karpeneter_contoller_role_arn" {
+  count       = local.addons.enable_karpenter ? 1 : 0
+  name        = "/truemark/eks/${var.cluster_name}/karpenter_controller_role_arn"
+  description = "Base64 encoded certificate data required to communicate with the cluster"
+  type        = "String"
+  value       = try(module.addons.gitops_metadata.karpenter_iam_role_arn, "")
+  tags        = var.tags
+}
+
+resource "aws_ssm_parameter" "karpeneter_node_role_arn" {
+  count       = local.addons.enable_karpenter ? 1 : 0
+  name        = "/truemark/eks/${var.cluster_name}/karpenter_node_role_arn"
+  description = "Base64 encoded certificate data required to communicate with the cluster"
+  type        = "String"
+  value       = try(module.addons.gitops_metadata.karpenter_node_iam_role_arn, null)
+  tags        = var.tags
+}

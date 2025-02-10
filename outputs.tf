@@ -97,3 +97,15 @@ output "fargate_profiles" {
   description = "Map of attribute maps for all EKS Fargate Profiles created"
   value       = module.eks.fargate_profiles
 }
+
+output "karpernter_controller_iam_role_arn" {
+  description = "IAM role ARN for Karpenter controller"
+  value       = try(module.addons.gitops_metadata.karpenter_iam_role_arn, "")
+}
+
+output "karpenter_node_iam_role_arn" {
+  description = "IAM role ARN for Karpenter nodes"
+  value       = try(module.addons.gitops_metadata.karpenter_node_iam_role_arn, "")
+}
+
+
