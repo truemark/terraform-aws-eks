@@ -63,7 +63,7 @@ locals {
     enable_istio                        = try(var.addons.enable_istio, true)
     enable_istio_ingress                = try(var.addons.enable_istio_ingress, true)
     enable_external_secrets             = try(var.addons.enable_external_secrets, true)
-    enable_metrics_server               = try(var.addons.enable_metrics_server, false) // confirm
+    enable_metrics_server               = try(var.addons.enable_metrics_server, false)
     enable_keda                         = try(var.addons.enable_keda, false)
     enable_aws_load_balancer_controller = try(var.addons.enable_aws_load_balancer_controller, true)
     enable_aws_ebs_csi_resources        = try(var.addons.enable_aws_ebs_csi_resources, true)
