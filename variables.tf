@@ -151,6 +151,12 @@ variable "default_critical_nodegroup_kms_key_id" {
   nullable    = true
 }
 
+variable "default_critical_addon_capacity_type" {
+  description = "Capacity type for the default critical addon node group"
+  type        = string
+  default     = "ON_DEMAND"
+}
+
 variable "critical_addons_node_selector" {
   description = "Config for node selector for workloads"
   type        = map(any)

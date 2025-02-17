@@ -1,50 +1,6 @@
 variable "addons" {
   description = "Kubernetes addons"
-  type = object({
-    enable_aws_load_balancer_controller = optional(bool, true)
-    enable_metrics_server               = optional(bool, true)
-    enable_cert_manager                 = optional(bool, false)
-    enable_external_dns                 = optional(bool, false)
-    enable_istio                        = optional(bool, false)
-    enable_istio_ingress                = optional(bool, false)
-    enable_external_secrets             = optional(bool, false)
-    enable_keda                         = optional(bool, false)
-    enable_aws_ebs_csi_resources        = optional(bool, false)
-    enable_velero                       = optional(bool, false)
-    enable_observability                = optional(bool, false)
-  })
-  default = {
-    enable_aws_load_balancer_controller = true
-    enable_metrics_server               = true
-  }
-  validation {
-    condition = alltrue([
-      for key in keys(var.addons) : contains([
-        "enable_cert_manager",
-        "enable_external_dns",
-        "enable_istio",
-        "enable_istio_ingress",
-        "enable_external_secrets",
-        "enable_metrics_server",
-        "enable_keda",
-        "enable_aws_load_balancer_controller",
-        "enable_aws_ebs_csi_resources",
-        "enable_velero",
-        "enable_observability",
-        "enable_cast_ai"
-      ], key)
-    ])
-    error_message = "Invalid key in var.addons"
-  }
-  validation {
-    condition = alltrue([
-      for key in keys(var.addons) : !contains([
-        "enable_karpenter",
-        "enable_auto_mode"
-      ], key)
-    ])
-    error_message = "The enable_karpenter params have been moved to compute_mode variable."
-  }
+  type        = any
 }
 
 
@@ -58,17 +14,17 @@ variable "deploy_addons" {
 ## Locals
 locals {
   addons = {
-    enable_cert_manager                 = try(var.addons.enable_cert_manager, false)
+    enable_cert_manager                 = try(var.addons.enable_cert_manager, true)
     enable_external_dns                 = try(var.addons.enable_external_dns, false)
-    enable_istio                        = try(var.addons.enable_istio, false)
-    enable_istio_ingress                = try(var.addons.enable_istio_ingress, false)
-    enable_external_secrets             = try(var.addons.enable_external_secrets, false)
+    enable_istio                        = try(var.addons.enable_istio, true)
+    enable_istio_ingress                = try(var.addons.enable_istio_ingress, true)
+    enable_external_secrets             = try(var.addons.enable_external_secrets, true)
     enable_metrics_server               = try(var.addons.enable_metrics_server, false)
     enable_keda                         = try(var.addons.enable_keda, false)
     enable_aws_load_balancer_controller = try(var.addons.enable_aws_load_balancer_controller, true)
     enable_aws_ebs_csi_resources        = try(var.addons.enable_aws_ebs_csi_resources, true)
     enable_velero                       = try(var.addons.enable_velero, false)
-    enable_observability                = try(var.addons.enable_observability, false)
+    enable_observability                = try(var.addons.enable_observability, true)
     enable_cast_ai                      = try(var.addons.enable_cast_ai, false)
     enable_karpenter                    = var.compute_mode == "karpenter" ? true : false
     enable_auto_mode                    = var.compute_mode == "eks_auto_mode" ? true : false
@@ -126,6 +82,12 @@ locals {
           iamRoleArn   = try(module.addons.gitops_metadata.external_dns_iam_role_arn, "")
           values       = try(yamldecode(join("\n", var.external_dns_helm_config.values)), {})
           chartVersion = try(var.external_dns_helm_config.chart_version, local.addons_default_versions.external_dns)
+        }
+        externalSecrets = {
+          enabled      = local.addons.enable_external_secrets
+          iamRoleArn   = try(module.addons.gitops_metadata.external_secrets_iam_role_arn, "")
+          values       = try(yamldecode(join("\n", var.external_secrets_helm_config.values)), {})
+          chartVersion = try(var.external_secrets_helm_config.chart_version, local.addons_default_versions.external_secrets)
         }
         auto_mode = {
           enabled                   = local.addons.enable_auto_mode
