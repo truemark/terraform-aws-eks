@@ -49,6 +49,7 @@ locals {
   default_critical_addon_nodegroup = {
     instance_types = var.default_critical_addon_node_group_instance_types
     ami_type       = "BOTTLEROCKET_ARM_64"
+    capacity_type  = var.default_critical_addon_capacity_type
     block_device_mappings = {
       xvda = {
         device_name = "/dev/xvda"
