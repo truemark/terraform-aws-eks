@@ -33,6 +33,9 @@ locals {
     coredns = {
       most_recent = true
     }
+    metrics-server = {
+      most_recent = true
+    }
   }
   other_addons = {
     metrics-server = {
