@@ -1,50 +1,6 @@
 variable "addons" {
   description = "Kubernetes addons"
-  type = object({
-    enable_aws_load_balancer_controller = optional(bool, true)
-    enable_metrics_server               = optional(bool, true)
-    enable_cert_manager                 = optional(bool, false)
-    enable_external_dns                 = optional(bool, false)
-    enable_istio                        = optional(bool, false)
-    enable_istio_ingress                = optional(bool, false)
-    enable_external_secrets             = optional(bool, false)
-    enable_keda                         = optional(bool, false)
-    enable_aws_ebs_csi_resources        = optional(bool, false)
-    enable_velero                       = optional(bool, false)
-    enable_observability                = optional(bool, false)
-  })
-  default = {
-    enable_aws_load_balancer_controller = true
-    enable_metrics_server               = true
-  }
-  validation {
-    condition = alltrue([
-      for key in keys(var.addons) : contains([
-        "enable_cert_manager",
-        "enable_external_dns",
-        "enable_istio",
-        "enable_istio_ingress",
-        "enable_external_secrets",
-        "enable_metrics_server",
-        "enable_keda",
-        "enable_aws_load_balancer_controller",
-        "enable_aws_ebs_csi_resources",
-        "enable_velero",
-        "enable_observability",
-        "enable_cast_ai"
-      ], key)
-    ])
-    error_message = "Invalid key in var.addons"
-  }
-  validation {
-    condition = alltrue([
-      for key in keys(var.addons) : !contains([
-        "enable_karpenter",
-        "enable_auto_mode"
-      ], key)
-    ])
-    error_message = "The enable_karpenter params have been moved to compute_mode variable."
-  }
+  type        = any
 }
 
 
