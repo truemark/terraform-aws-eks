@@ -45,7 +45,7 @@ data "aws_iam_policy_document" "prometheus_iam_role_policy" {
 module "prometheus_iam_policy" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-policy"
   version = "5.48.0"
-  name    = "prometheus-iam-policy"
+  name_prefix = "prometheus-"
   policy  = data.aws_iam_policy_document.prometheus_iam_role_policy.json
 }
 
