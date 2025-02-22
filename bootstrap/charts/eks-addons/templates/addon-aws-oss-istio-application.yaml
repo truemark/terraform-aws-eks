@@ -184,7 +184,6 @@ spec:
             type: {{ $v.serviceType }}
             {{- if eq $v.serviceType "LoadBalancer" }}
             annotations:
-              service.beta.kubernetes.io/aws-load-balancer-name: "{{ $v.name }}"
               service.beta.kubernetes.io/aws-load-balancer-type: "external"
               service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
               {{- if $v.subnets }}
