@@ -37,11 +37,19 @@ locals {
       most_recent = true
     }
   }
-  other_addons = {
-    metrics-server = {
-      most_recent = true
-    }
-  }
+  other_addons = merge({},
+    {
+      metrics-server = {
+        most_recent = true
+      }
+    },
+    var.enable_guard_duty ? {
+      aws-guardduty-agent = {
+        most_recent = var.guard_duty_addon_version != null ? false : true
+        version     = try(var.guard_duty_addon_version, null)
+      }
+    } : {}
+  )
 
   # No need for critical addons nodegroup when using auto_mode
   create_default_critical_addon_node_group = var.compute_mode == "eks_auto_mode" ? false : var.create_default_critical_addon_node_group
