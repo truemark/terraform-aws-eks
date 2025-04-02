@@ -1,8 +1,7 @@
-
 resource "kubectl_manifest" "karpenter_node_pool_arm" {
   count     = var.enable_karpenter ? 1 : 0
   yaml_body = <<-YAML
-    apiVersion: karpenter.sh/v1beta1
+    apiVersion: karpenter.sh/v1
     kind: NodePool
     metadata:
       name: truemark-arm64
@@ -36,7 +35,7 @@ resource "kubectl_manifest" "karpenter_node_pool_arm" {
 resource "kubectl_manifest" "karpenter_node_pool_amd" {
   count     = var.enable_karpenter ? 1 : 0
   yaml_body = <<-YAML
-    apiVersion: karpenter.sh/v1beta1
+    apiVersion: karpenter.sh/v1
     kind: NodePool
     metadata:
       name: truemark-amd64

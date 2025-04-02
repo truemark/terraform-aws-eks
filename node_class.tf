@@ -1,7 +1,7 @@
 resource "kubectl_manifest" "karpenter_node_class" {
   count     = var.enable_karpenter ? 1 : 0
   yaml_body = <<-YAML
-    apiVersion: karpenter.k8s.aws/v1beta1
+    apiVersion: karpenter.k8s.aws/v1
     kind: EC2NodeClass
     metadata:
       name: truemark

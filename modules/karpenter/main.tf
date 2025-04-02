@@ -23,13 +23,11 @@ resource "helm_release" "karpenter" {
   namespace        = "karpenter"
   create_namespace = true
 
-  name                = "karpenter"
-  repository          = "oci://public.ecr.aws/karpenter"
-  repository_username = var.aws_ecrpublic_authorization_token_user_name
-  repository_password = var.aws_ecrpublic_authorization_token_user_password
-  chart               = "karpenter"
-  version             = var.karpenter_controller_version
-  skip_crds           = true
+  name       = "karpenter"
+  repository = "oci://public.ecr.aws/karpenter"
+  chart      = "karpenter"
+  version    = var.karpenter_controller_version
+  skip_crds  = true
   lifecycle {
     ignore_changes = [
       repository_password
@@ -65,14 +63,12 @@ resource "helm_release" "karpenter" {
 }
 
 resource "helm_release" "karpenter_crd" {
-  namespace           = "karpenter"
-  create_namespace    = true
-  name                = "karpenter-crd"
-  repository          = "oci://public.ecr.aws/karpenter"
-  chart               = "karpenter-crd"
-  repository_username = var.aws_ecrpublic_authorization_token_user_name
-  repository_password = var.aws_ecrpublic_authorization_token_user_password
-  version             = var.karpenter_crds_version
+  namespace        = "karpenter"
+  create_namespace = true
+  name             = "karpenter-crd"
+  repository       = "oci://public.ecr.aws/karpenter"
+  chart            = "karpenter-crd"
+  version          = var.karpenter_crds_version
   lifecycle {
     ignore_changes = [
       repository_password
