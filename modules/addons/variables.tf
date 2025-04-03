@@ -192,6 +192,12 @@ variable "enable_aws_ebs_csi_resources" {
   default     = false
 }
 
+variable "enable_kube_bench" {
+  description = "Flag to enable or disable the enable_kube_bench security scanner add-ons."
+  type        = bool
+  default     = false
+}
+
 variable "enable_observability" {
   description = "Flag to enable or disable the observability.thanos controller add-on."
   type        = bool
@@ -200,6 +206,12 @@ variable "enable_observability" {
 
 variable "observability_helm_config" {
   description = "Configuration for the Observability add-on."
+  type        = any
+  default     = {}
+}
+
+variable "kube_bench_helm_config" {
+  description = "Configuration for the kube-bench add-on."
   type        = any
   default     = {}
 }

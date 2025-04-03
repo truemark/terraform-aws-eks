@@ -23,3 +23,6 @@ spec:
   tags:
     Name: {{ .Values.clusterName }}-node
     karpenter.sh/discovery: {{ .Values.clusterName }}
+  userData: |
+    [settings.kubernetes]
+      "kube-api-qps" = 0

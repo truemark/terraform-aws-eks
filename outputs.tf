@@ -107,5 +107,9 @@ output "karpenter_node_iam_role_arn" {
   description = "IAM role ARN for Karpenter nodes"
   value       = try(module.addons.gitops_metadata.karpenter_node_iam_role_arn, "")
 }
+output "kube_bench_node_iam_role_arn" {
+  description = "module.addons.gitops_metadata"
+  value       = module.addons.gitops_metadata
+}
 
 

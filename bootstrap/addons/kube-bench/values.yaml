@@ -1,0 +1,10 @@
+aws_region: ""
+iam_role_arn: ""
+aws_account_id: ""
+eks_cluster_name: ""
+enableSecurityHubReports: false
+# Run Daily at midnight
+cron_schedule: "0 0 * * *"
+tolerations: []
+affinity: {}
+namespace: "kube-system"

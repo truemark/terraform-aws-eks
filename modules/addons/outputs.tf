@@ -10,5 +10,6 @@ output "gitops_metadata" {
     try(module.keda[0].gitops_metadata, {}),
     try(module.velero[0].gitops_metadata, {}),
     try(module.observability[0].gitops_metadata, {}),
+    try(module.kube_bench[0].gitops_metadata, {}),
   )
 }

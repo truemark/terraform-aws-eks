@@ -1,0 +1,49 @@
+{{- if and (.Values.kubeBench) (.Values.kubeBench.enabled) }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: addons-kube-bench
+  namespace: {{ .Values.argocdNamespace | default "argocd" }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocdProject | default "default" }}
+  sources:
+    - repoURL: '{{ .Values.addons_repo_url }}'
+      targetRevision: '{{ .Values.addons_repo_revision }}'
+      ref: values
+    - repoURL: '{{ .Values.addons_repo_url }}'
+      targetRevision: '{{ .Values.addons_repo_revision }}'
+      path: bootstrap/addons/kube-bench
+      helm:
+        releaseName: kube-bench
+        ignoreMissingValueFiles: true
+        valueFiles:
+          - $values/{{ .Values.addons_repo_basepath }}addons/kube-bench/values.yaml
+        valuesObject:
+          aws_region: '{{ .Values.region }}'
+          iam_role_arn: '{{ .Values.kubeBench.values.iamRoleArn }}'
+          aws_account_id: '{{ .Values.kubeBench.values.awsAccountId }}'
+          eks_cluster_name:  '{{ .Values.kubeBench.values.eksClusterName }}'
+          cron_schedule:  '{{ .Values.kubeBench.values.cronSchedule }}'
+          enableSecurityHubReports: '{{ .Values.kubeBench.values.enableSecurityHubReports }}'
+          tolerations: '{{ .Values.kubeBench.values.tolerations }}'
+          affinity:
+            nodeAffinity: '{{ .Values.kubeBench.values.nodeAffinity }}'
+  destination:
+    namespace: '{{ .Values.kubeBench.namespace }}'
+    name: '{{ .Values.clusterName }}'
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - "CreateNamespace=true"
+      - "Validate=true"
+      - "PrunePropagationPolicy=Foreground"
+      - "PruneLast=true"
+      - "RespectIgnoreDifferences=false"
+{{- end }}

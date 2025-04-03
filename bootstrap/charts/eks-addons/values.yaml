@@ -4,6 +4,7 @@ clusterName: in-cluster
 addons_repo_url: https://github.com/truemark/terraform-aws-eks
 addons_repo_revision: main
 addons_repo_basepath: bootstrap
+region: us-west-2
 
 # Cert Manager
 certManager:
@@ -239,4 +240,17 @@ awsCsiEbsResources:
   enabled: false
   values: {
     csidriver: ebs.csi.aws.com
+  }
+
+kubeBench:
+  enabled: true
+  namespace: "kube-system"
+  values: {
+    awsAccountId: "",
+    eksClusterName: "",
+    iamRoleArn: "" ,
+    enableSecurityHubReports: false,
+    cronSchedule: "0 0 * * *",
+    tolerations: [],
+    nodeAffinity: {}
   }
