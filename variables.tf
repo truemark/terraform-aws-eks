@@ -716,9 +716,3 @@ variable "enable_karpenter_crd_webhook" {
   type        = bool
   default     = false
 }
-
-variable "enable_efs_csi" {
-  type        = bool
-  default     = false
-  description = "Enables AWS EFS CSI deployment"
-}
