@@ -138,6 +138,12 @@ module "eks" {
       most_recent              = true
       service_account_role_arn = module.ebs_csi_irsa_role.iam_role_arn
     }
+    kube-proxy = {
+      most_recent = true
+    }
+    coredns = {
+      most_recent = true
+    }
   }
 
   vpc_id     = var.vpc_id
