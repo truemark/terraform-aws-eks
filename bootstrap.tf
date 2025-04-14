@@ -28,6 +28,8 @@ locals {
     enable_cast_ai                      = try(var.addons.enable_cast_ai, false)
     enable_karpenter                    = var.compute_mode == "karpenter" ? true : false
     enable_auto_mode                    = var.compute_mode == "eks_auto_mode" ? true : false
+    enable_aws_security_hub             = try(var.addons.enable_aws_security_hub, false)
+    enable_kube_bench                   = try(var.addons.enable_kube_bench, false)
   }
 
   addons_default_versions = {
@@ -153,6 +155,20 @@ locals {
           serviceAccountName = try(module.addons.gitops_metadata.velero_service_account_name, null)
           region             = data.aws_region.current.id
           chartVersion       = try(var.velero_helm_config.chart_version, "8.0.0")
+        }
+        kubeBench = {
+          enabled = local.addons.enable_kube_bench
+          values = {
+            awsAccountId             = data.aws_caller_identity.current.account_id
+            awsRegion                = data.aws_region.current.name
+            eksClusterName           = var.cluster_name
+            iamRoleArn               = try(module.addons.gitops_metadata.kube_bench_iam_role_arn, "")
+            tolerations              = try(var.kube_bench_helm_config.tolerations, var.critical_addons_node_tolerations, [])
+            nodeAffinity             = try(var.kube_bench_helm_config.node_affinity, var.critical_addons_node_affinity, {})
+            namespace                = try(var.kube_bench_helm_config.namespace, "kube-system")
+            cronSchedule             = try(var.kube_bench_helm_config.cron_schedule, "0 0 * * *")
+            enableSecurityHubReports = try(var.kube_bench_helm_config.enable_security_hub_reports, false)
+          }
         }
         castAi = {
           enabled   = local.addons.enable_cast_ai
@@ -300,6 +316,10 @@ module "addons" {
 
   # AWS EBS CSI Resources
   enable_aws_ebs_csi_resources = local.addons.enable_aws_ebs_csi_resources
+
+  # Kube-bench Resources
+  enable_kube_bench      = local.addons.enable_kube_bench
+  kube_bench_helm_config = var.kube_bench_helm_config
 }
 
 ## SSM Parameters
@@ -317,6 +337,6 @@ resource "aws_ssm_parameter" "karpeneter_node_role_arn" {
   name        = "/truemark/eks/${var.cluster_name}/karpenter_node_role_arn"
   description = "Base64 encoded certificate data required to communicate with the cluster"
   type        = "String"
-  value       = try(module.addons.gitops_metadata.karpenter_node_iam_role_arn, null)
+  value       = try(module.addons.gitops_metadata.karpenter_node_iam_role_arn, "")
   tags        = var.tags
 }

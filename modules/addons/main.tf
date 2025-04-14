@@ -68,3 +68,10 @@ module "observability" {
   addons_context            = merge(local.addons_context)
   observability_helm_config = var.observability_helm_config
 }
+
+module "kube_bench" {
+  count                  = var.enable_kube_bench && var.deploy_addons ? 1 : 0
+  source                 = "./kube_bench"
+  addons_context         = merge(local.addons_context)
+  kube_bench_helm_config = var.kube_bench_helm_config
+}

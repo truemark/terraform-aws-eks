@@ -370,3 +370,9 @@ variable "auto_mode_helm_config" {
   type        = any
   default     = {}
 }
+
+variable "kube_bench_helm_config" {
+  description = "Configuration for the kube-bench add-on."
+  type        = map(any)
+  default     = {}
+}
