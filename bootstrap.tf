@@ -267,7 +267,7 @@ module "gitops_bridge_bootstrap" {
     metadata = local.addons_metadata
   }
   argocd_access_url                = var.argocd_access_url
-  argocd_dex_configs               = var.argocd_dex_config
+  argocd_dex_configs               = var.argocd_dex_configs
   argocd_rbac_policy_csv           = var.argocd_rbac_policy_csv
   critical_addons_node_affinity    = var.critical_addons_node_affinity
   critical_addons_node_tolerations = var.critical_addons_node_tolerations
