@@ -10,13 +10,36 @@ variable "deploy_addons" {
   default     = true
 }
 
-variable "argocd_dex_config" {
-  default  = null
-  nullable = true
+variable "argocd_dex_configs" {
+  description = <<EOT
+YAML-formatted string for configuring ArgoCD Dex connectors.
+Should be a valid YAML string (not a map).
+Example:
+  connectors:
+    - type: oidc
+      id: oidc
+      name: Auth0
+      config:
+        issuer: https://example.auth0.com
+        clientID: my-client-id
+        clientSecret: my-secret
+EOT
+  type        = string
+  default     = null
+  nullable    = true
 }
+
 variable "argocd_rbac_policy_csv" {
-  default  = null
-  nullable = true
+  description = <<EOT
+RBAC policy configuration in CSV format for ArgoCD.
+Should be a plain string in CSV format.
+Example:
+  g, user@example.com, role:admin
+  g, team@example.com, role:read-only
+EOT
+  type        = string
+  default     = null
+  nullable    = true
 }
 
 variable "argocd_access_url" {
