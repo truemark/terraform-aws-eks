@@ -10,6 +10,19 @@ variable "deploy_addons" {
   default     = true
 }
 
+variable "argocd_dex_config" {
+  default  = null
+  nullable = true
+}
+variable "argocd_rbac_policy_csv" {
+  default  = null
+  nullable = true
+}
+
+variable "argocd_access_url" {
+  default = ""
+}
+
 
 ## Locals
 locals {
@@ -230,22 +243,17 @@ module "gitops_bridge_bootstrap" {
   cluster = {
     metadata = local.addons_metadata
   }
+  argocd_access_url                = var.argocd_access_url
+  argocd_dex_configs               = var.argocd_dex_config
+  argocd_rbac_policy_csv           = var.argocd_rbac_policy_csv
+  critical_addons_node_affinity    = var.critical_addons_node_affinity
+  critical_addons_node_tolerations = var.critical_addons_node_tolerations
   argocd = {
-    chart_version = "7.7.10"
-    values = [
-      <<-EOT
-    global:
-      affinity:
-        ${jsonencode(var.critical_addons_node_affinity)}
-      tolerations:
-        ${jsonencode(var.critical_addons_node_tolerations)}
-    configs:
-      params:
-        server.insecure: true
-    EOT
-    ]
+    chart_version = "7.8.8"
   }
+
   apps = local.argocd_apps
+
   depends_on = [
     aws_eks_access_entry.access_entries,
     aws_eks_access_policy_association.access_policy_associations,

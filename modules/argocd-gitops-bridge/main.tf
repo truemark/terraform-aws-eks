@@ -13,7 +13,15 @@ resource "helm_release" "argocd" {
   chart            = try(var.argocd.chart, "argo-cd")
   version          = try(var.argocd.chart_version, "6.6.0")
   repository       = try(var.argocd.repository, "https://argoproj.github.io/argo-helm")
-  values           = try(var.argocd.values, [])
+  values = [
+    templatefile("${path.module}/values-argocd.yaml", {
+      critical_addons_node_affinity    = var.critical_addons_node_affinity
+      critical_addons_node_tolerations = var.critical_addons_node_tolerations
+      argocd_dex_configs               = try(var.argocd_dex_configs, null)
+      argocd_rbac_policy_csv           = try(var.argocd_rbac_policy_csv, null)
+      argocd_url                       = try(var.argocd_access_url, null)
+    })
+  ]
 
   timeout                    = try(var.argocd.timeout, null)
   repository_key_file        = try(var.argocd.repository_key_file, null)
@@ -67,6 +75,14 @@ resource "helm_release" "argocd" {
       name  = set_sensitive.value.name
       value = set_sensitive.value.value
       type  = try(set_sensitive.value.type, null)
+    }
+  }
+
+  dynamic "set" {
+    for_each = var.argocd_access_url != null ? [{ name = "configs.url", value = var.argocd_access_url }] : []
+    content {
+      name  = set.value.name
+      value = set.value.value
     }
   }
 

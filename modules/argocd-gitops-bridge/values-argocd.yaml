@@ -1,0 +1,23 @@
+global:
+  affinity:
+    ${indent(4, trimspace(yamlencode(critical_addons_node_affinity)))}
+  tolerations:
+    ${indent(4, trimspace(yamlencode(critical_addons_node_tolerations)))}
+
+configs:
+  params:
+    server.insecure: true
+
+  %{ if argocd_dex_configs != null }
+  cm:
+    url: https://${argocd_url}
+    dex.config: |
+      ${indent(6, argocd_dex_configs)}
+  %{ endif }
+
+  %{ if argocd_rbac_policy_csv != null }
+  rbac:
+    policy.csv: |
+    ${indent(4, argocd_rbac_policy_csv)}
+    scopes: "[email, groups]"
+  %{ endif }
