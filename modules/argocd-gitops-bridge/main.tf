@@ -78,14 +78,6 @@ resource "helm_release" "argocd" {
     }
   }
 
-  dynamic "set" {
-    for_each = var.argocd_access_url != null ? [{ name = "configs.url", value = var.argocd_access_url }] : []
-    content {
-      name  = set.value.name
-      value = set.value.value
-    }
-  }
-
 }
 
 
