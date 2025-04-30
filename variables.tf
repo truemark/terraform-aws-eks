@@ -376,3 +376,9 @@ variable "kube_bench_helm_config" {
   type        = map(any)
   default     = {}
 }
+
+variable "opa_gatekeeper_helm_config" {
+  description = "Configuration for the OPA Gatekeeper add-on."
+  type        = map(any)
+  default     = {}
+}

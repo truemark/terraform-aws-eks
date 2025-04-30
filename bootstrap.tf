@@ -66,6 +66,7 @@ locals {
     enable_auto_mode                    = var.compute_mode == "eks_auto_mode" ? true : false
     enable_aws_security_hub             = try(var.addons.enable_aws_security_hub, false)
     enable_kube_bench                   = try(var.addons.enable_kube_bench, false)
+    enable_opa                          = try(var.addons.enable_opa, false)
   }
 
   addons_default_versions = {
@@ -78,6 +79,7 @@ locals {
     aws_load_balancer_controller = "1.10.0"
     istio                        = "1.23.3"
     auto_mode                    = var.addons_target_revision
+    opa_gatekeeper               = "3.15.0"
     cast_ai = {
       agent              = "0.86.0"
       cluster_controller = "0.74.4"
@@ -223,6 +225,11 @@ locals {
             values       = try(yamldecode(join("\n", var.castai_helm_config.spot_handler.values)), {})
           }
         }
+        opaGatekeeper = {
+          enabled      = local.addons.enable_opa
+          values       = try(yamldecode(join("\n", var.opa_gatekeeper_helm_config.values)), {})
+          chartVersion = try(var.opa_gatekeeper_helm_config.chart_version, local.addons_default_versions.opa_gatekeeper)
+        }
         },
         local.addons.enable_observability && var.deploy_addons ? { observability = {
           enabled = local.addons.enable_observability
@@ -351,6 +358,10 @@ module "addons" {
   # Kube-bench Resources
   enable_kube_bench      = local.addons.enable_kube_bench
   kube_bench_helm_config = var.kube_bench_helm_config
+
+  # OPA Gatekeeper
+  enable_opa                 = local.addons.enable_opa
+  opa_gatekeeper_helm_config = var.opa_gatekeeper_helm_config
 }
 
 ## SSM Parameters

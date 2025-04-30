@@ -1,0 +1,112 @@
+{{- if and (.Values.opaGatekeeper) (.Values.opaGatekeeper.enabled) }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: addons-opa-gatekeeper
+  namespace: {{ .Values.argocdNamespace | default "argocd" }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocdProject | default "default" }}
+  sources:
+    - repoURL: '{{ .Values.addons_repo_url }}'
+      targetRevision: '{{ .Values.addons_repo_revision }}'
+      ref: values
+    - repoURL: https://open-policy-agent.github.io/gatekeeper/charts
+      targetRevision: {{ .Values.opaGatekeeper.chartVersion }}
+      chart: gatekeeper
+      helm:
+        releaseName: gatekeeper
+        ignoreMissingValueFiles: true
+        values: |
+          replicas: 1
+          controllerManager:
+            affinity:
+              nodeAffinity:
+                preferredDuringSchedulingIgnoredDuringExecution:
+                - weight: 1
+                  preference:
+                    matchExpressions:
+                    - key: CriticalAddonsOnly
+                      operator: In
+                      values:
+                      - "true"
+                - weight: 2
+                  preference:
+                    matchExpressions:
+                    - key: "karpenter.sh/nodepool"
+                      operator: In
+                      values:
+                      - "system"
+                      - "truemark-system"
+            tolerations:
+              - key: "CriticalAddonsOnly"
+                operator: "Exists"
+                effect: "NoSchedule"
+          audit:
+            affinity:
+              nodeAffinity:
+                preferredDuringSchedulingIgnoredDuringExecution:
+                - weight: 1
+                  preference:
+                    matchExpressions:
+                    - key: CriticalAddonsOnly
+                      operator: In
+                      values:
+                      - "true"
+                - weight: 2
+                  preference:
+                    matchExpressions:
+                    - key: "karpenter.sh/nodepool"
+                      operator: In
+                      values:
+                      - "system"
+                      - "truemark-system"
+            tolerations:
+              - key: "CriticalAddonsOnly"
+                operator: "Exists"
+                effect: "NoSchedule"
+          webhook:
+            affinity:
+              nodeAffinity:
+                preferredDuringSchedulingIgnoredDuringExecution:
+                - weight: 1
+                  preference:
+                    matchExpressions:
+                    - key: CriticalAddonsOnly
+                      operator: In
+                      values:
+                      - "true"
+                - weight: 2
+                  preference:
+                    matchExpressions:
+                    - key: "karpenter.sh/nodepool"
+                      operator: In
+                      values:
+                      - "system"
+                      - "truemark-system"
+            tolerations:
+              - key: "CriticalAddonsOnly"
+                operator: "Exists"
+                effect: "NoSchedule"
+          {{- if and (.Values.opaGatekeeper.values) (not (empty .Values.opaGatekeeper.values)) }}
+            {{- toYaml .Values.opaGatekeeper.values | nindent 10 }}
+          {{- end }}
+  destination:
+    namespace: '{{ .Values.opaGatekeeper.namespace | default "gatekeeper-system" }}'
+    name: '{{ .Values.clusterName }}'
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - "CreateNamespace=true"
+      - "Validate=false"
+      - "PrunePropagationPolicy=Foreground"
+      - "PruneLast=true"
+      - "RespectIgnoreDifferences=false"
+      - ServerSideApply=true  # Big CRDs.
+{{- end }}

@@ -221,3 +221,15 @@ variable "deploy_addons" {
   type        = bool
   default     = true
 }
+
+variable "enable_opa" {
+  description = "Flag to enable or disable the OPA Gatekeeper add-on."
+  type        = bool
+  default     = false
+}
+
+variable "opa_gatekeeper_helm_config" {
+  description = "Configuration for the OPA Gatekeeper add-on."
+  type        = any
+  default     = {}
+}

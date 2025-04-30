@@ -254,3 +254,10 @@ kubeBench:
     tolerations: [],
     nodeAffinity: {}
   }
+
+# OPA Gatekeeper
+opaGatekeeper:
+  enabled: false
+  namespace: "gatekeeper-system"
+  chartVersion: "3.15.0"
+  values: {}
