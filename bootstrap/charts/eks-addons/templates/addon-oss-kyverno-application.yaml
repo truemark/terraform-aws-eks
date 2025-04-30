@@ -1,0 +1,113 @@
+{{- if and (.Values.kyverno) (.Values.kyverno.enabled) }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: addons-kyverno
+  namespace: {{ .Values.argocdNamespace | default "argocd" }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocdProject | default "default" }}
+  sources:
+    - repoURL: https://kyverno.github.io/kyverno/
+      chart: kyverno
+      targetRevision: {{ .Values.kyverno.chartVersion }}
+      helm:
+        releaseName: kyverno
+        parameters:
+        {{- if or (.Values.critical_addons_node_selector) (not (empty .Values.critical_addons_node_selector)) }}
+          - name: nodeSelector.kubernetes\.io/os
+            value: linux
+        {{- end }}
+        values: |
+          replicaCount: 1
+
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+
+          {{- if or (.Values.critical_addons_node_selector) (not (empty .Values.critical_addons_node_selector)) }}
+          nodeSelector:
+            {{- toYaml .Values.critical_addons_node_selector | nindent 12 }}
+          {{- end }}
+
+          {{- if or (.Values.critical_addons_node_tolerations) (not (empty .Values.critical_addons_node_tolerations)) }}
+          tolerations:
+          {{- toYaml .Values.critical_addons_node_tolerations | nindent 10 }}
+          {{- end }}
+
+          admissionController:
+            replicas: 3
+            podDisruptionBudget:
+              minAvailable: 1
+
+          serviceMonitor:
+            enabled: true
+
+          metricsService:
+            create: true
+
+          backgroundController:
+            replicas: 2
+
+          cleanupController:
+            replicas: 2
+
+          {{- if and (.Values.kyverno.values) (not (empty .Values.kyverno.values)) }}
+            {{- toYaml .Values.kyverno.values | nindent 10 }}
+          {{- end }}
+  destination:
+    namespace: '{{ .Values.kyverno.namespace | default "kyverno" }}'
+    name: '{{ .Values.clusterName }}'
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - "CreateNamespace=true"
+      - "Validate=false"
+      - "PrunePropagationPolicy=Foreground"
+      - "PruneLast=true"
+      - "RespectIgnoreDifferences=false"
+
+{{ if .Values.kyverno.cisRecommendedPolicies }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: addons-kyverno-policies
+  namespace: {{ .Values.argocdNamespace | default "argocd" }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocdProject | default "default" }}
+  sources:
+    - repoURL: '{{ .Values.addons_repo_url }}'
+      targetRevision: '{{ .Values.target_revision }}'
+      path: bootstrap/addons/kyverno-policies
+      helm:
+        releaseName: kyverno-policies
+  destination:
+    namespace: 'kyverno-policies'
+    name: '{{ .Values.clusterName }}'
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - "CreateNamespace=true"
+      - "Validate=false"
+      - "PrunePropagationPolicy=Foreground"
+      - "PruneLast=true"
+      - "RespectIgnoreDifferences=false"
+{{ end }}
+{{- end }}

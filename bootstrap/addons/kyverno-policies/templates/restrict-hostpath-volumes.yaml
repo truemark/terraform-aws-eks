@@ -1,0 +1,33 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: restrict-hostpath-volumes
+  annotations:
+    policies.kyverno.io/title: Restrict HostPath Volumes
+    policies.kyverno.io/category: CIS Benchmark 5.2.6
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      This policy restricts the use of hostPath volumes which can access the host filesystem.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: restrict-hostpath-volumes
+      match:
+        any:
+        - resources:
+            kinds:
+              - Pod
+      exclude:
+        any:
+        - resources:
+            namespaces:
+              - kube-system
+              - kyverno
+      validate:
+        message: HostPath volumes are not allowed.
+        pattern:
+          spec:
+            =(volumes):
+              - =(hostPath): null

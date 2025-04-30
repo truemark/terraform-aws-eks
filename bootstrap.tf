@@ -67,6 +67,7 @@ locals {
     enable_aws_security_hub             = try(var.addons.enable_aws_security_hub, false)
     enable_kube_bench                   = try(var.addons.enable_kube_bench, false)
     enable_opa                          = try(var.addons.enable_opa, false)
+    enable_kyverno                      = try(var.addons.enable_kyverno, false)
   }
 
   addons_default_versions = {
@@ -80,6 +81,7 @@ locals {
     istio                        = "1.23.3"
     auto_mode                    = var.addons_target_revision
     opa_gatekeeper               = "3.15.0"
+    kyverno                      = "3.1.4"
     cast_ai = {
       agent              = "0.86.0"
       cluster_controller = "0.74.4"
@@ -226,10 +228,16 @@ locals {
           }
         }
         opaGatekeeper = {
-          enabled      = local.addons.enable_opa
-          values       = try(yamldecode(join("\n", var.opa_gatekeeper_helm_config.values)), {})
-          chartVersion = try(var.opa_gatekeeper_helm_config.chart_version, local.addons_default_versions.opa_gatekeeper)
+          enabled                = local.addons.enable_opa
+          values                 = try(yamldecode(join("\n", var.opa_gatekeeper_helm_config.values)), {})
+          chartVersion           = try(var.opa_gatekeeper_helm_config.chart_version, local.addons_default_versions.opa_gatekeeper)
           cisRecommendedPolicies = try(var.opa_gatekeeper_helm_config.cis_recommended_policies, true)
+        }
+        kyverno = {
+          enabled                = local.addons.enable_kyverno
+          values                 = try(yamldecode(join("\n", var.kyverno_helm_config.values)), {})
+          chartVersion           = try(var.kyverno_helm_config.chart_version, local.addons_default_versions.kyverno)
+          cisRecommendedPolicies = try(var.kyverno_helm_config.cis_recommended_policies, true)
         }
         },
         local.addons.enable_observability && var.deploy_addons ? { observability = {
@@ -363,6 +371,10 @@ module "addons" {
   # OPA Gatekeeper
   enable_opa                 = local.addons.enable_opa
   opa_gatekeeper_helm_config = var.opa_gatekeeper_helm_config
+
+  # Kyverno
+  enable_kyverno      = local.addons.enable_kyverno
+  kyverno_helm_config = var.kyverno_helm_config
 }
 
 ## SSM Parameters

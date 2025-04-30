@@ -382,3 +382,12 @@ variable "opa_gatekeeper_helm_config" {
   type        = map(any)
   default     = {}
 }
+
+variable "kyverno_helm_config" {
+  description = "Kyverno Helm chart configuration"
+  type        = any
+  default = {
+    values                   = []
+    cis_recommended_policies = true
+  }
+}

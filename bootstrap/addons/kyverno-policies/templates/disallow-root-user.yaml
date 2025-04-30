@@ -1,0 +1,36 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-root-user
+  annotations:
+    policies.kyverno.io/title: Disallow Root User
+    policies.kyverno.io/category: CIS Benchmark 5.2.6
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Running containers as root (user ID 0) can lead to a container escape
+      and compromise the system. This policy ensures containers are not run as root.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: check-runasuser
+      match:
+        any:
+        - resources:
+            kinds:
+              - Pod
+      exclude:
+        any:
+        - resources:
+            namespaces:
+              - kube-system
+              - kyverno
+      validate:
+        message: "Running as root is not allowed. Set runAsNonRoot to true or runAsUser > 0."
+        pattern:
+          spec:
+            containers:
+              - name: "*"
+                =(securityContext):
+                  =(runAsNonRoot): true | =(runAsUser): ">0"
