@@ -259,5 +259,6 @@ kubeBench:
 opaGatekeeper:
   enabled: false
   namespace: "gatekeeper-system"
+  createNamespace: true
   chartVersion: "3.15.0"
   values: {}

@@ -98,7 +98,7 @@ spec:
     {{ if .Values.opaGatekeeper.cisRecommendedPolicies }}
     - repoURL: '{{ .Values.addons_repo_url }}'
       targetRevision: '{{ .Values.addons_repo_revision }}'
-      path: '{{ .Values.addons_repo_basepath }}addons/opa-gatekeeper'
+      path: '{{ .Values.addons_repo_basepath }}/addons/opa-gatekeeper'
       ref: cis-policies
     {{ end }}
   destination:
