@@ -1,0 +1,25 @@
+# OPA Gatekeeper configuration values
+mutatingWebhook:
+  failurePolicy: Ignore
+validatingWebhook:
+  failurePolicy: Ignore
+constraintViolationsLimit: 100
+audit:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1024Mi
+  constraintViolations:
+    reportCount: 10
+postInstall:
+  labelNamespace:
+    enabled: true
+customResourceDefinitions:
+  create: true
+
+# CIS policy settings - enabled by default
+cis:
+  enabled: true

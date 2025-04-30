@@ -229,6 +229,7 @@ locals {
           enabled      = local.addons.enable_opa
           values       = try(yamldecode(join("\n", var.opa_gatekeeper_helm_config.values)), {})
           chartVersion = try(var.opa_gatekeeper_helm_config.chart_version, local.addons_default_versions.opa_gatekeeper)
+          cisRecommendedPolicies = try(var.opa_gatekeeper_helm_config.cis_recommended_policies, true)
         }
         },
         local.addons.enable_observability && var.deploy_addons ? { observability = {

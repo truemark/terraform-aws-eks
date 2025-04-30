@@ -1,0 +1,104 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8srestrictedpod
+  annotations:
+    description: Restricts pods based on CIS benchmark recommendations
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sRestrictedPod
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            exemptImages:
+              description: Image exemption list
+              type: array
+              items:
+                type: string
+            exemptNamespaces:
+              description: Namespace exemption list
+              type: array
+              items:
+                type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8srestrictedpod
+
+        violation[{"msg": msg}] {
+          # Check if namespace is exempted
+          namespace := input.review.object.metadata.namespace
+          not array_contains(input.parameters.exemptNamespaces, namespace)
+
+          # Check container configuration
+          container := input.review.object.spec.containers[_]
+          not is_exempt_image(container)
+
+          # Check for privileged containers (CIS 5.2.1)
+          container.securityContext.privileged
+
+          msg := sprintf("Container %s in pod %s has privileged access which violates CIS benchmark 5.2.1", [container.name, input.review.object.metadata.name])
+        }
+
+        violation[{"msg": msg}] {
+          # Check if namespace is exempted
+          namespace := input.review.object.metadata.namespace
+          not array_contains(input.parameters.exemptNamespaces, namespace)
+
+          # Check container configuration
+          container := input.review.object.spec.containers[_]
+          not is_exempt_image(container)
+
+          # Check for privilege escalation (CIS 5.2.2)
+          container.securityContext.allowPrivilegeEscalation
+
+          msg := sprintf("Container %s in pod %s allows privilege escalation which violates CIS benchmark 5.2.2", [container.name, input.review.object.metadata.name])
+        }
+
+        violation[{"msg": msg}] {
+          # Check if namespace is exempted
+          namespace := input.review.object.metadata.namespace
+          not array_contains(input.parameters.exemptNamespaces, namespace)
+
+          # Check for host namespaces (CIS 5.2.3/5.2.4)
+          input.review.object.spec.hostNetwork
+
+          msg := sprintf("Pod %s uses host network namespace which violates CIS benchmark 5.2.3", [input.review.object.metadata.name])
+        }
+
+        violation[{"msg": msg}] {
+          # Check if namespace is exempted
+          namespace := input.review.object.metadata.namespace
+          not array_contains(input.parameters.exemptNamespaces, namespace)
+
+          # Check for host namespaces (CIS 5.2.3/5.2.4)
+          input.review.object.spec.hostPID
+
+          msg := sprintf("Pod %s uses host PID namespace which violates CIS benchmark 5.2.4", [input.review.object.metadata.name])
+        }
+
+        violation[{"msg": msg}] {
+          # Check if namespace is exempted
+          namespace := input.review.object.metadata.namespace
+          not array_contains(input.parameters.exemptNamespaces, namespace)
+
+          # Check for host namespaces (CIS 5.2.3/5.2.4)
+          input.review.object.spec.hostIPC
+
+          msg := sprintf("Pod %s uses host IPC namespace which violates CIS benchmark 5.2.4", [input.review.object.metadata.name])
+        }
+
+        # Helper functions
+        is_exempt_image(container) {
+          exempt_images := input.parameters.exemptImages
+          img := container.image
+          exemption := exempt_images[_]
+          startswith(img, exemption)
+        }
+
+        array_contains(array, element) {
+          array[_] = element
+        }

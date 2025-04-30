@@ -1,0 +1,67 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8sseccompprofile
+  annotations:
+    description: Restricts pods based on seccomp profile settings (CIS 5.2.8)
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sSeccompProfile
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            allowedProfiles:
+              description: List of allowed seccomp profiles
+              type: array
+              items:
+                type: string
+            exemptNamespaces:
+              description: Namespace exemption list
+              type: array
+              items:
+                type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8sseccompprofile
+
+        violation[{"msg": msg}] {
+          # Check if namespace is exempted
+          namespace := input.review.object.metadata.namespace
+          not array_contains(input.parameters.exemptNamespaces, namespace)
+
+          pod := input.review.object
+          container := pod.spec.containers[_]
+
+          # CIS 5.2.8 - Use of seccomp profiles
+          not has_seccomp_profile(container, pod)
+
+          msg := sprintf("Container %s in pod %s does not use a seccomp profile which violates CIS benchmark 5.2.8", [container.name, pod.metadata.name])
+        }
+
+        # Check seccomp profiles
+        has_seccomp_profile(container, pod) {
+          # Container level seccomp profile is defined and allowed
+          profile := container.securityContext.seccompProfile.type
+          allowed_profiles := input.parameters.allowedProfiles
+          profile_allowed(profile, allowed_profiles)
+        }
+
+        has_seccomp_profile(container, pod) {
+          # Pod level seccomp profile is defined and allowed
+          profile := pod.spec.securityContext.seccompProfile.type
+          allowed_profiles := input.parameters.allowedProfiles
+          profile_allowed(profile, allowed_profiles)
+        }
+
+        # Helper functions
+        profile_allowed(profile, allowed_profiles) {
+          profile == allowed_profiles[_]
+        }
+
+        array_contains(array, element) {
+          array[_] = element
+        }

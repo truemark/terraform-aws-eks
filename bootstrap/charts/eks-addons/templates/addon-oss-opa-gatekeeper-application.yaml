@@ -95,6 +95,12 @@ spec:
           {{- if and (.Values.opaGatekeeper.values) (not (empty .Values.opaGatekeeper.values)) }}
             {{- toYaml .Values.opaGatekeeper.values | nindent 10 }}
           {{- end }}
+    {{ if .Values.opaGatekeeper.cisRecommendedPolicies }}
+    - repoURL: '{{ .Values.addons_repo_url }}'
+      targetRevision: '{{ .Values.addons_repo_revision }}'
+      path: '{{ .Values.addons_repo_basepath }}addons/opa-gatekeeper'
+      ref: cis-policies
+    {{ end }}
   destination:
     namespace: '{{ .Values.opaGatekeeper.namespace | default "gatekeeper-system" }}'
     name: '{{ .Values.clusterName }}'

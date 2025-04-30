@@ -1,0 +1,108 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8scontainercapabilities
+  annotations:
+    description: Controls Linux capabilities assigned to containers (CIS 5.2.7/5.2.9)
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sContainerCapabilities
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            allowedCapabilities:
+              description: List of capabilities that are allowed
+              type: array
+              items:
+                type: string
+            requiredDropCapabilities:
+              description: List of capabilities that must be dropped
+              type: array
+              items:
+                type: string
+            exemptImages:
+              description: List of exempt container images
+              type: array
+              items:
+                type: string
+            exemptNamespaces:
+              description: List of exempt namespaces
+              type: array
+              items:
+                type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8scontainercapabilities
+
+        violation[{"msg": msg}] {
+          # Check if namespace is exempted
+          namespace := input.review.object.metadata.namespace
+          not array_contains(input.parameters.exemptNamespaces, namespace)
+
+          container := input.review.object.spec.containers[_]
+          not is_exempt_container(container)
+
+          # Container has capabilities
+          capabilities := container.securityContext.capabilities
+
+          # Check if container adds disallowed capabilities (CIS 5.2.9)
+          forbidden_cap(capabilities, input.parameters.allowedCapabilities)
+
+          msg := sprintf("Container %s in pod %s has forbidden capabilities. Allowed capabilities: %v", [
+            container.name,
+            input.review.object.metadata.name,
+            input.parameters.allowedCapabilities
+          ])
+        }
+
+        violation[{"msg": msg}] {
+          # Check if namespace is exempted
+          namespace := input.review.object.metadata.namespace
+          not array_contains(input.parameters.exemptNamespaces, namespace)
+
+          container := input.review.object.spec.containers[_]
+          not is_exempt_container(container)
+
+          # Container has capabilities
+          capabilities := container.securityContext.capabilities
+
+          # Check if container doesn't drop required capabilities (CIS 5.2.7)
+          not dropped_required_caps(capabilities, input.parameters.requiredDropCapabilities)
+
+          msg := sprintf("Container %s in pod %s doesn't drop required capabilities. Required drops: %v", [
+            container.name,
+            input.review.object.metadata.name,
+            input.parameters.requiredDropCapabilities
+          ])
+        }
+
+        # Check for forbidden capabilities
+        forbidden_cap(capabilities, allowed_caps) {
+          added_capability := capabilities.add[_]
+          not array_contains(allowed_caps, added_capability)
+        }
+
+        # Check for missing dropped capabilities
+        dropped_required_caps(capabilities, required_caps) {
+          # All required capabilities must be in the dropped list
+          dropped := {c | c := capabilities.drop[_]}
+          required := {c | c := required_caps[_]}
+          missing := required - dropped
+          count(missing) == 0
+        }
+
+        # Helper functions
+        is_exempt_container(container) {
+          exempt_images := input.parameters.exemptImages
+          img := container.image
+          exemption := exempt_images[_]
+          startswith(img, exemption)
+        }
+
+        array_contains(array, element) {
+          array[_] = element
+        }

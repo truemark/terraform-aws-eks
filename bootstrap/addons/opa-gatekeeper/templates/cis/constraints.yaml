@@ -1,0 +1,68 @@
+{{- if and .Values.cis .Values.cis.enabled }}
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sRestrictedPod
+metadata:
+  name: restrict-pod-security
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+  parameters:
+    exemptNamespaces:
+      - "kube-system"
+      - "gatekeeper-system"
+      - "argocd"
+    exemptImages:
+      - "k8s.gcr.io/kube-apiserver"
+      - "k8s.gcr.io/kube-controller-manager"
+      - "k8s.gcr.io/kube-scheduler"
+      - "k8s.gcr.io/kube-proxy"
+      - "amazon/aws-node"
+      - "quay.io/coreos/flannel"
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sSeccompProfile
+metadata:
+  name: cis-seccomp-profile
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+  parameters:
+    allowedProfiles:
+      - "runtime/default"
+      - "docker/default"
+      - "localhost/*"
+    exemptNamespaces:
+      - "kube-system"
+      - "gatekeeper-system"
+      - "argocd"
+---
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sContainerCapabilities
+metadata:
+  name: cis-capabilities
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+  parameters:
+    allowedCapabilities: []
+    requiredDropCapabilities:
+      - "ALL"
+    exemptNamespaces:
+      - "kube-system"
+      - "gatekeeper-system"
+      - "argocd"
+    exemptImages:
+      - "k8s.gcr.io/kube-apiserver"
+      - "k8s.gcr.io/kube-controller-manager"
+      - "k8s.gcr.io/kube-scheduler"
+      - "k8s.gcr.io/kube-proxy"
+      - "amazon/aws-node"
+      - "quay.io/coreos/flannel"
+{{- end }}
