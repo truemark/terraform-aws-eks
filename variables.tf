@@ -341,6 +341,11 @@ variable "truemark_nodeclass_default_ami_family" {
   type        = string
   default     = "Bottlerocket"
 }
+variable "truemark_nodeclass_default_ami_alias" {
+  description = "The AMI alias to use in the amiSelectorTerms"
+  type        = string
+  default     = "bottlerocket@latest"
+}
 
 variable "truemark_nodeclass_default_block_device_mappings" {
   description = "Specifies the default size and characteristics of the volumes used by the Karpenter provisioner. It defines the volume size, type, and encryption settings."

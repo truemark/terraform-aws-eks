@@ -7,6 +7,8 @@ resource "kubectl_manifest" "karpenter_node_class" {
       name: truemark
     spec:
       amiFamily: ${var.truemark_nodeclass_default_ami_family}
+      amiSelectorTerms:
+        - alias: ${var.truemark_nodeclass_default_ami_alias}
       blockDeviceMappings: ${jsonencode(var.truemark_nodeclass_default_block_device_mappings.specs)}
       role: ${module.karpenter[0].karpenter_node_iam_role_arn}
       subnetSelectorTerms:

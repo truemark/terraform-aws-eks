@@ -15,6 +15,8 @@ resource "kubectl_manifest" "karpenter_node_pool_arm" {
         spec:
           nodeClassRef:
             name: truemark
+            kind: EC2NodeClass
+            group: karpenter.k8s.aws
           taints:
           - key: karpenter.sh/nodepool
             value: "truemark-arm64"
@@ -49,6 +51,8 @@ resource "kubectl_manifest" "karpenter_node_pool_amd" {
         spec:
           nodeClassRef:
             name: truemark
+            kind: EC2NodeClass
+            group: karpenter.k8s.aws
           taints:
           - key: karpenter.sh/nodepool
             value: "truemark-amd64"
