@@ -21,7 +21,7 @@ spec:
         values: |
           {{- if .Values.karpenter.enableCrdWebhookConfig }}
           webhook:
-            enabled: true
+            enabled: false
             serviceNamespace: {{ .Values.karpenter.namespace }}
           {{- end }}
   destination:
@@ -73,8 +73,6 @@ spec:
             name: karpenter
             annotations:
               eks.amazonaws.com/role-arn: {{ .Values.karpenter.iamRoleArn }}
-          webhook:
-            enabled: true
           {{- if and (.Values.karpenter.values) (not (empty .Values.karpenter.values)) }}
             {{- toYaml .Values.karpenter.values | nindent 10 }}
           {{- end }}
