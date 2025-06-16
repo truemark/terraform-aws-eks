@@ -83,6 +83,11 @@ locals {
       cluster_controller = "0.74.4"
       spot_handler       = "0.22.1"
     }
+    observability = {
+      kube_prometheus_stack = "74.2.1"
+      thanos                = "17.0.3"
+      fluentbit             = "0.49.1"
+    }
   }
 
   auto_mode_system_nodepool_manifest = try(module.addons.gitops_metadata.auto_mode_system_nodepool_manifest, null)
@@ -232,10 +237,12 @@ locals {
             enabled      = var.observability_helm_config.thanos.enabled
             s3BucketName = module.addons.gitops_metadata.observability_thanos_s3_bucket_name
             iamRoleArn   = module.addons.gitops_metadata.observability_thanos_iam_role_arn
+            chartVersion = try(var.observability_helm_config.thanos.chart_version, local.addons_default_versions.observability.thanos)
           }
           kubePrometheusStack = {
             enabled = try(var.observability_helm_config.kube_prometheus_stack.enabled, true)
             values  = try(yamldecode(join("\n", var.observability_helm_config.kube_prometheus_stack.values)), {})
+            chartVersion = try(var.observability_helm_config.kube_prometheus_stack.chart_version, local.addons_default_versions.observability.kube_prometheus_stack)
             prometheus = merge({
               iamRoleArn = module.addons.gitops_metadata.observability_prometheus_iam_role_arn
             }, var.observability_helm_config.kube_prometheus_stack.prometheus)
@@ -272,7 +279,7 @@ module "gitops_bridge_bootstrap" {
   critical_addons_node_affinity    = var.critical_addons_node_affinity
   critical_addons_node_tolerations = var.critical_addons_node_tolerations
   argocd = {
-    chart_version = "7.8.8"
+    chart_version = "8.0.17"
   }
 
   apps = local.argocd_apps
