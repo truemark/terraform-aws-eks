@@ -21,7 +21,7 @@ spec:
         values: |
           {{- if .Values.karpenter.enableCrdWebhookConfig }}
           webhook:
-            enabled: true
+            enabled: false
             serviceNamespace: {{ .Values.karpenter.namespace }}
           {{- end }}
   destination:

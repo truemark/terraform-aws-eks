@@ -70,7 +70,7 @@ locals {
 
   addons_default_versions = {
     cert_manager                 = "v1.18.0"
-    external_dns                 = "1.17.0"
+    external_dns                 = "1.16.1"
     karpenter                    = "1.5.0"
     external_secrets             = "0.17.0"
     metrics_server               = "3.12.0"
