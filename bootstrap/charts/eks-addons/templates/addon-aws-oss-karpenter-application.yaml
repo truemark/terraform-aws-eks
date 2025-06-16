@@ -18,12 +18,6 @@ spec:
       helm:
         releaseName: karpenter-crds
         ignoreMissingValueFiles: true
-        values: |
-          {{- if .Values.karpenter.enableCrdWebhookConfig }}
-          webhook:
-            enabled: false
-            serviceNamespace: {{ .Values.karpenter.namespace }}
-          {{- end }}
   destination:
     namespace: '{{ .Values.karpenter.namespace }}'
     name: '{{ .Values.clusterName }}'
