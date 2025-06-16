@@ -84,7 +84,7 @@ locals {
       spot_handler       = "0.22.1"
     }
     observability = {
-      kube_prometheus_stack = "74.2.1"
+      kube_prometheus_stack = "74.2.0"
       thanos                = "17.0.3"
       fluentbit             = "0.49.1"
     }
