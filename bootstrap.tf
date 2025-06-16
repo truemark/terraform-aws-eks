@@ -69,14 +69,14 @@ locals {
   }
 
   addons_default_versions = {
-    cert_manager                 = "v1.14.3"
-    external_dns                 = "1.15.0"
-    karpenter                    = "1.0.7"
-    external_secrets             = "0.7.0"
+    cert_manager                 = "v1.18.0"
+    external_dns                 = "1.17.0"
+    karpenter                    = "1.5.0"
+    external_secrets             = "0.17.0"
     metrics_server               = "3.12.0"
-    keda                         = "2.16.0"
-    aws_load_balancer_controller = "1.10.0"
-    istio                        = "1.23.3"
+    keda                         = "2.17.1"
+    aws_load_balancer_controller = "1.13.2"
+    istio                        = "1.26.1"
     auto_mode                    = var.addons_target_revision
     cast_ai = {
       agent              = "0.86.0"
