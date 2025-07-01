@@ -280,7 +280,7 @@ resource "kubernetes_storage_class" "gp3_ext4_encrypted" {
     "csi.storage.k8s.io/fstype" = "ext4"
     type                        = "gp3"
     encrypted                   = "true"
-    kmsKeyId = var.ebs_volumes_kms_key_id != null ? var.ebs_volumes_kms_key_id : data.aws_kms_key.default_ebs.arn
+    kmsKeyId = var.ebs_volumes_kms_key_id != null ? var.ebs_volumes_kms_key_id : data.aws_kms_key.default_ebs.key_id
   }
   volume_binding_mode = "WaitForFirstConsumer"
   depends_on = [
