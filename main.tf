@@ -273,9 +273,9 @@ resource "kubernetes_storage_class" "gp3_ext4_encrypted" {
   storage_provisioner = "ebs.csi.aws.com"
   reclaim_policy      = "Delete"
   parameters = {
-    fsType    = "ext4"
-    type      = "gp3"
-    encrypted = "true"
+    "csi.storage.k8s.io/fstype" = "ext4"
+    type                        = "gp3"
+    encrypted                   = "true"
   }
   volume_binding_mode = "WaitForFirstConsumer"
   depends_on = [
