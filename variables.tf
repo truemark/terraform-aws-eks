@@ -59,6 +59,13 @@ variable "vpc_cni_before_compute" {
   default     = false
 }
 
+variable "ebs_volumes_kms_key_id" {
+  description = "KMS key ID for EBS volumes created by the EKS cluster."
+  type        = string
+  default     = null
+  nullable    = true
+}
+
 
 ###############################################
 # Node Group Configuration
