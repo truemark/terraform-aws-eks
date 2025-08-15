@@ -13,7 +13,7 @@ locals {
 ################################################################################
 module "external_dns_irsa_role" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
-  version = "~> 5"
+  version = "~> 5.0"
 
   role_name_prefix           = "external-dns-"
   attach_external_dns_policy = true

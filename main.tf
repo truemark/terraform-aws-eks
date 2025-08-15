@@ -185,6 +185,7 @@ resource "aws_eks_access_policy_association" "access_policy_associations" {
 
 module "vpc_cni_irsa" {
   source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+  version = "~> 5.0"
 
   role_name             = "${var.cluster_name}-AmazonEKSVPCCNIRole"
   attach_vpc_cni_policy = true

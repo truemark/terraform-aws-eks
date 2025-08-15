@@ -96,7 +96,7 @@ data "aws_iam_policy_document" "velero" {
 
 module "velero_irsa_policy" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-policy"
-  version = "~> 5"
+  version = "~> 5.0"
 
   name_prefix = "velero-"
   path        = "/"
@@ -107,7 +107,7 @@ module "velero_irsa_policy" {
 
 module "velero_irsa_role" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
-  version = "~> 5"
+  version = "~> 5.0"
 
   role_name_prefix = "velero-"
   role_policy_arns = {

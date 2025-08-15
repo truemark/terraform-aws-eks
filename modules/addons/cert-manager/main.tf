@@ -13,7 +13,7 @@ locals {
 ################################################################################
 module "cert_manager_iam_role" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
-  version = "~> 5"
+  version = "~> 5.0"
 
   role_name_prefix              = "cert-manager-"
   attach_cert_manager_policy    = true

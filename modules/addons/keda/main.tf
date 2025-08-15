@@ -31,7 +31,7 @@ module "keda_irsa_policy" {
 
 module "keda_irsa_role" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
-  version = "~> 5"
+  version = "~> 5.0"
 
   role_name_prefix = "keda-"
   role_policy_arns = {
