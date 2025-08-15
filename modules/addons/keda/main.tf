@@ -19,7 +19,7 @@ data "aws_iam_policy_document" "keda" {
 
 module "keda_irsa_policy" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-policy"
-  version = "~> 5"
+  version = "~> 5.0"
 
   name_prefix = "keda-"
   path        = "/"
