@@ -97,6 +97,7 @@ data "aws_iam_roles" "eks_access_iam_roles" {
 
 module "ebs_csi_irsa_role" {
   source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+  version = "~> 5.0"
 
   role_name = "${var.cluster_name}-AmazonEKS_EBS_CSI_DriverRole"
 
@@ -252,6 +253,7 @@ resource "helm_release" "aws_load_balancer_controller" {
 
 module "vpc_cni_irsa" {
   source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+  version = "~> 5.0"
 
   role_name             = "${var.cluster_name}-AmazonEKSVPCCNIRole"
   attach_vpc_cni_policy = true
@@ -314,6 +316,7 @@ YAML
 
 module "external_secrets_irsa" {
   source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+  version = "~> 5.0"
 
   role_name                             = "${var.cluster_name}-ExternalSecrets"
   attach_external_secrets_policy        = true
